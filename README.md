@@ -1,5 +1,11 @@
 # derby-timer
 
+Derby race timer console built on [Bun](https://bun.com), the fast all-in-one JavaScript runtime, bundler, and server.
+
+## Requirements
+
+- Bun (required). Install from https://bun.com if you do not have it.
+
 ## Install
 
 ```bash
@@ -13,6 +19,10 @@ bun --hot index.ts
 ```
 
 Then open `http://localhost:3000` in your browser.
+
+## Docs
+
+- Race day implementation plan: `docs/race-day-plan.md`
 
 ## Notes
 
