@@ -1,15 +1,21 @@
 # derby-timer
 
-To install dependencies:
+## Install
 
 ```bash
 bun install
 ```
 
-To run (with HMR):
+## Run (with HMR)
 
 ```bash
 bun --hot index.ts
 ```
 
-This project was created using `bun init` in bun v1.3.6. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Then open `http://localhost:3000` in your browser.
+
+## Notes
+
+- Bun serves the UI and API from `index.ts`.
+- The frontend bundle is `index.html` + `frontend.ts` + `styles.css`.
+- State is in-memory for now and resets on restart.
