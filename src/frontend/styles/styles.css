@@ -4,74 +4,87 @@
 @import "tw-animate-css";
 
 :root {
-    /* Racing Theme Colors */
-    --racing-black: #0a0a0f;
-    --racing-dark: #151520;
-    --racing-gray: #2a2a35;
-    --racing-light: #e8e8f0;
-    --racing-white: #ffffff;
-    --racing-red: #ff1a1a;
-    --racing-orange: #ff6600;
-    --racing-yellow: #ffd700;
-    --racing-green: #00e676;
-    --racing-blue: #2979ff;
-    --racing-purple: #aa00ff;
-
-    /* shadcn/ui mappings */
-    --background: var(--racing-black);
-    --foreground: var(--racing-white);
-    --card: var(--racing-dark);
-    --card-foreground: var(--racing-white);
-    --popover: var(--racing-dark);
-    --popover-foreground: var(--racing-white);
-    --primary: var(--racing-red);
-    --primary-foreground: var(--racing-white);
-    --secondary: var(--racing-gray);
-    --secondary-foreground: var(--racing-white);
-    --muted: var(--racing-gray);
-    --muted-foreground: var(--racing-light);
-    --accent: var(--racing-red);
-    --accent-foreground: var(--racing-white);
-    --destructive: var(--racing-red);
-    --destructive-foreground: var(--racing-white);
-    --border: var(--racing-gray);
-    --input: var(--racing-gray);
-    --ring: var(--racing-red);
+    /* Light Theme Colors */
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #f97316;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f97316;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #f97316;
     --radius: 0.75rem;
 }
 
 @theme inline {
-    /* Colors */
-    --color-racing-black: var(--racing-black);
-    --color-racing-dark: var(--racing-dark);
-    --color-racing-gray: var(--racing-gray);
-    --color-racing-light: var(--racing-light);
-    --color-racing-white: var(--racing-white);
-    --color-racing-red: var(--racing-red);
-    --color-racing-orange: var(--racing-orange);
-    --color-racing-yellow: var(--racing-yellow);
-    --color-racing-green: var(--racing-green);
-    --color-racing-blue: var(--racing-blue);
-    --color-racing-purple: var(--racing-purple);
-
     /* Fonts */
     --font-racing: "Anton", sans-serif;
     --font-body: "Rajdhani", sans-serif;
-
-    /* Animations */
-    --animate-pulse-fast: pulse 0.5s ease-in-out infinite;
-    --animate-slide-up: slide-up 0.3s ease-out;
-    --animate-checkered: checkered-scroll 20s linear infinite;
 }
 
-@keyframes pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.7;
-    }
+/* Base styles */
+body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Racing font utility */
+.font-racing {
+    font-family: var(--font-racing);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #f97316;
+}
+
+/* Selection */
+::selection {
+    background: #f97316;
+    color: #ffffff;
+}
+
+/* Focus visible */
+:focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: 2px;
+}
+
+/* Button overrides */
+button {
+    font-family: var(--font-body);
+    font-weight: 600;
+}
+
+/* Animation utilities */
+.animate-slide-up {
+    animation: slide-up 0.3s ease-out;
 }
 
 @keyframes slide-up {
@@ -83,193 +96,6 @@
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-@keyframes checkered-scroll {
-    from {
-        background-position: 0 0;
-    }
-    to {
-        background-position: 40px 40px;
-    }
-}
-
-/* Base styles */
-body {
-    font-family: var(--font-body);
-    background-color: var(--racing-black);
-    color: var(--racing-white);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Racing font utility */
-.font-racing {
-    font-family: var(--font-racing);
-}
-
-/* Checkered pattern background */
-.bg-checkered {
-    background-image:
-        linear-gradient(45deg, #000 25%, transparent 25%),
-        linear-gradient(-45deg, #000 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #000 75%),
-        linear-gradient(-45deg, transparent 75%, #000 75%);
-    background-size: 20px 20px;
-    background-position:
-        0 0,
-        0 10px,
-        10px -10px,
-        -10px 0px;
-}
-
-/* Racing stripe border */
-.border-racing-stripe {
-    border-image: repeating-linear-gradient(
-            45deg,
-            var(--racing-red),
-            var(--racing-red) 10px,
-            var(--racing-white) 10px,
-            var(--racing-white) 20px
-        )
-        10;
-}
-
-/* Glow effects */
-.glow-red {
-    box-shadow: 0 0 20px rgba(255, 26, 26, 0.5);
-}
-
-.glow-green {
-    box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
-}
-
-.glow-yellow {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--racing-dark);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--racing-gray);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--racing-red);
-}
-
-/* Selection */
-::selection {
-    background: var(--racing-red);
-    color: var(--racing-white);
-}
-
-/* Focus visible */
-:focus-visible {
-    outline: 2px solid var(--racing-red);
-    outline-offset: 2px;
-}
-
-/* Button overrides for racing theme */
-button {
-    font-family: var(--font-body);
-    font-weight: 600;
-}
-
-/* Form elements - improved visibility */
-input,
-select,
-textarea {
-    font-family: var(--font-body);
-    background-color: var(--racing-black);
-    border: 2px solid var(--racing-gray);
-    color: var(--racing-white);
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    transition: all 0.2s ease;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-    border-color: var(--racing-red);
-    box-shadow: 0 0 0 3px rgba(255, 26, 26, 0.3);
-    outline: none;
-}
-
-input::placeholder,
-textarea::placeholder {
-    color: var(--racing-light);
-    opacity: 0.5;
-}
-
-/* Animation utilities */
-.animate-slide-up {
-    animation: slide-up 0.3s ease-out;
-}
-
-.animate-checkered {
-    animation: checkered-scroll 20s linear infinite;
-}
-
-/* Status badges */
-.status-badge {
-    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
-}
-
-.status-draft {
-    @apply bg-racing-gray text-racing-white;
-}
-
-.status-checkin {
-    @apply bg-racing-blue text-white;
-}
-
-.status-racing {
-    @apply bg-racing-orange text-racing-black;
-}
-
-.status-complete {
-    @apply bg-racing-green text-racing-black;
-}
-
-/* Card hover effects */
-.card-hover {
-    @apply transition-all duration-200;
-}
-
-.card-hover:hover {
-    @apply transform -translate-y-1;
-    box-shadow: 0 10px 30px rgba(255, 26, 26, 0.2);
-}
-
-/* Lane number badges */
-.lane-badge {
-    @apply w-12 h-12 rounded-full flex items-center justify-center font-racing text-xl font-bold;
-}
-
-/* Podium colors */
-.podium-gold {
-    @apply text-racing-yellow;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-
-.podium-silver {
-    @apply text-gray-300;
-}
-
-.podium-bronze {
-    @apply text-amber-600;
 }
 
 /* Responsive font sizes for projection */
