@@ -132,3 +132,7 @@ interface Racer {
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+## Simplicity and offline
+
+The whole thing needs to run without internet, and be super simple for an agent to code and for a human to setup an event.

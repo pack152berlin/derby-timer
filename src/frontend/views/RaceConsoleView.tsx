@@ -32,6 +32,7 @@ export function RaceConsoleView() {
 
   const currentHeat = heats.find(h => h.status === 'running') || heats.find(h => h.status === 'pending');
   const completedCount = heats.filter(h => h.status === 'complete').length;
+  const queuedCount = heats.filter(h => h.status !== 'complete').length;
 
   const handleStart = async () => {
     if (!currentHeat) return;
@@ -47,7 +48,6 @@ export function RaceConsoleView() {
       return;
     }
     await api.saveResults(currentHeat.id, results);
-    await api.completeHeat(currentHeat.id);
     setHeatResults({});
     refreshData();
   };
@@ -91,7 +91,7 @@ export function RaceConsoleView() {
           Race Control
         </h1>
         <p className="text-slate-500 mt-1">
-          {completedCount} / {heats.length} heats complete
+          {completedCount} heats complete • {queuedCount} queued
         </p>
       </div>
 
@@ -100,7 +100,7 @@ export function RaceConsoleView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-sm uppercase tracking-wider mb-1 font-semibold">Current Heat</p>
-              <h2 className="text-4xl font-black">Heat {currentHeat.heat_number}</h2>
+              <h2 className="text-4xl font-black">Round {currentHeat.round} • Heat {currentHeat.heat_number}</h2>
             </div>
             <Badge 
               className={cn(
@@ -136,7 +136,7 @@ export function RaceConsoleView() {
                 
                 {currentHeat.status === 'running' && (
                   <div className="grid grid-cols-2 gap-2">
-                    {[1, 2, 3, 4].slice(0, currentEvent.lane_count).map(place => (
+                    {Array.from({ length: currentHeat.lanes?.length ?? currentEvent.lane_count }, (_, idx) => idx + 1).map(place => (
                       <Button
                         key={place}
                         variant={result?.place === place ? "default" : "outline"}

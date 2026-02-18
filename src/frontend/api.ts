@@ -46,11 +46,18 @@ export const api = {
     return res.ok ? res.json() : [];
   },
   
-  async generateHeats(eventId: string): Promise<Heat[]> {
+  async generateHeats(
+    eventId: string,
+    options?: { rounds?: number; lookahead?: 2 | 3; lane_count?: number }
+  ): Promise<Heat[]> {
     const res = await fetch(`/api/events/${eventId}/generate-heats`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rounds: 1 })
+      body: JSON.stringify({
+        rounds: options?.rounds ?? 1,
+        lookahead: options?.lookahead,
+        lane_count: options?.lane_count,
+      })
     });
     return res.json();
   },

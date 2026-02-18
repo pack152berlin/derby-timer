@@ -180,7 +180,7 @@ function DisplayApp() {
               <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Current Heat</h2>
               {currentHeat && (
                 <p className="text-2xl text-orange-600 font-bold mt-1">
-                  Heat {currentHeat.heat_number} of {heats.length}
+                  Round {currentHeat.round} • Heat {currentHeat.heat_number}
                 </p>
               )}
             </div>

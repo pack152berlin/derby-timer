@@ -1,6 +1,6 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, Activity } from 'lucide-react';
+import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, Activity, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import './styles/styles.css';
@@ -14,11 +14,12 @@ import { RegistrationView } from './views/RegistrationView';
 import { HeatsView } from './views/HeatsView';
 import { RaceConsoleView } from './views/RaceConsoleView';
 import { StandingsView } from './views/StandingsView';
+import { RaceFormatView } from './views/RaceFormatView';
 
 // ===== MAIN APP =====
 
 function App() {
-  const [currentView, setCurrentView] = useState<'events' | 'register' | 'heats' | 'race' | 'standings'>('events');
+  const [currentView, setCurrentView] = useState<'events' | 'register' | 'heats' | 'race' | 'standings' | 'format'>('events');
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [racers, setRacers] = useState<Racer[]>([]);
   const [heats, setHeats] = useState<Heat[]>([]);
@@ -97,6 +98,7 @@ function App() {
           {currentView === 'heats' && <HeatsView />}
           {currentView === 'race' && <RaceConsoleView />}
           {currentView === 'standings' && <StandingsView />}
+          {currentView === 'format' && <RaceFormatView />}
         </main>
       </div>
     </AppContext.Provider>
@@ -123,6 +125,8 @@ function Navigation({
     { id: 'standings', label: 'Standings', icon: BarChart3 }
   ];
 
+  const formatIsActive = currentView === 'format';
+
   return (
     <nav className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6">
@@ -147,8 +151,21 @@ function Navigation({
           </div>
           
           <div className="flex gap-1">
+            <button
+              onClick={() => onNavigate('format')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
+                formatIsActive
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              )}
+            >
+              <BookOpen size={18} />
+              <span className="hidden md:inline">Race Format</span>
+            </button>
+
             {!currentEvent ? (
-              <Badge variant="outline" className="px-4 py-2 text-sm font-semibold">
+              <Badge variant="outline" className="px-4 py-2 text-sm font-semibold ml-2">
                 Select an event to begin
               </Badge>
             ) : (

@@ -113,7 +113,7 @@ function generateBalancedHeats(
           usedCars.add(bestCar.id);
           const counts = carLaneCounts.get(bestCar.id);
           if (counts) {
-            counts[lane]++;
+            counts[lane] = (counts[lane] ?? 0) + 1;
           }
         }
       }
@@ -231,7 +231,7 @@ describe("Heat Generation - Lane Balanced", () => {
         heat.forEach((car, lane) => {
           const counts = carLaneCounts.get(car.id);
           if (counts) {
-            counts[lane]++;
+            counts[lane] = (counts[lane] ?? 0) + 1;
           }
         });
       });

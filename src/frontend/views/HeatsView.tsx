@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, Clock, Flag, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { useApp } from '../context';
 
 export function HeatsView() {
   const { currentEvent, racers, heats, refreshData } = useApp();
+  const [lookahead, setLookahead] = useState<2 | 3>(3);
 
   if (!currentEvent) {
     return (
@@ -20,6 +21,7 @@ export function HeatsView() {
   }
 
   const eligibleRacers = racers.filter(r => r.weight_ok);
+  const queuedHeats = heats.filter((heat) => heat.status !== 'complete').length;
 
   const handleGenerate = async () => {
     if (eligibleRacers.length === 0) {
@@ -27,7 +29,7 @@ export function HeatsView() {
       return;
     }
     if (!confirm(`Generate heats for ${eligibleRacers.length} eligible racers?`)) return;
-    await api.generateHeats(currentEvent.id);
+    await api.generateHeats(currentEvent.id, { lookahead, rounds: 1 });
     refreshData();
   };
 
@@ -45,18 +47,36 @@ export function HeatsView() {
             Heat Schedule
           </h1>
           <p className="text-slate-500 mt-1">
-            {heats.length} heats • {currentEvent.lane_count} lanes • {eligibleRacers.length} eligible racers
+            {heats.length} generated • {queuedHeats} queued • {currentEvent.lane_count} lanes • {eligibleRacers.length} eligible racers
           </p>
         </div>
         {heats.length === 0 ? (
-          <Button 
-            onClick={handleGenerate}
-            size="lg"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 shadow-lg"
-          >
-            <Play className="w-5 h-5 mr-2" />
-            Generate Heats
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-1 flex items-center gap-1">
+              {[2, 3].map((value) => (
+                <button
+                  key={value}
+                  onClick={() => setLookahead(value as 2 | 3)}
+                  className={cn(
+                    'h-12 px-3 rounded-md text-sm font-semibold transition-colors',
+                    lookahead === value
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  )}
+                >
+                  {value} ahead
+                </button>
+              ))}
+            </div>
+            <Button
+              onClick={handleGenerate}
+              size="lg"
+              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 shadow-lg"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Start Rolling Heats
+            </Button>
+          </div>
         ) : (
           <Button 
             variant="outline"
@@ -82,7 +102,7 @@ export function HeatsView() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl">Heat {heat.heat_number}</CardTitle>
+                  <CardTitle className="text-2xl">Round {heat.round} • Heat {heat.heat_number}</CardTitle>
                   <Badge 
                     className={cn(
                       heat.status === 'pending' && "bg-slate-200 text-slate-700",
@@ -117,7 +137,7 @@ export function HeatsView() {
           <CardContent className="text-center py-16">
             <Clock className="w-16 h-16 mx-auto mb-4 text-slate-300" />
             <p className="text-lg text-slate-500 font-medium mb-2">No heats generated yet</p>
-            <p className="text-slate-400">Click Generate Heats to create the race schedule</p>
+            <p className="text-slate-400">DerbyTimer will queue only 2-3 heats at a time and keep matching by lane needs and wins.</p>
           </CardContent>
         </Card>
       )}

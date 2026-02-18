@@ -8,6 +8,18 @@ import {
   ResultRepository,
   umzug,
 } from "./db";
+import {
+  clampLookahead,
+  planHeatQueue,
+  planNextHeat,
+  type PlannerHeat,
+  type PlannerRacer,
+  type PlannerStanding,
+} from "./race/heat-planner";
+import {
+  selectSurvivorsForNextRound,
+  type EliminationStanding,
+} from "./race/elimination";
 
 // Initialize database on startup
 await umzug.up();
@@ -52,6 +64,252 @@ const getCurrentElapsedMs = () => {
   return Date.now() - activeHeat.startTimeMs;
 };
 
+type EventPlanningSettings = {
+  laneCount: number;
+  rounds: number;
+  lookahead: 2 | 3;
+};
+
+const eventPlanningByEventId = new Map<string, EventPlanningSettings>();
+
+const getPlanningSettings = (eventId: string, fallbackLaneCount: number): EventPlanningSettings => {
+  const existing = eventPlanningByEventId.get(eventId);
+  if (existing) return existing;
+
+  return {
+    laneCount: fallbackLaneCount,
+    rounds: 1,
+    lookahead: 3,
+  };
+};
+
+const getPlannerRacers = (eventId: string): PlannerRacer[] => {
+  return racersRepo.findInspectedByEvent(eventId).map((racer) => ({
+    id: racer.id,
+    car_number: racer.car_number,
+  }));
+};
+
+const getEventStandings = (eventId: string): EliminationStanding[] => {
+  return resultsRepo.getStandings(eventId).map((standing) => ({
+    racer_id: standing.racer_id,
+    wins: standing.wins,
+    losses: standing.losses,
+    heats_run: standing.heats_run,
+    avg_time_ms: standing.avg_time_ms,
+  }));
+};
+
+const toPlannerStandings = (standings: EliminationStanding[]): PlannerStanding[] => {
+  return standings.map((standing) => ({
+    racer_id: standing.racer_id,
+    wins: standing.wins,
+    losses: standing.losses,
+    heats_run: standing.heats_run,
+  }));
+};
+
+const toPlannerHeats = (
+  heats: ReturnType<HeatRepository["findByEventWithLanes"]>
+): PlannerHeat[] => {
+  return heats.map((heat) => ({
+    status: heat.status,
+    lanes: heat.lanes.map((lane) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+    })),
+  }));
+};
+
+const getHighestRound = (heats: { round: number }[]) => {
+  if (heats.length === 0) {
+    return 1;
+  }
+
+  return heats.reduce((maxRound, heat) => {
+    return Math.max(maxRound, heat.round);
+  }, 1);
+};
+
+const getRoundRacers = (
+  allRacers: PlannerRacer[],
+  roundHeats: ReturnType<HeatRepository["findByEventWithLanes"]>,
+  roundNumber: number
+) => {
+  if (roundHeats.length === 0 && roundNumber === 1) {
+    return allRacers;
+  }
+
+  const racerIds = new Set<string>();
+  for (const heat of roundHeats) {
+    for (const lane of heat.lanes) {
+      racerIds.add(lane.racer_id);
+    }
+  }
+
+  return allRacers.filter((racer) => racerIds.has(racer.id));
+};
+
+const getNextHeatNumber = (heats: ReturnType<HeatRepository["findByEvent"]>) => {
+  return (
+    heats.reduce((maxHeatNumber, heat) => {
+      return Math.max(maxHeatNumber, heat.heat_number);
+    }, 0) + 1
+  );
+};
+
+const appendPlannedHeatsForRound = (
+  eventId: string,
+  roundNumber: number,
+  racers: PlannerRacer[],
+  existingRoundHeats: PlannerHeat[],
+  standings: PlannerStanding[],
+  settings: EventPlanningSettings
+) => {
+  const plannedHeats = planHeatQueue({
+    racers,
+    laneCount: settings.laneCount,
+    rounds: settings.rounds,
+    standings,
+    existingHeats: existingRoundHeats,
+    lookahead: settings.lookahead,
+  });
+
+  if (plannedHeats.length === 0) {
+    return 0;
+  }
+
+  let nextHeatNumber = getNextHeatNumber(heatsRepo.findByEvent(eventId));
+
+  for (const plannedHeat of plannedHeats) {
+    heatsRepo.create({
+      event_id: eventId,
+      round: roundNumber,
+      heat_number: nextHeatNumber,
+      lanes: plannedHeat.lanes,
+    });
+
+    nextHeatNumber++;
+  }
+
+  return plannedHeats.length;
+};
+
+const topUpHeatQueue = (eventId: string, settings: EventPlanningSettings): number => {
+  const allRacers = getPlannerRacers(eventId);
+  if (allRacers.length === 0) {
+    return 0;
+  }
+
+  const allHeatsWithLanes = heatsRepo.findByEventWithLanes(eventId);
+  const currentRound = getHighestRound(allHeatsWithLanes);
+  const currentRoundHeatsWithLanes = allHeatsWithLanes.filter((heat) => {
+    return heat.round === currentRound;
+  });
+  const currentRoundPlannerHeats = toPlannerHeats(currentRoundHeatsWithLanes);
+  const currentRoundRacers = getRoundRacers(
+    allRacers,
+    currentRoundHeatsWithLanes,
+    currentRound
+  );
+
+  if (currentRoundRacers.length === 0) {
+    return 0;
+  }
+
+  const eventStandings = getEventStandings(eventId);
+  const plannerStandings = toPlannerStandings(eventStandings);
+  const inFlightRoundHeatCount = currentRoundPlannerHeats.filter((heat) => {
+    return heat.status !== "complete";
+  }).length;
+  const nextRoundHeat = planNextHeat({
+    racers: currentRoundRacers,
+    laneCount: settings.laneCount,
+    rounds: settings.rounds,
+    standings: plannerStandings,
+    existingHeats: currentRoundPlannerHeats,
+  });
+
+  if (nextRoundHeat) {
+    if (inFlightRoundHeatCount >= settings.lookahead) {
+      return 0;
+    }
+
+    return appendPlannedHeatsForRound(
+      eventId,
+      currentRound,
+      currentRoundRacers,
+      currentRoundPlannerHeats,
+      plannerStandings,
+      settings
+    );
+  }
+
+  if (inFlightRoundHeatCount > 0) {
+    return 0;
+  }
+
+  if (currentRoundRacers.length <= 2) {
+    return 0;
+  }
+
+  const survivors = selectSurvivorsForNextRound(currentRoundRacers, eventStandings);
+  const nextRoundNumber = currentRound + 1;
+
+  return appendPlannedHeatsForRound(
+    eventId,
+    nextRoundNumber,
+    survivors,
+    [],
+    plannerStandings,
+    settings
+  );
+};
+
+const maybeMarkEventComplete = (eventId: string, settings: EventPlanningSettings) => {
+  const allRacers = getPlannerRacers(eventId);
+  if (allRacers.length === 0) {
+    return;
+  }
+
+  const allHeatsWithLanes = heatsRepo.findByEventWithLanes(eventId);
+  const currentRound = getHighestRound(allHeatsWithLanes);
+  const currentRoundHeatsWithLanes = allHeatsWithLanes.filter((heat) => {
+    return heat.round === currentRound;
+  });
+  const currentRoundPlannerHeats = toPlannerHeats(currentRoundHeatsWithLanes);
+
+  if (currentRoundPlannerHeats.length === 0) {
+    return;
+  }
+
+  const heatsInFlight = currentRoundPlannerHeats.filter((heat) => heat.status !== "complete");
+  if (heatsInFlight.length > 0) {
+    return;
+  }
+
+  const currentRoundRacers = getRoundRacers(
+    allRacers,
+    currentRoundHeatsWithLanes,
+    currentRound
+  );
+  if (currentRoundRacers.length > 2) {
+    return;
+  }
+
+  const nextHeat = planNextHeat({
+    racers: currentRoundRacers,
+    laneCount: settings.laneCount,
+    rounds: settings.rounds,
+    standings: toPlannerStandings(getEventStandings(eventId)),
+    existingHeats: currentRoundPlannerHeats,
+  });
+
+  if (!nextHeat) {
+    eventsRepo.update(eventId, { status: "complete" });
+  }
+};
+
 Bun.serve({
   routes: {
     // Serve the main UI
@@ -60,6 +318,7 @@ Bun.serve({
     "/heats": index,
     "/race": index,
     "/standings": index,
+    "/format": index,
     "/display": display,
 
     // ===== EVENTS API =====
@@ -194,6 +453,7 @@ Bun.serve({
       DELETE: (req) => {
         // Delete all heats for event (for regeneration)
         heatsRepo.deleteByEvent(req.params.eventId);
+        eventPlanningByEventId.delete(req.params.eventId);
         return respondJson({ success: true });
       },
     },
@@ -223,6 +483,9 @@ Bun.serve({
 
     "/api/heats/:id/complete": {
       POST: (req) => {
+        const existingHeat = heatsRepo.findById(req.params.id);
+        if (!existingHeat) return respondJson({ error: "Heat not found" }, 404);
+
         const heat = heatsRepo.updateStatus(req.params.id, "complete");
         if (!heat) return respondJson({ error: "Heat not found" }, 404);
 
@@ -232,6 +495,13 @@ Bun.serve({
           activeHeat.running = false;
           activeHeat.startTimeMs = null;
           activeHeat.elapsedMs = 0;
+        }
+
+        const event = eventsRepo.findById(existingHeat.event_id);
+        if (event) {
+          const settings = getPlanningSettings(event.id, event.lane_count);
+          topUpHeatQueue(event.id, settings);
+          maybeMarkEventComplete(event.id, settings);
         }
 
         return respondJson(heat);
@@ -244,6 +514,7 @@ Bun.serve({
         const body = (await req.json()) as {
           rounds?: number;
           lane_count?: number;
+          lookahead?: number;
         };
 
         const event = eventsRepo.findById(req.params.eventId);
@@ -258,28 +529,17 @@ Bun.serve({
         heatsRepo.deleteByEvent(req.params.eventId);
 
         const laneCount = body.lane_count ?? event.lane_count;
-        const rounds = body.rounds ?? 1;
+        const rounds = Math.max(1, body.rounds ?? 1);
+        const lookahead = clampLookahead(body.lookahead);
 
-        // Generate balanced lane rotation
-        const heats = generateBalancedHeats(
-          racers.map((r) => ({ id: r.id, car_number: r.car_number })),
+        const planningSettings: EventPlanningSettings = {
           laneCount,
-          rounds
-        );
+          rounds,
+          lookahead,
+        };
+        eventPlanningByEventId.set(req.params.eventId, planningSettings);
 
-        // Save heats
-        let heatNumber = 1;
-        for (const heatRacers of heats) {
-          heatsRepo.create({
-            event_id: req.params.eventId,
-            round: 1,
-            heat_number: heatNumber++,
-            lanes: heatRacers.map((racer, idx) => ({
-              lane_number: idx + 1,
-              racer_id: racer.id,
-            })),
-          });
-        }
+        topUpHeatQueue(req.params.eventId, planningSettings);
 
         // Update event status to racing
         eventsRepo.update(req.params.eventId, { status: "racing" });
@@ -296,6 +556,9 @@ Bun.serve({
         return respondJson(results);
       },
       POST: async (req) => {
+        const heat = heatsRepo.findById(req.params.heatId);
+        if (!heat) return respondJson({ error: "Heat not found" }, 404);
+
         const body = (await req.json()) as {
           results: {
             lane_number: number;
@@ -316,6 +579,20 @@ Bun.serve({
 
         // Complete the heat
         heatsRepo.updateStatus(req.params.heatId, "complete");
+
+        if (activeHeat.heatId === req.params.heatId) {
+          activeHeat.heatId = null;
+          activeHeat.running = false;
+          activeHeat.startTimeMs = null;
+          activeHeat.elapsedMs = 0;
+        }
+
+        const event = eventsRepo.findById(heat.event_id);
+        if (event) {
+          const settings = getPlanningSettings(event.id, event.lane_count);
+          topUpHeatQueue(event.id, settings);
+          maybeMarkEventComplete(event.id, settings);
+        }
 
         return respondJson(savedResults);
       },
@@ -359,115 +636,5 @@ Bun.serve({
     console: true,
   },
 });
-
-// Heat generation algorithm - balanced lane rotation
-// Ensures every car races in every lane exactly once when possible
-function generateBalancedHeats(
-  racers: { id: string; car_number: string }[],
-  laneCount: number,
-  rounds: number
-): { id: string; car_number: string }[][] {
-  const heats: { id: string; car_number: string }[][] = [];
-  const totalRacers = racers.length;
-
-  if (totalRacers === 0 || laneCount === 0) {
-    return heats;
-  }
-
-  // Handle case where we have fewer racers than lanes
-  if (totalRacers <= laneCount) {
-    // Each racer needs to run in each lane
-    // We need laneCount heats minimum (one per lane)
-    // Each heat will have all racers, rotated through lanes
-    const heatsNeeded = Math.max(laneCount, rounds);
-
-    for (let heatIdx = 0; heatIdx < heatsNeeded; heatIdx++) {
-      const heat: { id: string; car_number: string }[] = [];
-
-      for (let lane = 0; lane < laneCount; lane++) {
-        // Rotate which racer is in which lane
-        const racerIndex = (heatIdx + lane) % totalRacers;
-        const racer = racers[racerIndex];
-        if (racer) {
-          heat.push(racer);
-        }
-      }
-
-      heats.push(heat);
-    }
-  } else {
-    // More racers than lanes
-    // We need to ensure each car races in each lane
-    // This requires a more complex rotation algorithm
-
-    // Calculate how many heats each car needs (one per lane)
-    const heatsPerCar = Math.max(laneCount, rounds);
-
-    // Total car-lane assignments needed
-    const totalAssignments = totalRacers * heatsPerCar;
-
-    // Each heat provides 'laneCount' assignments
-    const totalHeats = Math.ceil(totalAssignments / laneCount);
-
-    // Use a round-robin tournament scheduling approach
-    // Create a grid where rows are heats and columns are lanes
-    // Each car appears exactly once in each column (lane)
-
-    // Initialize tracking: which lanes each car has used
-    const carLaneCounts: Map<string, number[]> = new Map();
-    for (const racer of racers) {
-      carLaneCounts.set(racer.id, new Array(laneCount).fill(0));
-    }
-
-    // Generate heats
-    for (let heatIdx = 0; heatIdx < totalHeats; heatIdx++) {
-      const heat: ({ id: string; car_number: string } | null)[] = new Array(laneCount).fill(null);
-      const usedCars = new Set<string>();
-
-      // For each lane, find a car that:
-      // 1. Hasn't been used in this heat
-      // 2. Has the lowest count for this specific lane
-      // 3. Has the lowest total lane count overall
-
-      for (let lane = 0; lane < laneCount; lane++) {
-        let bestCar: { id: string; car_number: string } | null = null;
-        let bestScore = Infinity;
-
-        for (const racer of racers) {
-          if (usedCars.has(racer.id)) continue;
-
-          const laneCounts = carLaneCounts.get(racer.id);
-          if (!laneCounts) continue;
-          const thisLaneCount = laneCounts[lane] ?? 0;
-          const totalCount = laneCounts.reduce((a, b) => a + b, 0);
-
-          // Score: prioritize cars that need this lane, then by total usage
-          const score = thisLaneCount * 1000 + totalCount;
-
-          if (score < bestScore) {
-            bestScore = score;
-            bestCar = racer;
-          }
-        }
-
-        if (bestCar) {
-          heat[lane] = bestCar;
-          usedCars.add(bestCar.id);
-          const counts = carLaneCounts.get(bestCar.id);
-          if (counts) {
-            counts[lane]++;
-          }
-        }
-      }
-
-      // Only add heat if all lanes are filled
-      if (heat.every(car => car !== null)) {
-        heats.push(heat as { id: string; car_number: string }[]);
-      }
-    }
-  }
-
-  return heats;
-}
 
 console.log("Derby Race Server running on http://localhost:3000");

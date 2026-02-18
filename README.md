@@ -36,7 +36,7 @@ bun install
 bun run src/migrate.ts
 
 # Start the server with hot reload
-bun --hot src/index.ts
+bun start
 
 # Open http://localhost:3000
 ```
