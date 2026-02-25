@@ -41,6 +41,24 @@ bun start
 # Open http://localhost:3000
 ```
 
+## Race-Day Rehearsal Command
+
+Run a full simulated race flow (check-in -> heat generation -> partial run -> server restart -> finish) in an isolated SQLite file:
+
+```bash
+bun run rehearsal:race-day
+```
+
+Useful options:
+
+```bash
+# Keep the rehearsal DB for post-run inspection
+bun run rehearsal:race-day --keep-db
+
+# Customize scale/format
+bun run rehearsal:race-day --cars 50 --lookahead 2 --pre-restart-heats 20
+```
+
 ## Race Day Workflow
 
 ### 1. Event Setup

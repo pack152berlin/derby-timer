@@ -82,6 +82,13 @@ export class HeatRepository {
     ).all(eventId) as Heat[];
   }
 
+  findRunning(): Heat | null {
+    const row = this.db.query(
+      "SELECT * FROM heats WHERE status = 'running' ORDER BY updated_at DESC LIMIT 1"
+    ).get() as Heat | undefined;
+    return row ?? null;
+  }
+
   findWithLanes(heatId: string): (Heat & { lanes: (HeatLane & { car_number: string; racer_name: string })[] }) | null {
     const heat = this.findById(heatId);
     if (!heat) return null;
@@ -123,6 +130,9 @@ export class HeatRepository {
     } else if (status === 'complete') {
       updates.push('finished_at = ?');
       values.push(now);
+    } else if (status === 'pending') {
+      updates.push('started_at = ?', 'finished_at = ?');
+      values.push(null, null);
     }
     
     values.push(id);

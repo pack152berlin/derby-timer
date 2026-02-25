@@ -1,11 +1,11 @@
 import index from "./frontend/index.html";
 import display from "./frontend/display.html";
 import {
-  getDb,
   EventRepository,
   RacerRepository,
   HeatRepository,
   ResultRepository,
+  PlanningStateRepository,
   umzug,
 } from "./db";
 import {
@@ -30,21 +30,7 @@ const eventsRepo = new EventRepository();
 const racersRepo = new RacerRepository();
 const heatsRepo = new HeatRepository();
 const resultsRepo = new ResultRepository();
-
-// Active heat state (for live race console)
-type ActiveHeatState = {
-  heatId: string | null;
-  running: boolean;
-  startTimeMs: number | null;
-  elapsedMs: number;
-};
-
-const activeHeat: ActiveHeatState = {
-  heatId: null,
-  running: false,
-  startTimeMs: null,
-  elapsedMs: 0,
-};
+const planningStateRepo = new PlanningStateRepository();
 
 const jsonHeaders = {
   "Content-Type": "application/json",
@@ -57,11 +43,34 @@ const respondJson = (payload: unknown, status = 200) => {
   });
 };
 
-const getCurrentElapsedMs = () => {
-  if (!activeHeat.running || activeHeat.startTimeMs === null) {
-    return activeHeat.elapsedMs;
+const getElapsedMsFromStartedAt = (startedAt: string | null) => {
+  if (!startedAt) {
+    return 0;
   }
-  return Date.now() - activeHeat.startTimeMs;
+
+  const startedAtMs = Date.parse(startedAt);
+  if (Number.isNaN(startedAtMs)) {
+    return 0;
+  }
+
+  return Math.max(0, Date.now() - startedAtMs);
+};
+
+const getActiveHeatStatus = () => {
+  const runningHeat = heatsRepo.findRunning();
+  if (!runningHeat) {
+    return {
+      heatId: null,
+      running: false,
+      elapsedMs: 0,
+    };
+  }
+
+  return {
+    heatId: runningHeat.id,
+    running: true,
+    elapsedMs: getElapsedMsFromStartedAt(runningHeat.started_at),
+  };
 };
 
 type EventPlanningSettings = {
@@ -70,11 +79,53 @@ type EventPlanningSettings = {
   lookahead: 2 | 3;
 };
 
-const eventPlanningByEventId = new Map<string, EventPlanningSettings>();
+const clearRoundRacerCache = (eventId: string) => {
+  planningStateRepo.clearRoundRosters(eventId);
+};
+
+const setRoundRacerCache = (eventId: string, roundNumber: number, racers: PlannerRacer[]) => {
+  planningStateRepo.replaceRoundRacerIds(
+    eventId,
+    roundNumber,
+    racers.map((racer) => racer.id)
+  );
+};
+
+const getRoundRacersFromCache = (
+  eventId: string,
+  roundNumber: number,
+  allRacers: PlannerRacer[]
+) => {
+  const cachedRacerIds = planningStateRepo.getRoundRacerIds(eventId, roundNumber);
+  if (!cachedRacerIds || cachedRacerIds.length === 0) {
+    return null;
+  }
+
+  const racersById = new Map<string, PlannerRacer>();
+  for (const racer of allRacers) {
+    racersById.set(racer.id, racer);
+  }
+
+  const racers = cachedRacerIds
+    .map((racerId) => racersById.get(racerId))
+    .filter((racer): racer is PlannerRacer => racer !== undefined);
+
+  if (racers.length === 0) {
+    return null;
+  }
+
+  return racers;
+};
 
 const getPlanningSettings = (eventId: string, fallbackLaneCount: number): EventPlanningSettings => {
-  const existing = eventPlanningByEventId.get(eventId);
-  if (existing) return existing;
+  const existing = planningStateRepo.getSettings(eventId);
+  if (existing) {
+    return {
+      laneCount: existing.lane_count,
+      rounds: Math.max(1, existing.rounds),
+      lookahead: existing.lookahead === 2 ? 2 : 3,
+    };
+  }
 
   return {
     laneCount: fallbackLaneCount,
@@ -132,11 +183,23 @@ const getHighestRound = (heats: { round: number }[]) => {
 };
 
 const getRoundRacers = (
+  eventId: string,
   allRacers: PlannerRacer[],
   roundHeats: ReturnType<HeatRepository["findByEventWithLanes"]>,
   roundNumber: number
 ) => {
+  const cachedRacers = getRoundRacersFromCache(eventId, roundNumber, allRacers);
+  if (cachedRacers) {
+    return cachedRacers;
+  }
+
   if (roundHeats.length === 0 && roundNumber === 1) {
+    setRoundRacerCache(eventId, roundNumber, allRacers);
+    return allRacers;
+  }
+
+  if (roundNumber === 1) {
+    setRoundRacerCache(eventId, roundNumber, allRacers);
     return allRacers;
   }
 
@@ -147,7 +210,12 @@ const getRoundRacers = (
     }
   }
 
-  return allRacers.filter((racer) => racerIds.has(racer.id));
+  const roundRacers = allRacers.filter((racer) => racerIds.has(racer.id));
+  if (roundRacers.length > 0) {
+    setRoundRacerCache(eventId, roundNumber, roundRacers);
+  }
+
+  return roundRacers;
 };
 
 const getNextHeatNumber = (heats: ReturnType<HeatRepository["findByEvent"]>) => {
@@ -208,6 +276,7 @@ const topUpHeatQueue = (eventId: string, settings: EventPlanningSettings): numbe
   });
   const currentRoundPlannerHeats = toPlannerHeats(currentRoundHeatsWithLanes);
   const currentRoundRacers = getRoundRacers(
+    eventId,
     allRacers,
     currentRoundHeatsWithLanes,
     currentRound
@@ -255,6 +324,7 @@ const topUpHeatQueue = (eventId: string, settings: EventPlanningSettings): numbe
 
   const survivors = selectSurvivorsForNextRound(currentRoundRacers, eventStandings);
   const nextRoundNumber = currentRound + 1;
+  setRoundRacerCache(eventId, nextRoundNumber, survivors);
 
   return appendPlannedHeatsForRound(
     eventId,
@@ -289,6 +359,7 @@ const maybeMarkEventComplete = (eventId: string, settings: EventPlanningSettings
   }
 
   const currentRoundRacers = getRoundRacers(
+    eventId,
     allRacers,
     currentRoundHeatsWithLanes,
     currentRound
@@ -310,7 +381,11 @@ const maybeMarkEventComplete = (eventId: string, settings: EventPlanningSettings
   }
 };
 
+const parsedPort = Number(Bun.env.PORT ?? "3000");
+const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3000;
+
 Bun.serve({
+  port,
   routes: {
     // Serve the main UI
     "/": index,
@@ -365,6 +440,8 @@ Bun.serve({
       DELETE: (req) => {
         const deleted = eventsRepo.delete(req.params.id);
         if (!deleted) return respondJson({ error: "Event not found" }, 404);
+        planningStateRepo.clearSettings(req.params.id);
+        clearRoundRacerCache(req.params.id);
         return respondJson({ success: true });
       },
     },
@@ -451,9 +528,15 @@ Bun.serve({
         return respondJson(heat, 201);
       },
       DELETE: (req) => {
+        const runningHeat = heatsRepo.findRunning();
+        if (runningHeat?.event_id === req.params.eventId) {
+          heatsRepo.updateStatus(runningHeat.id, "pending");
+        }
+
         // Delete all heats for event (for regeneration)
         heatsRepo.deleteByEvent(req.params.eventId);
-        eventPlanningByEventId.delete(req.params.eventId);
+        planningStateRepo.clearSettings(req.params.eventId);
+        clearRoundRacerCache(req.params.eventId);
         return respondJson({ success: true });
       },
     },
@@ -468,14 +551,13 @@ Bun.serve({
 
     "/api/heats/:id/start": {
       POST: (req) => {
+        const runningHeat = heatsRepo.findRunning();
+        if (runningHeat && runningHeat.id !== req.params.id) {
+          return respondJson({ error: "Another heat is already running" }, 409);
+        }
+
         const heat = heatsRepo.updateStatus(req.params.id, "running");
         if (!heat) return respondJson({ error: "Heat not found" }, 404);
-
-        // Set as active heat
-        activeHeat.heatId = req.params.id;
-        activeHeat.running = true;
-        activeHeat.startTimeMs = Date.now();
-        activeHeat.elapsedMs = 0;
 
         return respondJson(heat);
       },
@@ -488,14 +570,6 @@ Bun.serve({
 
         const heat = heatsRepo.updateStatus(req.params.id, "complete");
         if (!heat) return respondJson({ error: "Heat not found" }, 404);
-
-        // Clear active heat if this was it
-        if (activeHeat.heatId === req.params.id) {
-          activeHeat.heatId = null;
-          activeHeat.running = false;
-          activeHeat.startTimeMs = null;
-          activeHeat.elapsedMs = 0;
-        }
 
         const event = eventsRepo.findById(existingHeat.event_id);
         if (event) {
@@ -525,8 +599,15 @@ Bun.serve({
           return respondJson({ error: "No racers have passed inspection" }, 400);
         }
 
+        const runningHeat = heatsRepo.findRunning();
+        if (runningHeat?.event_id === req.params.eventId) {
+          heatsRepo.updateStatus(runningHeat.id, "pending");
+        }
+
         // Delete existing heats
         heatsRepo.deleteByEvent(req.params.eventId);
+        planningStateRepo.clearSettings(req.params.eventId);
+        clearRoundRacerCache(req.params.eventId);
 
         const laneCount = body.lane_count ?? event.lane_count;
         const rounds = Math.max(1, body.rounds ?? 1);
@@ -537,7 +618,20 @@ Bun.serve({
           rounds,
           lookahead,
         };
-        eventPlanningByEventId.set(req.params.eventId, planningSettings);
+        planningStateRepo.upsertSettings({
+          event_id: req.params.eventId,
+          lane_count: planningSettings.laneCount,
+          rounds: planningSettings.rounds,
+          lookahead: planningSettings.lookahead,
+        });
+        setRoundRacerCache(
+          req.params.eventId,
+          1,
+          racers.map((racer) => ({
+            id: racer.id,
+            car_number: racer.car_number,
+          }))
+        );
 
         topUpHeatQueue(req.params.eventId, planningSettings);
 
@@ -580,13 +674,6 @@ Bun.serve({
         // Complete the heat
         heatsRepo.updateStatus(req.params.heatId, "complete");
 
-        if (activeHeat.heatId === req.params.heatId) {
-          activeHeat.heatId = null;
-          activeHeat.running = false;
-          activeHeat.startTimeMs = null;
-          activeHeat.elapsedMs = 0;
-        }
-
         const event = eventsRepo.findById(heat.event_id);
         if (event) {
           const settings = getPlanningSettings(event.id, event.lane_count);
@@ -609,24 +696,28 @@ Bun.serve({
     // ===== LIVE RACE CONSOLE API =====
     "/api/race/active": {
       GET: () => {
-        return respondJson({
-          heatId: activeHeat.heatId,
-          running: activeHeat.running,
-          elapsedMs: getCurrentElapsedMs(),
-        });
+        return respondJson(getActiveHeatStatus());
       },
     },
 
     "/api/race/stop": {
       POST: () => {
-        activeHeat.elapsedMs = getCurrentElapsedMs();
-        activeHeat.running = false;
-        activeHeat.startTimeMs = null;
+        const runningHeat = heatsRepo.findRunning();
+        if (!runningHeat) {
+          return respondJson({
+            heatId: null,
+            running: false,
+            elapsedMs: 0,
+          });
+        }
+
+        const elapsedMs = getElapsedMsFromStartedAt(runningHeat.started_at);
+        heatsRepo.updateStatus(runningHeat.id, "pending");
 
         return respondJson({
-          heatId: activeHeat.heatId,
-          running: activeHeat.running,
-          elapsedMs: activeHeat.elapsedMs,
+          heatId: runningHeat.id,
+          running: false,
+          elapsedMs,
         });
       },
     },
@@ -637,4 +728,4 @@ Bun.serve({
   },
 });
 
-console.log("Derby Race Server running on http://localhost:3000");
+console.log(`Derby Race Server running on http://localhost:${port}`);
