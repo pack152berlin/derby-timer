@@ -1,5 +1,7 @@
 import index from "./frontend/index.html";
 import display from "./frontend/display.html";
+import { existsSync, mkdirSync, unlinkSync } from "node:fs";
+import { basename, join } from "node:path";
 import {
   EventRepository,
   RacerRepository,
@@ -36,11 +38,73 @@ const jsonHeaders = {
   "Content-Type": "application/json",
 };
 
+const photoUploadDir = Bun.env.DERBY_UPLOAD_DIR ?? "uploads/car-photos";
+const parsedMaxPhotoBytes = Number(Bun.env.DERBY_MAX_PHOTO_BYTES ?? "1200000");
+const maxPhotoBytes = Number.isFinite(parsedMaxPhotoBytes) && parsedMaxPhotoBytes > 0
+  ? parsedMaxPhotoBytes
+  : 1_200_000;
+
+if (!existsSync(photoUploadDir)) {
+  mkdirSync(photoUploadDir, { recursive: true });
+}
+
+const getPhotoExtension = (mimeType: string) => {
+  const normalizedType = mimeType.toLowerCase();
+
+  if (normalizedType === "image/jpeg") return "jpg";
+  if (normalizedType === "image/png") return "png";
+  if (normalizedType === "image/webp") return "webp";
+  if (normalizedType === "image/heic") return "heic";
+  if (normalizedType === "image/heif") return "heif";
+  if (normalizedType === "image/avif") return "avif";
+  if (normalizedType === "image/gif") return "gif";
+
+  const subtype = normalizedType.split("/")[1] ?? "jpg";
+  const sanitizedSubtype = subtype.replace(/[^a-z0-9]/g, "");
+  return sanitizedSubtype || "jpg";
+};
+
+const getPhotoPath = (filename: string) => {
+  return join(photoUploadDir, basename(filename));
+};
+
+const deletePhotoFile = (filename: string | null) => {
+  if (!filename) {
+    return;
+  }
+
+  try {
+    unlinkSync(getPhotoPath(filename));
+  } catch {
+    // Ignore missing files while cleaning up old photos.
+  }
+};
+
 const respondJson = (payload: unknown, status = 200) => {
   return new Response(JSON.stringify(payload), {
     status,
     headers: jsonHeaders,
   });
+};
+
+const isSqliteUniqueConstraintError = (
+  error: unknown,
+  expectedColumns: string[] = []
+) => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const sqliteCode = (error as { code?: string }).code;
+  if (sqliteCode !== "SQLITE_CONSTRAINT_UNIQUE") {
+    return false;
+  }
+
+  if (expectedColumns.length === 0) {
+    return true;
+  }
+
+  return expectedColumns.every((column) => error.message.includes(column));
 };
 
 const getElapsedMsFromStartedAt = (startedAt: string | null) => {
@@ -438,8 +502,12 @@ Bun.serve({
         return respondJson(event);
       },
       DELETE: (req) => {
+        const eventRacers = racersRepo.findByEvent(req.params.id);
         const deleted = eventsRepo.delete(req.params.id);
         if (!deleted) return respondJson({ error: "Event not found" }, 404);
+        for (const racer of eventRacers) {
+          deletePhotoFile(racer.car_photo_filename);
+        }
         planningStateRepo.clearSettings(req.params.id);
         clearRoundRacerCache(req.params.id);
         return respondJson({ success: true });
@@ -461,13 +529,29 @@ Bun.serve({
         if (!body.name || !body.car_number) {
           return respondJson({ error: "Name and car number are required" }, 400);
         }
-        const racer = racersRepo.create({
-          event_id: req.params.eventId,
-          name: body.name,
-          den: body.den,
-          car_number: body.car_number,
-        });
-        return respondJson(racer, 201);
+
+        try {
+          const racer = racersRepo.create({
+            event_id: req.params.eventId,
+            name: body.name,
+            den: body.den,
+            car_number: body.car_number,
+          });
+          return respondJson(racer, 201);
+        } catch (error) {
+          if (
+            isSqliteUniqueConstraintError(error, ["racers.event_id", "racers.car_number"])
+          ) {
+            return respondJson(
+              {
+                error: `Car #${body.car_number} is already registered for this event. Choose a different car number.`,
+              },
+              409
+            );
+          }
+
+          throw error;
+        }
       },
     },
 
@@ -489,9 +573,120 @@ Bun.serve({
         return respondJson(racer);
       },
       DELETE: (req) => {
+        const racer = racersRepo.findById(req.params.id);
+        if (!racer) return respondJson({ error: "Racer not found" }, 404);
+
         const deleted = racersRepo.delete(req.params.id);
         if (!deleted) return respondJson({ error: "Racer not found" }, 404);
+        deletePhotoFile(racer.car_photo_filename);
         return respondJson({ success: true });
+      },
+    },
+
+    "/api/racers/:id/photo": {
+      GET: async (req) => {
+        const racer = racersRepo.findById(req.params.id);
+        if (!racer) {
+          return respondJson({ error: "Racer not found" }, 404);
+        }
+
+        if (!racer.car_photo_filename) {
+          return respondJson({ error: "Photo not found" }, 404);
+        }
+
+        const photo = Bun.file(getPhotoPath(racer.car_photo_filename));
+        if (!(await photo.exists())) {
+          return respondJson({ error: "Photo not found" }, 404);
+        }
+
+        return new Response(photo, {
+          headers: {
+            "Content-Type": (racer.car_photo_mime_type ?? photo.type) || "application/octet-stream",
+            "Cache-Control": "public, max-age=300",
+          },
+        });
+      },
+
+      POST: async (req) => {
+        const racer = racersRepo.findById(req.params.id);
+        if (!racer) {
+          return respondJson({ error: "Racer not found" }, 404);
+        }
+
+        const formData = await req.formData();
+        const photoEntry = formData.get("photo");
+
+        if (!(photoEntry instanceof File)) {
+          return respondJson({ error: "Photo file is required" }, 400);
+        }
+
+        if (photoEntry.size <= 0) {
+          return respondJson({ error: "Photo file is empty" }, 400);
+        }
+
+        const mimeType = (photoEntry.type || "").toLowerCase();
+        if (!mimeType.startsWith("image/")) {
+          return respondJson({ error: "Only image uploads are supported" }, 400);
+        }
+
+        if (photoEntry.size > maxPhotoBytes) {
+          return respondJson(
+            {
+              error: `Photo is too large. Please upload an image under ${Math.floor(
+                maxPhotoBytes / 1024
+              )}KB`,
+            },
+            413
+          );
+        }
+
+        const extension = getPhotoExtension(mimeType);
+        const filename = `${racer.id}-${Date.now()}-${crypto.randomUUID()}.${extension}`;
+        const photoPath = getPhotoPath(filename);
+
+        try {
+          await Bun.write(photoPath, await photoEntry.arrayBuffer());
+        } catch {
+          return respondJson({ error: "Failed to store photo" }, 500);
+        }
+
+        const updatedRacer = racersRepo.update(req.params.id, {
+          car_photo_filename: filename,
+          car_photo_mime_type: mimeType,
+          car_photo_bytes: photoEntry.size,
+        });
+
+        if (!updatedRacer) {
+          deletePhotoFile(filename);
+          return respondJson({ error: "Racer not found" }, 404);
+        }
+
+        if (racer.car_photo_filename && racer.car_photo_filename !== filename) {
+          deletePhotoFile(racer.car_photo_filename);
+        }
+
+        return respondJson(updatedRacer);
+      },
+
+      DELETE: (req) => {
+        const racer = racersRepo.findById(req.params.id);
+        if (!racer) {
+          return respondJson({ error: "Racer not found" }, 404);
+        }
+
+        deletePhotoFile(racer.car_photo_filename);
+
+        const updatedRacer = racersRepo.update(req.params.id, {
+          car_photo_filename: null,
+          car_photo_mime_type: null,
+          car_photo_bytes: null,
+        });
+
+        if (!updatedRacer) {
+          return respondJson({ error: "Racer not found" }, 404);
+        }
+
+        return respondJson(updatedRacer);
       },
     },
 

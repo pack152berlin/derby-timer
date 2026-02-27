@@ -26,7 +26,42 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'Unable to add racer');
+    }
+
     return res.json();
+  },
+
+  async uploadRacerPhoto(id: string, file: File): Promise<Racer> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const res = await fetch(`/api/racers/${id}/photo`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'Photo upload failed');
+    }
+
+    return res.json();
+  },
+
+  async deleteRacerPhoto(id: string): Promise<Racer> {
+    const res = await fetch(`/api/racers/${id}/photo`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  },
+
+  getRacerPhotoUrl(id: string, updatedAt?: string): string {
+    const cacheKey = updatedAt ? encodeURIComponent(updatedAt) : Date.now().toString();
+    return `/api/racers/${id}/photo?v=${cacheKey}`;
   },
   
   async deleteRacer(id: string): Promise<void> {

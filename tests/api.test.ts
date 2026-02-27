@@ -81,6 +81,23 @@ describe("DerbyTimer API Integration Tests", () => {
       racerId = racer.id;
     });
 
+    it("should show a clear warning for duplicate car numbers", async () => {
+      const response = await fetch(`${baseUrl}/api/events/${eventId}/racers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Duplicate Number",
+          den: "Bear",
+          car_number: "7",
+        }),
+      });
+
+      expect(response.status).toBe(409);
+      const error = await response.json();
+      expect(error.error).toContain("already registered");
+      expect(error.error).toContain("different car number");
+    });
+
     it("should reject racer without required fields", async () => {
       const response = await fetch(`${baseUrl}/api/events/${eventId}/racers`, {
         method: "POST",
@@ -116,6 +133,40 @@ describe("DerbyTimer API Integration Tests", () => {
       const racer = await response.json();
       expect(racer.weight_ok).toBe(1);
       expect(racer.inspected_at).toBeDefined();
+    });
+
+    it("should upload and retrieve a racer photo", async () => {
+      const onePixelPngBase64 =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+      const imageBytes = Buffer.from(onePixelPngBase64, "base64");
+
+      const formData = new FormData();
+      formData.append("photo", new File([imageBytes], "car.png", { type: "image/png" }));
+
+      const uploadResponse = await fetch(`${baseUrl}/api/racers/${racerId}/photo`, {
+        method: "POST",
+        body: formData,
+      });
+
+      expect(uploadResponse.status).toBe(200);
+      const racer = await uploadResponse.json();
+      expect(racer.car_photo_filename).toBeDefined();
+      expect(racer.car_photo_mime_type).toBe("image/png");
+      expect(racer.car_photo_bytes).toBeGreaterThan(0);
+
+      const photoResponse = await fetch(`${baseUrl}/api/racers/${racerId}/photo`);
+      expect(photoResponse.status).toBe(200);
+      expect(photoResponse.headers.get("content-type")?.startsWith("image/")).toBe(true);
+
+      const deleteResponse = await fetch(`${baseUrl}/api/racers/${racerId}/photo`, {
+        method: "DELETE",
+      });
+
+      expect(deleteResponse.status).toBe(200);
+      const afterDelete = await deleteResponse.json();
+      expect(afterDelete.car_photo_filename).toBeNull();
+      expect(afterDelete.car_photo_mime_type).toBeNull();
+      expect(afterDelete.car_photo_bytes).toBeNull();
     });
   });
 });
