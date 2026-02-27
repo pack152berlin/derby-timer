@@ -75,7 +75,7 @@ describe("DerbyTimer API Integration Tests", () => {
       const racer = await response.json();
       expect(racer.name).toBe("Johnny Test");
       expect(racer.den).toBe("Wolf");
-      expect(racer.car_number).toMatch(/^\d{2,3}$/);
+      expect(racer.car_number).toMatch(/^[1-9]\d$/);
       expect(racer.weight_ok).toBe(0);
       expect(racer.id).toBeDefined();
       firstCarNumber = racer.car_number;
@@ -94,7 +94,7 @@ describe("DerbyTimer API Integration Tests", () => {
 
       expect(response.status).toBe(201);
       const racer = await response.json();
-      expect(racer.car_number).toMatch(/^\d{2,3}$/);
+      expect(racer.car_number).toMatch(/^[1-9]\d$/);
       expect(racer.car_number).not.toBe(firstCarNumber);
     });
 
@@ -123,7 +123,7 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(racerNames).toEqual(["Johnny Test", "Second Scout"]);
 
       for (const racer of racers) {
-        expect(racer.car_number).toMatch(/^\d{2,3}$/);
+        expect(racer.car_number).toMatch(/^[1-9]\d$/);
       }
     });
 

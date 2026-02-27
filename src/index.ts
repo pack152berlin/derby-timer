@@ -108,7 +108,7 @@ const isSqliteUniqueConstraintError = (
 };
 
 const MIN_CAR_NUMBER = 10;
-const MAX_CAR_NUMBER = 999;
+const MAX_CAR_NUMBER = 99;
 const MAX_CAR_NUMBER_ATTEMPTS = 2_000;
 
 const generateRandomCarNumber = () => {
