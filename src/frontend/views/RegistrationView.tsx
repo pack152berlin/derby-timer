@@ -192,7 +192,6 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRacerName, setNewRacerName] = useState('');
   const [newRacerDen, setNewRacerDen] = useState('');
-  const [newRacerCarNumber, setNewRacerCarNumber] = useState('');
   const [newRacerInspected, setNewRacerInspected] = useState(true);
   const [newRacerPhoto, setNewRacerPhoto] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
@@ -250,7 +249,6 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
   const resetForm = () => {
     setNewRacerName('');
     setNewRacerDen('');
-    setNewRacerCarNumber('');
     setNewRacerInspected(true);
     clearPhotoSelection();
   };
@@ -304,7 +302,7 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newRacerName.trim() || !newRacerCarNumber || isSubmitting || isProcessingPhoto) return;
+    if (!newRacerName.trim() || isSubmitting || isProcessingPhoto) return;
 
     setNotice(null);
     setIsSubmitting(true);
@@ -313,7 +311,6 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
       const racer = await api.createRacer(currentEvent!.id, {
         name: newRacerName.trim(),
         den: newRacerDen || null,
-        car_number: newRacerCarNumber,
       });
 
       let warning: string | null = null;
@@ -437,7 +434,7 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
             <CardTitle className="text-lg">Add New Racer</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 items-end">
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 items-end">
               <div className="md:col-span-2 xl:col-span-2">
                 <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
                   Full Name *
@@ -469,18 +466,10 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
                   </datalist>
                 )}
               </div>
-              <div className="xl:col-span-1">
-                <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
-                  Car # *
-                </label>
-                <Input 
-                  value={newRacerCarNumber}
-                  onChange={(e) => setNewRacerCarNumber(e.target.value)}
-                  required 
-                  placeholder="7"
-                  className="h-12"
-                />
-              </div>
+
+              <p className="md:col-span-2 xl:col-span-3 text-sm font-semibold text-slate-600">
+                Car numbers are assigned automatically when you save.
+              </p>
 
               <div className="md:col-span-2 xl:col-span-4">
                 <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">

@@ -1,5 +1,10 @@
 import type { Event, Racer, Heat, Standing, HeatResult } from './types';
 
+type CreateRacerInput = {
+  name: string;
+  den?: string | null;
+};
+
 export const api = {
   async getEvents(): Promise<Event[]> {
     const res = await fetch('/api/events');
@@ -20,7 +25,7 @@ export const api = {
     return res.ok ? res.json() : [];
   },
   
-  async createRacer(eventId: string, data: Partial<Racer>): Promise<Racer> {
+  async createRacer(eventId: string, data: CreateRacerInput): Promise<Racer> {
     const res = await fetch(`/api/events/${eventId}/racers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

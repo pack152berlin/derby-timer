@@ -107,6 +107,15 @@ const isSqliteUniqueConstraintError = (
   return expectedColumns.every((column) => error.message.includes(column));
 };
 
+const MIN_CAR_NUMBER = 10;
+const MAX_CAR_NUMBER = 999;
+const MAX_CAR_NUMBER_ATTEMPTS = 2_000;
+
+const generateRandomCarNumber = () => {
+  const range = MAX_CAR_NUMBER - MIN_CAR_NUMBER + 1;
+  return String(Math.floor(Math.random() * range) + MIN_CAR_NUMBER);
+};
+
 const getElapsedMsFromStartedAt = (startedAt: string | null) => {
   if (!startedAt) {
     return 0;
@@ -524,34 +533,43 @@ Bun.serve({
         const body = (await req.json()) as {
           name: string;
           den?: string;
-          car_number: string;
         };
-        if (!body.name || !body.car_number) {
-          return respondJson({ error: "Name and car number are required" }, 400);
+        const name = body.name?.trim();
+        if (!name) {
+          return respondJson({ error: "Name is required" }, 400);
         }
 
-        try {
-          const racer = racersRepo.create({
-            event_id: req.params.eventId,
-            name: body.name,
-            den: body.den,
-            car_number: body.car_number,
-          });
-          return respondJson(racer, 201);
-        } catch (error) {
-          if (
-            isSqliteUniqueConstraintError(error, ["racers.event_id", "racers.car_number"])
-          ) {
-            return respondJson(
-              {
-                error: `Car #${body.car_number} is already registered for this event. Choose a different car number.`,
-              },
-              409
-            );
+        const den = body.den?.trim();
+
+        for (let attempt = 0; attempt < MAX_CAR_NUMBER_ATTEMPTS; attempt += 1) {
+          const carNumber = generateRandomCarNumber();
+
+          try {
+            const racer = racersRepo.create({
+              event_id: req.params.eventId,
+              name,
+              den,
+              car_number: carNumber,
+            });
+            return respondJson(racer, 201);
+          } catch (error) {
+            if (
+              isSqliteUniqueConstraintError(error, ["racers.event_id", "racers.car_number"])
+            ) {
+              continue;
+            }
+
+            throw error;
           }
-
-          throw error;
         }
+
+        return respondJson(
+          {
+            error:
+              "Unable to assign a unique car number for this event. Try removing a racer and submitting again.",
+          },
+          409
+        );
       },
     },
 

@@ -4,6 +4,7 @@ describe("DerbyTimer API Integration Tests", () => {
   const baseUrl = "http://localhost:3000";
   let eventId: string;
   let racerId: string;
+  let firstCarNumber: string;
   let heatId: string;
 
   // Test Event Management
@@ -67,7 +68,6 @@ describe("DerbyTimer API Integration Tests", () => {
         body: JSON.stringify({
           name: "Johnny Test",
           den: "Wolf",
-          car_number: "7",
         }),
       });
 
@@ -75,27 +75,27 @@ describe("DerbyTimer API Integration Tests", () => {
       const racer = await response.json();
       expect(racer.name).toBe("Johnny Test");
       expect(racer.den).toBe("Wolf");
-      expect(racer.car_number).toBe("7");
+      expect(racer.car_number).toMatch(/^\d{2,3}$/);
       expect(racer.weight_ok).toBe(0);
       expect(racer.id).toBeDefined();
+      firstCarNumber = racer.car_number;
       racerId = racer.id;
     });
 
-    it("should show a clear warning for duplicate car numbers", async () => {
+    it("should auto-assign a different number for each racer", async () => {
       const response = await fetch(`${baseUrl}/api/events/${eventId}/racers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: "Duplicate Number",
+          name: "Second Scout",
           den: "Bear",
-          car_number: "7",
         }),
       });
 
-      expect(response.status).toBe(409);
-      const error = await response.json();
-      expect(error.error).toContain("already registered");
-      expect(error.error).toContain("different car number");
+      expect(response.status).toBe(201);
+      const racer = await response.json();
+      expect(racer.car_number).toMatch(/^\d{2,3}$/);
+      expect(racer.car_number).not.toBe(firstCarNumber);
     });
 
     it("should reject racer without required fields", async () => {
@@ -103,7 +103,7 @@ describe("DerbyTimer API Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: "Incomplete",
+          den: "Webelos",
         }),
       });
 
@@ -117,9 +117,14 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(response.status).toBe(200);
       const racers = await response.json();
       expect(Array.isArray(racers)).toBe(true);
-      expect(racers.length).toBe(1);
-      expect(racers[0].name).toBe("Johnny Test");
-      expect(racers[0].car_number).toBe("7");
+      expect(racers.length).toBe(2);
+
+      const racerNames = racers.map((racer: { name: string }) => racer.name).sort();
+      expect(racerNames).toEqual(["Johnny Test", "Second Scout"]);
+
+      for (const racer of racers) {
+        expect(racer.car_number).toMatch(/^\d{2,3}$/);
+      }
     });
 
     it("should pass inspection for a racer", async () => {
