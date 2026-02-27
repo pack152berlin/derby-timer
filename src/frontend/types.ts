@@ -16,6 +16,11 @@ export interface Racer {
   car_number: string;
   weight_ok: number;
   inspected_at: string | null;
+  car_photo_filename: string | null;
+  car_photo_mime_type: string | null;
+  car_photo_bytes: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface HeatLane {

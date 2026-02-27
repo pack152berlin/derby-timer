@@ -151,6 +151,13 @@ const parseArguments = (argv: string[]): CliOptions => {
   return options;
 };
 
+const getCliArgs = () => {
+  if (typeof Bun !== "undefined" && Array.isArray(Bun.argv)) {
+    return Bun.argv.slice(2);
+  }
+  return process.argv.slice(2);
+};
+
 const terminatorByMode: Record<TerminatorMode, string> = {
   cr: "\r",
   lf: "\n",
@@ -241,7 +248,7 @@ const main = async () => {
   let options: CliOptions;
 
   try {
-    options = parseArguments(Bun.argv.slice(2));
+    options = parseArguments(getCliArgs());
   } catch (error) {
     console.error(
       error instanceof Error ? error.message : "Failed to parse command line arguments"

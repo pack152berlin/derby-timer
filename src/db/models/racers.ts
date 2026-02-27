@@ -9,6 +9,9 @@ export interface Racer {
   car_number: string;
   weight_ok: number;
   inspected_at: string | null;
+  car_photo_filename: string | null;
+  car_photo_mime_type: string | null;
+  car_photo_bytes: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,10 +25,13 @@ export interface CreateRacerInput {
 
 export interface UpdateRacerInput {
   name?: string;
-  den?: string;
+  den?: string | null;
   car_number?: string;
   weight_ok?: boolean;
-  inspected_at?: string;
+  inspected_at?: string | null;
+  car_photo_filename?: string | null;
+  car_photo_mime_type?: string | null;
+  car_photo_bytes?: number | null;
 }
 
 export class RacerRepository {
@@ -40,9 +46,35 @@ export class RacerRepository {
     const now = new Date().toISOString();
     
     this.db.run(
-      `INSERT INTO racers (id, event_id, name, den, car_number, weight_ok, inspected_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, input.event_id, input.name, input.den ?? null, input.car_number, 0, null, now, now]
+      `INSERT INTO racers (
+         id,
+         event_id,
+         name,
+         den,
+         car_number,
+         weight_ok,
+         inspected_at,
+         car_photo_filename,
+         car_photo_mime_type,
+         car_photo_bytes,
+         created_at,
+         updated_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        input.event_id,
+        input.name,
+        input.den ?? null,
+        input.car_number,
+        0,
+        null,
+        null,
+        null,
+        null,
+        now,
+        now,
+      ]
     );
 
     return {
@@ -53,6 +85,9 @@ export class RacerRepository {
       car_number: input.car_number,
       weight_ok: 0,
       inspected_at: null,
+      car_photo_filename: null,
+      car_photo_mime_type: null,
+      car_photo_bytes: null,
       created_at: now,
       updated_at: now
     };
@@ -89,11 +124,20 @@ export class RacerRepository {
     if (!existing) return null;
 
     const now = new Date().toISOString();
-    const name = input.name ?? existing.name;
-    const den = input.den ?? existing.den;
-    const car_number = input.car_number ?? existing.car_number;
+    const name = "name" in input ? (input.name ?? existing.name) : existing.name;
+    const den = "den" in input ? (input.den ?? null) : existing.den;
+    const car_number = "car_number" in input ? (input.car_number ?? existing.car_number) : existing.car_number;
     const weight_ok = input.weight_ok !== undefined ? (input.weight_ok ? 1 : 0) : existing.weight_ok;
-    const inspected_at = input.inspected_at ?? existing.inspected_at;
+    const inspected_at = "inspected_at" in input ? (input.inspected_at ?? null) : existing.inspected_at;
+    const car_photo_filename = "car_photo_filename" in input
+      ? (input.car_photo_filename ?? null)
+      : existing.car_photo_filename;
+    const car_photo_mime_type = "car_photo_mime_type" in input
+      ? (input.car_photo_mime_type ?? null)
+      : existing.car_photo_mime_type;
+    const car_photo_bytes = "car_photo_bytes" in input
+      ? (input.car_photo_bytes ?? null)
+      : existing.car_photo_bytes;
     
     this.db.run(
       `UPDATE racers SET
@@ -102,9 +146,23 @@ export class RacerRepository {
         car_number = ?,
         weight_ok = ?,
         inspected_at = ?,
+        car_photo_filename = ?,
+        car_photo_mime_type = ?,
+        car_photo_bytes = ?,
         updated_at = ?
        WHERE id = ?`,
-      [name, den, car_number, weight_ok, inspected_at, now, id]
+      [
+        name,
+        den,
+        car_number,
+        weight_ok,
+        inspected_at,
+        car_photo_filename,
+        car_photo_mime_type,
+        car_photo_bytes,
+        now,
+        id,
+      ]
     );
 
     return this.findById(id);
