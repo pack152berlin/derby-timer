@@ -124,7 +124,7 @@ function DisplayApp() {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin text-orange-500 mb-6">
+          <div className="animate-spin text-[#003F87] mb-6">
             <Activity size={80} />
           </div>
           <p className="text-3xl text-slate-600 font-black">Loading Race Data...</p>
@@ -149,7 +149,7 @@ function DisplayApp() {
       {/* Header - Airport Style Board */}
       <div className="flex items-center justify-between mb-6 pb-6 border-b-4 border-slate-900">
         <div className="flex items-center gap-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-xl">
+          <div className="w-20 h-20 bg-gradient-to-br from-[#003F87] to-[#CE1126] rounded-2xl flex items-center justify-center shadow-xl">
             <Flag size={48} className="text-white" />
           </div>
           <div>
@@ -161,7 +161,7 @@ function DisplayApp() {
         </div>
         <div className="text-right">
           <div className="flex items-center gap-3 text-slate-500">
-            <Timer size={28} className="text-orange-500" />
+            <Timer size={28} className="text-[#CE1126]" />
             <span className="text-2xl font-mono font-bold">{lastUpdated.toLocaleTimeString()}</span>
           </div>
           <p className="text-slate-400 mt-1 font-semibold">Live Updates</p>
@@ -173,13 +173,13 @@ function DisplayApp() {
         {/* Left: Current Heat - Large, Clear */}
         <div className="bg-white rounded-3xl border-4 border-slate-900 p-8 flex flex-col shadow-2xl">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 bg-[#003F87] rounded-2xl flex items-center justify-center shadow-lg">
               <Zap size={40} className="text-white" />
             </div>
             <div>
               <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Current Heat</h2>
               {currentHeat && (
-                <p className="text-2xl text-orange-600 font-bold mt-1">
+                <p className="text-2xl text-[#CE1126] font-bold mt-1">
                   Round {currentHeat.round} • Heat {currentHeat.heat_number}
                 </p>
               )}
@@ -193,14 +193,14 @@ function DisplayApp() {
                 .map((lane, index) => (
                 <div 
                   key={lane.id}
-                  className="bg-slate-50 rounded-2xl p-6 flex items-center gap-6 border-l-8 border-orange-500 shadow-lg"
+                  className="bg-slate-50 rounded-2xl p-6 flex items-center gap-6 border-l-8 border-[#003F87] shadow-lg"
                 >
                   <div className="w-24 h-24 bg-slate-900 rounded-xl flex items-center justify-center text-5xl font-black text-white">
                     {lane.lane_number}
                   </div>
                   <div className="flex-1">
                     <p className="text-4xl font-black text-slate-900">{lane.racer_name || 'Unknown'}</p>
-                    <p className="text-3xl text-orange-600 font-bold mt-1">Car #{lane.car_number || '?'}</p>
+                    <p className="text-3xl text-[#003F87] font-bold mt-1">Car #{lane.car_number || '?'}</p>
                   </div>
                 </div>
               ))}
@@ -216,7 +216,7 @@ function DisplayApp() {
           )}
 
           {currentHeat?.status === 'running' && (
-            <div className="mt-6 bg-orange-500 rounded-2xl p-6 text-center shadow-xl animate-pulse">
+            <div className="mt-6 bg-[#CE1126] rounded-2xl p-6 text-center shadow-xl animate-pulse">
               <p className="text-5xl font-black text-white uppercase tracking-widest">
                 Race in Progress!
               </p>
@@ -260,7 +260,7 @@ function DisplayApp() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-3xl font-black text-slate-900 truncate">{standing.racer_name}</p>
-                    <p className="text-2xl text-orange-600 font-bold">Car #{standing.car_number}</p>
+                    <p className="text-2xl text-[#003F87] font-bold">Car #{standing.car_number}</p>
                   </div>
                   <div className="flex items-center gap-6 text-center">
                     <div>

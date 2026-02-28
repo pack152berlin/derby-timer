@@ -159,7 +159,7 @@ export function RegistrationView() {
         </h1>
         <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
           <div className="flex items-center gap-2 text-slate-600">
-            <Users size={18} className="text-orange-500" />
+            <Users size={18} className="text-[#003F87]" />
             <span className="font-semibold">{racers.length} Racers</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
@@ -423,13 +423,13 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
       />
 
       {notice && (
-        <Card className="mb-4 border-orange-200 bg-orange-50">
-          <CardContent className="p-3 text-sm font-semibold text-orange-700">{notice}</CardContent>
+        <Card className="mb-4 border-blue-200 bg-blue-50">
+          <CardContent className="p-3 text-sm font-semibold text-blue-800">{notice}</CardContent>
         </Card>
       )}
 
       {showAddForm ? (
-        <Card className="mb-6 border-2 border-orange-200">
+        <Card className="mb-6 border-2 border-blue-200">
           <CardHeader>
             <CardTitle className="text-lg">Add New Racer</CardTitle>
           </CardHeader>
@@ -543,7 +543,7 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
                 <Button
                   type="submit"
                   disabled={isSubmitting || isProcessingPhoto}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold h-12"
+                  className="flex-1 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold h-12"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -593,7 +593,7 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
         {racers.map(racer => (
           <Card 
             key={racer.id} 
-            className="group hover:border-orange-300 transition-all"
+            className="group hover:border-blue-300 transition-all"
           >
             <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">

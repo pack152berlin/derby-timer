@@ -36,8 +36,8 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
   const getStatusBadge = (status: Event['status']) => {
     const variants: Record<string, { variant: any; className: string }> = {
       draft: { variant: 'secondary' as const, className: 'bg-slate-100 text-slate-600 border-slate-300' },
-      checkin: { variant: 'default' as const, className: 'bg-blue-50 text-blue-700 border-blue-300' },
-      racing: { variant: 'default' as const, className: 'bg-orange-50 text-orange-700 border-orange-300' },
+      checkin: { variant: 'default' as const, className: 'bg-blue-50 text-blue-800 border-blue-300' },
+      racing: { variant: 'default' as const, className: 'bg-red-50 text-red-700 border-red-300' },
       complete: { variant: 'default' as const, className: 'bg-emerald-50 text-emerald-700 border-emerald-300' }
     };
     return variants[status] || { variant: 'secondary' as const, className: 'bg-slate-100 text-slate-600' };
@@ -55,7 +55,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
         <Button 
           onClick={() => setShowForm(!showForm)}
           size="lg"
-          className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 shadow-lg"
+          className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-6 shadow-lg"
         >
           <Plus className="w-5 h-5 mr-2" />
           New Event
@@ -91,7 +91,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
                 <select 
                   name="lane_count" 
                   defaultValue="4"
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003F87] focus:border-transparent"
                 >
                   <option value="2">2 Lanes</option>
                   <option value="3">3 Lanes</option>
@@ -101,7 +101,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
                 </select>
               </div>
               <div className="md:col-span-4 flex gap-2">
-                <Button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+                <Button type="submit" className="flex-1 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold">
                   Create Event
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -119,7 +119,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           return (
             <Card 
               key={event.id}
-              className="cursor-pointer hover:border-orange-500 transition-all duration-200 hover:shadow-lg border-2"
+              className="cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2"
               onClick={() => onSelectEvent(event)}
             >
               <CardHeader className="pb-3">
@@ -136,7 +136,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
               <CardContent>
                 <div className="space-y-2 text-slate-500 text-sm">
                   <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-orange-500" />
+                    <Clock size={16} className="text-[#CE1126]" />
                     <span className="font-medium">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
                     <span className="font-medium">{event.lane_count} Racing Lanes</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center text-orange-500 font-semibold text-sm">
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center text-[#003F87] font-semibold text-sm">
                   Select Event
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </div>

@@ -30,12 +30,12 @@ export function Navigation({
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={onGoHome}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#003F87] to-[#CE1126] rounded-lg flex items-center justify-center shadow-lg">
               <Flag className="w-6 h-6 text-white" />
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black uppercase tracking-tight text-slate-900 leading-none">
-                Derby<span className="text-orange-500">Timer</span>
+                Derby<span className="text-[#CE1126]">Timer</span>
               </span>
               {currentEvent && (
                 <span className="text-xs text-slate-500 font-medium truncate max-w-[200px]">

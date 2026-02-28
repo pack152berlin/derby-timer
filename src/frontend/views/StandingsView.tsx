@@ -44,7 +44,7 @@ export function StandingsView() {
                   </div>
                   
                   <div className="w-20 text-center">
-                    <p className="text-2xl font-black text-orange-600">#{standing.car_number}</p>
+                    <p className="text-2xl font-black text-[#003F87]">#{standing.car_number}</p>
                   </div>
                   
                   <div className="flex-1">

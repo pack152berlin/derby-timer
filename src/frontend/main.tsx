@@ -84,8 +84,8 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
           {loading && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white p-8 rounded-xl shadow-2xl border-l-4 border-orange-500">
-                <div className="animate-spin text-orange-500 mb-4">
+              <div className="bg-white p-8 rounded-xl shadow-2xl border-l-4 border-[#003F87]">
+                <div className="animate-spin text-[#003F87] mb-4">
                   <Activity size={48} />
                 </div>
                 <p className="text-slate-600 font-semibold">Loading...</p>
@@ -135,12 +135,12 @@ function Navigation({
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={onGoHome}
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-[#003F87] to-[#CE1126] rounded-lg flex items-center justify-center shadow-lg">
               <Flag className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="flex flex-col">
               <span className="text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900 leading-none">
-                Derby<span className="text-orange-500">Timer</span>
+                Derby<span className="text-[#CE1126]">Timer</span>
               </span>
               {currentEvent && (
                 <span className="text-xs text-slate-500 font-medium truncate max-w-[68vw] sm:max-w-[200px]">
@@ -156,7 +156,7 @@ function Navigation({
               className={cn(
                 "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
                 formatIsActive
-                  ? "bg-orange-500 text-white shadow-md"
+                  ? "bg-[#003F87] text-white shadow-md"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               )}
             >
@@ -180,7 +180,7 @@ function Navigation({
                       className={cn(
                         "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
                         isActive
-                          ? "bg-slate-900 text-white shadow-md"
+                          ? "bg-[#003F87] text-white shadow-md"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       )}
                     >

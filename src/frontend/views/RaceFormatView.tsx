@@ -29,12 +29,12 @@ export function RaceFormatView() {
         <Card className="border-2 border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Timer className="w-5 h-5 text-orange-500" />
+              <Timer className="w-5 h-5 text-[#003F87]" />
               Rolling Queue
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-slate-700">
-            <Badge className="bg-orange-500 text-white">2-3 heats visible</Badge>
+            <Badge className="bg-[#003F87] text-white">2-3 heats visible</Badge>
             <p>Only the next few heats are generated so late-breaking results can affect upcoming matchups.</p>
           </CardContent>
         </Card>
@@ -42,7 +42,7 @@ export function RaceFormatView() {
         <Card className="border-2 border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Route className="w-5 h-5 text-orange-500" />
+              <Route className="w-5 h-5 text-[#003F87]" />
               Lane Fairness
             </CardTitle>
           </CardHeader>
@@ -55,7 +55,7 @@ export function RaceFormatView() {
         <Card className="border-2 border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Shuffle className="w-5 h-5 text-orange-500" />
+              <Shuffle className="w-5 h-5 text-[#003F87]" />
               Similar Records
             </CardTitle>
           </CardHeader>
@@ -66,10 +66,10 @@ export function RaceFormatView() {
         </Card>
       </div>
 
-      <Card className="border-2 border-orange-200 bg-orange-50 mb-6">
+      <Card className="border-2 border-blue-200 bg-blue-50 mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
-            <BookOpen className="w-6 h-6 text-orange-600" />
+            <BookOpen className="w-6 h-6 text-[#CE1126]" />
             Elimination Checkpoint
           </CardTitle>
         </CardHeader>

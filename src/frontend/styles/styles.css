@@ -11,19 +11,19 @@
     --card-foreground: #0f172a;
     --popover: #ffffff;
     --popover-foreground: #0f172a;
-    --primary: #f97316;
+    --primary: #003f87;
     --primary-foreground: #ffffff;
     --secondary: #f1f5f9;
     --secondary-foreground: #0f172a;
     --muted: #f1f5f9;
     --muted-foreground: #64748b;
-    --accent: #f97316;
+    --accent: #ce1126;
     --accent-foreground: #ffffff;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
     --border: #e2e8f0;
     --input: #e2e8f0;
-    --ring: #f97316;
+    --ring: #003f87;
     --radius: 0.75rem;
 }
 
@@ -61,18 +61,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #f97316;
+    background: #003f87;
 }
 
 /* Selection */
 ::selection {
-    background: #f97316;
+    background: #003f87;
     color: #ffffff;
 }
 
 /* Focus visible */
 :focus-visible {
-    outline: 2px solid #f97316;
+    outline: 2px solid #003f87;
     outline-offset: 2px;
 }
 

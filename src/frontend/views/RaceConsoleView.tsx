@@ -106,7 +106,7 @@ export function RaceConsoleView() {
               className={cn(
                 "px-6 py-3 text-lg font-bold uppercase",
                 currentHeat.status === 'pending' && "bg-slate-700",
-                currentHeat.status === 'running' && "bg-orange-500 text-white",
+                currentHeat.status === 'running' && "bg-[#CE1126] text-white",
                 currentHeat.status === 'complete' && "bg-emerald-500"
               )}
             >
@@ -130,7 +130,7 @@ export function RaceConsoleView() {
               <CardContent className="p-5">
                 <div className="mb-3">
                   <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Lane {lane.lane_number}</p>
-                  <p className="text-3xl font-black text-orange-600">#{lane.car_number}</p>
+                  <p className="text-3xl font-black text-[#003F87]">#{lane.car_number}</p>
                   <p className="text-base text-slate-700">{lane.racer_name}</p>
                 </div>
                 
@@ -195,7 +195,7 @@ export function RaceConsoleView() {
           <Button 
             onClick={handleComplete}
             disabled={currentResults.length === 0}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xl px-12 py-6 shadow-lg disabled:opacity-50"
+            className="bg-[#CE1126] hover:bg-[#ad0e20] text-white font-bold text-xl px-12 py-6 shadow-lg disabled:opacity-50"
           >
             <CheckCircle className="w-6 h-6 mr-3" />
             COMPLETE HEAT

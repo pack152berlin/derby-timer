@@ -60,7 +60,7 @@ export function HeatsView() {
                   className={cn(
                     'h-12 px-3 rounded-md text-sm font-semibold transition-colors',
                     lookahead === value
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-[#003F87] text-white'
                       : 'text-slate-600 hover:bg-slate-100'
                   )}
                 >
@@ -71,7 +71,7 @@ export function HeatsView() {
             <Button
               onClick={handleGenerate}
               size="lg"
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 shadow-lg"
+              className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-6 shadow-lg"
             >
               <Play className="w-5 h-5 mr-2" />
               Start Rolling Heats
@@ -96,7 +96,7 @@ export function HeatsView() {
               className={cn(
                 "border-2",
                 heat.status === 'pending' && "border-slate-200",
-                heat.status === 'running' && "border-orange-300 bg-orange-50",
+                heat.status === 'running' && "border-red-300 bg-red-50",
                 heat.status === 'complete' && "border-emerald-300 bg-emerald-50"
               )}
             >
@@ -106,7 +106,7 @@ export function HeatsView() {
                   <Badge 
                     className={cn(
                       heat.status === 'pending' && "bg-slate-200 text-slate-700",
-                      heat.status === 'running' && "bg-orange-500 text-white",
+                      heat.status === 'running' && "bg-[#CE1126] text-white",
                       heat.status === 'complete' && "bg-emerald-500 text-white"
                     )}
                   >
@@ -120,7 +120,7 @@ export function HeatsView() {
                     <Card key={lane.id} className="bg-slate-50">
                       <CardContent className="p-4">
                         <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-bold">Lane {lane.lane_number}</p>
-                        <p className="text-2xl font-black text-orange-600">#{lane.car_number}</p>
+                        <p className="text-2xl font-black text-[#003F87]">#{lane.car_number}</p>
                         <p className="text-sm text-slate-700 mt-1">{lane.racer_name}</p>
                       </CardContent>
                     </Card>
