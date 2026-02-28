@@ -154,6 +154,34 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(assignedNumbers).toEqual(["3", "4", "5", "6", "7", "8", "9", "10", "12"]);
     });
 
+    it("should update a racer name and den", async () => {
+      const response = await fetch(`${baseUrl}/api/racers/${racerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "  Johnny Updated  ",
+          den: "   ",
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const racer = await response.json();
+      expect(racer.name).toBe("Johnny Updated");
+      expect(racer.den).toBeNull();
+    });
+
+    it("should reject empty racer name updates", async () => {
+      const response = await fetch(`${baseUrl}/api/racers/${racerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "   " }),
+      });
+
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      expect(error.error).toContain("Name is required");
+    });
+
     it("should pass inspection for a racer", async () => {
       const response = await fetch(`${baseUrl}/api/racers/${racerId}/inspect`, {
         method: "POST",

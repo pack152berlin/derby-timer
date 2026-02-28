@@ -5,6 +5,13 @@ type CreateRacerInput = {
   den?: string | null;
 };
 
+type UpdateRacerInput = {
+  name?: string;
+  den?: string | null;
+  car_number?: string;
+  weight_ok?: boolean;
+};
+
 export const api = {
   async getEvents(): Promise<Event[]> {
     const res = await fetch('/api/events');
@@ -35,6 +42,21 @@ export const api = {
     if (!res.ok) {
       const payload = await res.json().catch(() => null) as { error?: string } | null;
       throw new Error(payload?.error ?? 'Unable to add racer');
+    }
+
+    return res.json();
+  },
+
+  async updateRacer(id: string, data: UpdateRacerInput): Promise<Racer> {
+    const res = await fetch(`/api/racers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'Unable to update racer');
     }
 
     return res.json();
@@ -107,7 +129,11 @@ export const api = {
   },
   
   async startHeat(heatId: string): Promise<void> {
-    await fetch(`/api/heats/${heatId}/start`, { method: 'POST' });
+    const res = await fetch(`/api/heats/${heatId}/start`, { method: 'POST' });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'Unable to start heat');
+    }
   },
   
   async completeHeat(heatId: string): Promise<void> {

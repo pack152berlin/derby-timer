@@ -11,6 +11,8 @@ import { useApp } from '../context';
 export function RaceConsoleView() {
   const { currentEvent, heats, refreshData } = useApp();
   const [heatResults, setHeatResults] = useState<Record<string, HeatResult[]>>({});
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isStartingHeat, setIsStartingHeat] = useState(false);
 
   if (!currentEvent) {
     return (
@@ -35,18 +37,38 @@ export function RaceConsoleView() {
   const queuedCount = heats.filter(h => h.status !== 'complete').length;
 
   const handleStart = async () => {
-    if (!currentHeat) return;
-    await api.startHeat(currentHeat.id);
-    refreshData();
+    if (!currentHeat || isStartingHeat) return;
+
+    setNotice(null);
+    setIsStartingHeat(true);
+
+    try {
+      await api.startHeat(currentHeat.id);
+      await refreshData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to start this heat.';
+      setNotice(message);
+    } finally {
+      setIsStartingHeat(false);
+    }
   };
 
   const handleComplete = async () => {
     if (!currentHeat) return;
     const results = heatResults[currentHeat.id] || [];
-    if (results.length === 0) {
-      alert('Please record finish positions first');
+
+    const lanesInHeat = currentHeat.lanes?.length ?? currentEvent.lane_count;
+    if (results.length < lanesInHeat) {
+      alert('Please record a finish result for every lane first.');
       return;
     }
+
+    const placed = results.filter((result) => !result.dnf).map((result) => result.place);
+    if (new Set(placed).size !== placed.length) {
+      alert('Each finishing place can only be used once.');
+      return;
+    }
+
     await api.saveResults(currentHeat.id, results);
     setHeatResults({});
     refreshData();
@@ -55,7 +77,17 @@ export function RaceConsoleView() {
   const recordPlace = (heatId: string, laneNumber: number, racerId: string, place: number) => {
     setHeatResults(prev => {
       const current = prev[heatId] || [];
-      const filtered = current.filter(r => r.lane_number !== laneNumber);
+      const filtered = current.filter((result) => {
+        if (result.lane_number === laneNumber) {
+          return false;
+        }
+
+        if (!result.dnf && result.place === place) {
+          return false;
+        }
+
+        return true;
+      });
       return { ...prev, [heatId]: [...filtered, { lane_number: laneNumber, racer_id: racerId, place }] };
     });
   };
@@ -83,6 +115,11 @@ export function RaceConsoleView() {
   }
 
   const currentResults = heatResults[currentHeat.id] || [];
+  const expectedResults = currentHeat.lanes?.length ?? currentEvent.lane_count;
+  const hasAllResults = currentResults.length === expectedResults;
+  const nonDnfPlaces = currentResults.filter((result) => !result.dnf).map((result) => result.place);
+  const hasDuplicatePlaces = new Set(nonDnfPlaces).size !== nonDnfPlaces.length;
+  const canCompleteHeat = hasAllResults && !hasDuplicatePlaces;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -116,6 +153,12 @@ export function RaceConsoleView() {
         </CardContent>
       </Card>
 
+      {notice && (
+        <Card className="mb-6 border-red-200 bg-red-50">
+          <CardContent className="p-3 text-sm font-semibold text-red-800">{notice}</CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         {currentHeat.lanes?.map(lane => {
           const result = currentResults.find(r => r.lane_number === lane.lane_number);
@@ -136,19 +179,27 @@ export function RaceConsoleView() {
                 
                 {currentHeat.status === 'running' && (
                   <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: currentHeat.lanes?.length ?? currentEvent.lane_count }, (_, idx) => idx + 1).map(place => (
-                      <Button
-                        key={place}
-                        variant={result?.place === place ? "default" : "outline"}
-                        onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
-                        className={cn(
-                          "h-12 font-bold",
-                          result?.place === place && "bg-yellow-400 text-slate-900 hover:bg-yellow-500"
-                        )}
-                      >
-                        {place}{place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'}
-                      </Button>
-                    ))}
+                    {Array.from({ length: currentHeat.lanes?.length ?? currentEvent.lane_count }, (_, idx) => idx + 1).map((place) => {
+                      const placeTakenByOtherLane = currentResults.some((entry) => {
+                        return !entry.dnf && entry.place === place && entry.lane_number !== lane.lane_number;
+                      });
+
+                      return (
+                        <Button
+                          key={place}
+                          variant={result?.place === place ? "default" : "outline"}
+                          onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
+                          disabled={placeTakenByOtherLane}
+                          className={cn(
+                            "h-12 font-bold",
+                            result?.place === place && "bg-yellow-400 text-slate-900 hover:bg-yellow-500",
+                            placeTakenByOtherLane && "opacity-50"
+                          )}
+                        >
+                          {place}{place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'}
+                        </Button>
+                      );
+                    })}
                     <Button
                       variant={result?.dnf ? "default" : "outline"}
                       onClick={() => recordDNF(currentHeat.id, lane.lane_number, lane.racer_id!)}
@@ -184,17 +235,18 @@ export function RaceConsoleView() {
         {currentHeat.status === 'pending' && (
           <Button 
             onClick={handleStart}
+            disabled={isStartingHeat}
             className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl px-12 py-6 shadow-lg"
           >
             <Flag className="w-6 h-6 mr-3" />
-            START HEAT
+            {isStartingHeat ? 'STARTING...' : 'START HEAT'}
           </Button>
         )}
         
         {currentHeat.status === 'running' && (
           <Button 
             onClick={handleComplete}
-            disabled={currentResults.length === 0}
+            disabled={!canCompleteHeat}
             className="bg-[#CE1126] hover:bg-[#ad0e20] text-white font-bold text-xl px-12 py-6 shadow-lg disabled:opacity-50"
           >
             <CheckCircle className="w-6 h-6 mr-3" />

@@ -620,11 +620,44 @@ Bun.serve({
       PATCH: async (req) => {
         const body = (await req.json()) as {
           name?: string;
-          den?: string;
+          den?: string | null;
           car_number?: string;
           weight_ok?: boolean;
         };
-        const racer = racersRepo.update(req.params.id, body);
+
+        const updatePayload: {
+          name?: string;
+          den?: string | null;
+          car_number?: string;
+          weight_ok?: boolean;
+        } = {};
+
+        if (body.name !== undefined) {
+          const name = body.name.trim();
+          if (!name) {
+            return respondJson({ error: "Name is required" }, 400);
+          }
+          updatePayload.name = name;
+        }
+
+        if (body.den !== undefined) {
+          const den = body.den?.trim() ?? "";
+          updatePayload.den = den.length > 0 ? den : null;
+        }
+
+        if (body.car_number !== undefined) {
+          const carNumber = body.car_number.trim();
+          if (!carNumber) {
+            return respondJson({ error: "Car number is required" }, 400);
+          }
+          updatePayload.car_number = carNumber;
+        }
+
+        if (body.weight_ok !== undefined) {
+          updatePayload.weight_ok = body.weight_ok;
+        }
+
+        const racer = racersRepo.update(req.params.id, updatePayload);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
         return respondJson(racer);
       },
@@ -802,9 +835,12 @@ Bun.serve({
 
     "/api/heats/:id/start": {
       POST: (req) => {
+        const requestedHeat = heatsRepo.findById(req.params.id);
+        if (!requestedHeat) return respondJson({ error: "Heat not found" }, 404);
+
         const runningHeat = heatsRepo.findRunning();
         if (runningHeat && runningHeat.id !== req.params.id) {
-          return respondJson({ error: "Another heat is already running" }, 409);
+          heatsRepo.updateStatus(runningHeat.id, "pending");
         }
 
         const heat = heatsRepo.updateStatus(req.params.id, "running");

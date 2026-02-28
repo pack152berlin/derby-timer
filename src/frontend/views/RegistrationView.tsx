@@ -6,6 +6,7 @@ import {
   CheckSquare,
   ImagePlus,
   Loader2,
+  Pencil,
   Plus,
   Search,
   Trash2,
@@ -202,6 +203,10 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
   const [notice, setNotice] = useState<string | null>(null);
   const [activePhotoRacerId, setActivePhotoRacerId] = useState<string | null>(null);
   const [pendingCardPhotoRacerId, setPendingCardPhotoRacerId] = useState<string | null>(null);
+  const [editingRacerId, setEditingRacerId] = useState<string | null>(null);
+  const [editRacerName, setEditRacerName] = useState('');
+  const [editRacerDen, setEditRacerDen] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const cardPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const denSuggestions = useMemo(() => {
@@ -251,6 +256,12 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
     setNewRacerDen('');
     setNewRacerInspected(true);
     clearPhotoSelection();
+  };
+
+  const resetEditForm = () => {
+    setEditingRacerId(null);
+    setEditRacerName('');
+    setEditRacerDen('');
   };
 
   const handlePhotoSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -345,8 +356,43 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this racer and their saved car photo?')) return;
+    if (editingRacerId === id) {
+      resetEditForm();
+    }
     await api.deleteRacer(id);
     refreshData();
+  };
+
+  const beginEdit = (racer: Racer) => {
+    setNotice(null);
+    setEditingRacerId(racer.id);
+    setEditRacerName(racer.name);
+    setEditRacerDen(racer.den ?? '');
+  };
+
+  const handleSaveEdit = async (racer: Racer) => {
+    const name = editRacerName.trim();
+    if (!name || isSavingEdit) {
+      return;
+    }
+
+    setNotice(null);
+    setIsSavingEdit(true);
+
+    try {
+      await api.updateRacer(racer.id, {
+        name,
+        den: editRacerDen.trim() || null,
+      });
+      setNotice(`Updated ${name}.`);
+      resetEditForm();
+      await refreshData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to update racer.';
+      setNotice(message);
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const beginCardPhotoUpload = (racerId: string) => {
@@ -413,6 +459,14 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
 
   return (
     <div>
+      {denSuggestions.length > 0 && (
+        <datalist id="den-suggestions">
+          {denSuggestions.map((den) => (
+            <option key={den} value={den} />
+          ))}
+        </datalist>
+      )}
+
       <input
         ref={cardPhotoInputRef}
         type="file"
@@ -458,13 +512,6 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
                   list="den-suggestions"
                   className="h-12"
                 />
-                {denSuggestions.length > 0 && (
-                  <datalist id="den-suggestions">
-                    {denSuggestions.map((den) => (
-                      <option key={den} value={den} />
-                    ))}
-                  </datalist>
-                )}
               </div>
 
               <p className="md:col-span-2 xl:col-span-3 text-sm font-semibold text-slate-600">
@@ -590,7 +637,10 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
       )}
 
       <div className="grid gap-3">
-        {racers.map(racer => (
+        {racers.map((racer) => {
+          const isEditing = editingRacerId === racer.id;
+
+          return (
           <Card 
             key={racer.id} 
             className="group hover:border-blue-300 transition-all"
@@ -620,13 +670,34 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
                   </div>
                 )}
 
-                <div className="min-w-0">
-                  <p className="font-bold text-lg text-slate-900 truncate">{racer.name}</p>
-                  <div className="flex gap-2 text-sm text-slate-500 mt-1">
-                    {racer.den && (
-                      <Badge variant="secondary" className="font-medium">{racer.den}</Badge>
-                    )}
-                  </div>
+                <div className="min-w-0 flex-1">
+                  {isEditing ? (
+                    <div className="grid gap-2 sm:min-w-[280px]">
+                      <Input
+                        value={editRacerName}
+                        onChange={(event) => setEditRacerName(event.target.value)}
+                        placeholder="Racer name"
+                        className="h-10 bg-white"
+                        autoFocus
+                      />
+                      <Input
+                        value={editRacerDen}
+                        onChange={(event) => setEditRacerDen(event.target.value)}
+                        placeholder="Den"
+                        list="den-suggestions"
+                        className="h-10 bg-white"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="font-bold text-lg text-slate-900 truncate">{racer.name}</p>
+                      <div className="flex gap-2 text-sm text-slate-500 mt-1">
+                        {racer.den && (
+                          <Badge variant="secondary" className="font-medium">{racer.den}</Badge>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -640,49 +711,91 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
                   <span className="text-slate-400 text-sm mr-auto sm:mr-0">Pending</span>
                 )}
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={activePhotoRacerId === racer.id}
-                  onClick={() => beginCardPhotoUpload(racer.id)}
-                  className="h-10 px-3"
-                >
-                  {activePhotoRacerId === racer.id ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <ImagePlus className="w-4 h-4 mr-2" />
-                  )}
-                  {racer.car_photo_filename ? 'Change Photo' : 'Add Photo'}
-                </Button>
+                {isEditing ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleSaveEdit(racer)}
+                      disabled={isSavingEdit || !editRacerName.trim()}
+                      className="h-10 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
+                    >
+                      {isSavingEdit ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={resetEditForm}
+                      disabled={isSavingEdit}
+                      className="h-10 px-3"
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                      onClick={() => beginEdit(racer)}
+                      className="h-10 px-3"
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
 
-                {racer.car_photo_filename && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={activePhotoRacerId === racer.id}
-                    onClick={() => handleRemoveRacerPhoto(racer)}
-                    className="h-10 px-3 border-slate-300"
-                  >
-                    Remove Photo
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                      onClick={() => beginCardPhotoUpload(racer.id)}
+                      className="h-10 px-3"
+                    >
+                      {activePhotoRacerId === racer.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <ImagePlus className="w-4 h-4 mr-2" />
+                      )}
+                      {racer.car_photo_filename ? 'Change Photo' : 'Add Photo'}
+                    </Button>
+
+                    {racer.car_photo_filename && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                        onClick={() => handleRemoveRacerPhoto(racer)}
+                        className="h-10 px-3 border-slate-300"
+                      >
+                        Remove Photo
+                      </Button>
+                    )}
+
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDelete(racer.id)} 
+                      disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                      className="text-slate-500 hover:text-red-600 hover:bg-red-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all h-10 px-3"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="ml-2 text-sm font-semibold">Delete</span>
+                    </Button>
+                  </>
                 )}
-
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => handleDelete(racer.id)} 
-                  disabled={activePhotoRacerId === racer.id}
-                  className="text-slate-500 hover:text-red-600 hover:bg-red-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all h-10 px-3"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="ml-2 text-sm font-semibold">Delete</span>
-                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {racers.length === 0 && !showAddForm && (
@@ -761,9 +874,10 @@ function InspectionTab() {
                     <CheckSquare className="w-3 h-3 mr-1" />
                     PASSED
                   </Badge>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleInspect(racer.id, false)}
                     className="h-11 px-4"
                   >
