@@ -8,7 +8,8 @@
     "rehearsal:race-day": "bun run scripts/race-day-rehearsal.ts",
     "clear:derbies": "bun run scripts/clear-derbies.ts",
     "serial:k1": "bun run src/electronics/k1-serial.ts",
-    "serial:k1:harness": "bun run src/electronics/k1-harness.ts"
+    "serial:k1:harness": "bun run src/electronics/k1-harness.ts",
+    "serial:k1:probe": "bun run src/electronics/k1-probe.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
