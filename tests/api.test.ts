@@ -1,5 +1,9 @@
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 
+const hasRepeatedDigits = (value: string) => {
+  return new Set(value).size !== value.length;
+};
+
 describe("DerbyTimer API Integration Tests", () => {
   const baseUrl = "http://localhost:3000";
   let eventId: string;
@@ -75,14 +79,14 @@ describe("DerbyTimer API Integration Tests", () => {
       const racer = await response.json();
       expect(racer.name).toBe("Johnny Test");
       expect(racer.den).toBe("Wolf");
-      expect(racer.car_number).toMatch(/^[1-9]\d$/);
+      expect(racer.car_number).toBe("1");
       expect(racer.weight_ok).toBe(0);
       expect(racer.id).toBeDefined();
       firstCarNumber = racer.car_number;
       racerId = racer.id;
     });
 
-    it("should auto-assign a different number for each racer", async () => {
+    it("should auto-assign sequential car numbers", async () => {
       const response = await fetch(`${baseUrl}/api/events/${eventId}/racers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +98,7 @@ describe("DerbyTimer API Integration Tests", () => {
 
       expect(response.status).toBe(201);
       const racer = await response.json();
-      expect(racer.car_number).toMatch(/^[1-9]\d$/);
+      expect(racer.car_number).toBe("2");
       expect(racer.car_number).not.toBe(firstCarNumber);
     });
 
@@ -123,8 +127,31 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(racerNames).toEqual(["Johnny Test", "Second Scout"]);
 
       for (const racer of racers) {
-        expect(racer.car_number).toMatch(/^[1-9]\d$/);
+        expect(racer.car_number).toMatch(/^\d+$/);
+        expect(Number.parseInt(racer.car_number, 10)).toBeGreaterThan(0);
+        expect(hasRepeatedDigits(racer.car_number)).toBe(false);
       }
+    });
+
+    it("should skip numbers that repeat digits", async () => {
+      const assignedNumbers: string[] = [];
+
+      for (let index = 0; index < 9; index += 1) {
+        const response = await fetch(`${baseUrl}/api/events/${eventId}/racers`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: `Extra Scout ${index + 1}`,
+            den: "Webelos",
+          }),
+        });
+
+        expect(response.status).toBe(201);
+        const racer = await response.json();
+        assignedNumbers.push(racer.car_number);
+      }
+
+      expect(assignedNumbers).toEqual(["3", "4", "5", "6", "7", "8", "9", "10", "12"]);
     });
 
     it("should pass inspection for a racer", async () => {

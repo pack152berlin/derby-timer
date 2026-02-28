@@ -468,7 +468,7 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
               </div>
 
               <p className="md:col-span-2 xl:col-span-3 text-sm font-semibold text-slate-600">
-                A random 2-digit car number is assigned automatically when you save.
+                Car numbers are assigned sequentially when you save, skipping numbers with repeated digits.
               </p>
 
               <div className="md:col-span-2 xl:col-span-4">

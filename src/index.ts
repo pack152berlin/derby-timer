@@ -107,13 +107,43 @@ const isSqliteUniqueConstraintError = (
   return expectedColumns.every((column) => error.message.includes(column));
 };
 
-const MIN_CAR_NUMBER = 10;
-const MAX_CAR_NUMBER = 99;
 const MAX_CAR_NUMBER_ATTEMPTS = 2_000;
+const nextCarNumberByEvent = new Map<string, number>();
 
-const generateRandomCarNumber = () => {
-  const range = MAX_CAR_NUMBER - MIN_CAR_NUMBER + 1;
-  return String(Math.floor(Math.random() * range) + MIN_CAR_NUMBER);
+const hasRepeatedDigits = (value: number) => {
+  const digits = String(value);
+  return new Set(digits).size !== digits.length;
+};
+
+const getNextValidCarNumber = (startAt: number) => {
+  let candidate = Math.max(1, Math.trunc(startAt));
+
+  while (hasRepeatedDigits(candidate)) {
+    candidate += 1;
+  }
+
+  return candidate;
+};
+
+const getNextStartingCarNumberForEvent = (eventId: string) => {
+  const cached = nextCarNumberByEvent.get(eventId);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const eventRacers = racersRepo.findByEvent(eventId);
+  let highestCarNumber = 0;
+
+  for (const racer of eventRacers) {
+    const parsedCarNumber = Number.parseInt(racer.car_number, 10);
+    if (Number.isFinite(parsedCarNumber) && parsedCarNumber > highestCarNumber) {
+      highestCarNumber = parsedCarNumber;
+    }
+  }
+
+  const nextCarNumber = getNextValidCarNumber(highestCarNumber + 1);
+  nextCarNumberByEvent.set(eventId, nextCarNumber);
+  return nextCarNumber;
 };
 
 const getElapsedMsFromStartedAt = (startedAt: string | null) => {
@@ -514,6 +544,7 @@ Bun.serve({
         const eventRacers = racersRepo.findByEvent(req.params.id);
         const deleted = eventsRepo.delete(req.params.id);
         if (!deleted) return respondJson({ error: "Event not found" }, 404);
+        nextCarNumberByEvent.delete(req.params.id);
         for (const racer of eventRacers) {
           deletePhotoFile(racer.car_photo_filename);
         }
@@ -541,8 +572,10 @@ Bun.serve({
 
         const den = body.den?.trim();
 
+        let candidateCarNumber = getNextStartingCarNumberForEvent(req.params.eventId);
+
         for (let attempt = 0; attempt < MAX_CAR_NUMBER_ATTEMPTS; attempt += 1) {
-          const carNumber = generateRandomCarNumber();
+          const carNumber = String(candidateCarNumber);
 
           try {
             const racer = racersRepo.create({
@@ -551,11 +584,16 @@ Bun.serve({
               den,
               car_number: carNumber,
             });
+
+            const nextCarNumber = getNextValidCarNumber(candidateCarNumber + 1);
+            nextCarNumberByEvent.set(req.params.eventId, nextCarNumber);
             return respondJson(racer, 201);
           } catch (error) {
             if (
               isSqliteUniqueConstraintError(error, ["racers.event_id", "racers.car_number"])
             ) {
+              candidateCarNumber = getNextValidCarNumber(candidateCarNumber + 1);
+              nextCarNumberByEvent.set(req.params.eventId, candidateCarNumber);
               continue;
             }
 
