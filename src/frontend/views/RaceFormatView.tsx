@@ -75,10 +75,13 @@ export function RaceFormatView() {
         </CardHeader>
         <CardContent className="space-y-3 text-slate-800 text-lg">
           <p>
-            Opinionated policy: run a full lane-coverage cycle, then cut the field in half. Repeat until only 2 cars remain.
+            Policy in this app: only inspected racers are eligible, each active field runs a full lane-coverage cycle, then the field is cut to about half (rounded up) until 2 racers remain.
           </p>
           <p>
-            Cuts use current standings (wins, then losses, then average time) and the last 2 cars run the championship final.
+            Elimination cuts rank racers by wins, then fewer losses, then faster average time, then more heats run, then lower car number.
+          </p>
+          <p>
+            The final 2 racers run a finals round with the same lane-coverage rule; the champion is whoever finishes on top of standings after those heats.
           </p>
           {eligibleCars > 0 ? (
             <>
@@ -86,7 +89,7 @@ export function RaceFormatView() {
                 For this event: {eliminationPlan.join(' -> ')} (start to final), {finalEliminatedCount} total eliminations.
               </p>
               <p>
-                Lane target per cut stage: every active car must hit each of the {laneCount} lanes before the next elimination.
+                Lane target per stage: every active car must run each of the {laneCount} lanes once before the next cut.
               </p>
             </>
           ) : (
@@ -103,7 +106,7 @@ export function RaceFormatView() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-slate-700 text-lg">
-          <p>Standings sort by wins first, then fewer losses, then average time as a tiebreaker.</p>
+          <p>Leaderboard standings sort by wins first, then fewer losses, then faster average time.</p>
           <p>
             Current leaderboard entries: <span className="font-bold">{standings.length}</span>
             {currentEvent ? ` in ${currentEvent.name}` : ''}
