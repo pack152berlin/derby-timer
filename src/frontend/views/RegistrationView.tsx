@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -133,6 +134,7 @@ export function RegistrationView() {
   const { currentEvent, racers, refreshData } = useApp();
   const [activeTab, setActiveTab] = useState('racers');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'car'>('newest');
 
   if (!currentEvent) {
     return (
@@ -147,10 +149,13 @@ export function RegistrationView() {
   const inspectionPercent = racers.length > 0 ? Math.round((inspectedCount / racers.length) * 100) : 0;
 
   const sortedRacers = useMemo(() => {
-    return [...racers].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }, [racers]);
+    return [...racers].sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      return Number(a.car_number) - Number(b.car_number);
+    });
+  }, [racers, sortBy]);
 
   const filteredRacers = sortedRacers.filter(r => {
     const nameMatch = (r.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -183,7 +188,13 @@ export function RegistrationView() {
         </TabsList>
         
         <TabsContent value="racers">
-          <RacersTab racers={filteredRacers} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <RacersTab 
+            racers={filteredRacers} 
+            searchTerm={searchTerm} 
+            setSearchTerm={setSearchTerm}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+          />
         </TabsContent>
         
         <TabsContent value="inspection">
@@ -194,7 +205,19 @@ export function RegistrationView() {
   );
 }
 
-function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], searchTerm: string, setSearchTerm: (s: string) => void }) {
+function RacersTab({ 
+  racers, 
+  searchTerm, 
+  setSearchTerm,
+  sortBy,
+  setSortBy
+}: { 
+  racers: Racer[], 
+  searchTerm: string, 
+  setSearchTerm: (s: string) => void,
+  sortBy: 'newest' | 'car',
+  setSortBy: (s: 'newest' | 'car') => void
+}) {
   const { currentEvent, racers: allRacers, refreshData } = useApp();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRacerName, setNewRacerName] = useState('');
@@ -632,6 +655,32 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
               className="pl-10 h-12 bg-white border-slate-300"
             />
           </div>
+          
+          <div className="flex items-center gap-3 px-4 h-12 rounded-lg border border-slate-200 bg-white">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sort:</span>
+            <div className="flex items-center gap-3">
+              <span className={cn(
+                "text-sm font-semibold transition-colors",
+                sortBy === 'newest' ? "text-slate-900" : "text-slate-400"
+              )}>
+                Newest
+              </span>
+              <Switch 
+                checked={sortBy === 'car'} 
+                onCheckedChange={(checked) => setSortBy(checked ? 'car' : 'newest')}
+                className="data-[size=default]:h-6 data-[size=default]:w-11"
+              />
+              <span className={cn(
+                "text-sm font-semibold transition-colors",
+                sortBy === 'car' ? "text-slate-900" : "text-slate-400"
+              )}>
+                Car #
+              </span>
+            </div>
+          </div>
+
+          <div className="flex-1"></div>
+
           <Button 
             onClick={() => setShowAddForm(true)}
             className="bg-slate-900 hover:bg-slate-800 text-white font-semibold h-12 w-full sm:w-auto"
