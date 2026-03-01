@@ -11,6 +11,7 @@ import {
   Search,
   Trash2,
   Users,
+  X,
   XSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -236,6 +245,7 @@ function RacersTab({
   const [editRacerName, setEditRacerName] = useState('');
   const [editRacerDen, setEditRacerDen] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [racerToDelete, setRacerToDelete] = useState<Racer | null>(null);
   const cardPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const denSuggestions = useMemo(() => {
@@ -383,12 +393,13 @@ function RacersTab({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this racer and their saved car photo?')) return;
-    if (editingRacerId === id) {
+  const confirmDelete = async () => {
+    if (!racerToDelete) return;
+    if (editingRacerId === racerToDelete.id) {
       resetEditForm();
     }
-    await api.deleteRacer(id);
+    await api.deleteRacer(racerToDelete.id);
+    setRacerToDelete(null);
     refreshData();
   };
 
@@ -699,8 +710,18 @@ function RacersTab({
           <Card 
             key={racer.id}
             data-testid="racer-card"
-            className="group hover:border-blue-300 transition-all"
+            className="group relative hover:border-blue-300 transition-all"
           >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRacerToDelete(racer)}
+              className="absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-all z-10 flex items-center gap-1"
+              title="Delete Racer"
+            >
+              <X className="h-3 w-3" />
+              <span className="text-[10px] font-bold uppercase">Delete</span>
+            </Button>
             <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <div className={cn(
@@ -834,17 +855,6 @@ function RacersTab({
                         Remove Photo
                       </Button>
                     )}
-
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleDelete(racer.id)} 
-                      disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                      className="text-slate-500 hover:text-red-600 hover:bg-red-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all h-10 px-3"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="ml-2 text-sm font-semibold">Delete</span>
-                    </Button>
                   </>
                 )}
               </div>
@@ -863,6 +873,25 @@ function RacersTab({
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={!!racerToDelete} onOpenChange={(open) => !open && setRacerToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{racerToDelete?.name}</strong>? This will also remove their saved car photo. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setRacerToDelete(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete Racer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
