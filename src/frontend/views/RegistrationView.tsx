@@ -691,13 +691,14 @@ function RacersTab({
         </div>
       )}
 
-      <div className="grid gap-3">
+      <div className="grid gap-3" data-testid="racer-list">
         {racers.map((racer) => {
           const isEditing = editingRacerId === racer.id;
 
           return (
           <Card 
-            key={racer.id} 
+            key={racer.id}
+            data-testid="racer-card"
             className="group hover:border-blue-300 transition-all"
           >
             <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -886,10 +887,11 @@ function InspectionTab({ racers }: { racers: Racer[] }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="racer-list">
       {racers.map(racer => (
         <Card 
-          key={racer.id} 
+          key={racer.id}
+          data-testid="racer-card"
           className={cn(
             "border-2",
             racer.weight_ok 

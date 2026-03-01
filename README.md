@@ -41,6 +41,14 @@ bun start
 # Open http://localhost:3000
 ```
 
+## Testing
+
+```bash
+bun test              # unit + integration tests (requires server on :3000)
+bun run test:unit     # unit tests only — no server needed
+bun run test:ui       # Playwright e2e tests (optional locally, always runs in CI)
+```
+
 ## Race-Day Rehearsal Command
 
 Run a full simulated race flow (check-in -> heat generation -> partial run -> server restart -> finish) in an isolated SQLite file:
