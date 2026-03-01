@@ -154,6 +154,17 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(assignedNumbers).toEqual(["3", "4", "5", "6", "7", "8", "9", "10", "12"]);
     });
 
+    it("should list racers ordered by car number", async () => {
+      const response = await fetch(`${baseUrl}/api/events/${eventId}/racers`);
+      expect(response.status).toBe(200);
+      const racers = await response.json();
+      expect(Array.isArray(racers)).toBe(true);
+
+      const carNumbers = racers.map((racer: { car_number: string }) => Number(racer.car_number));
+      const sorted = [...carNumbers].sort((a, b) => a - b);
+      expect(carNumbers).toEqual(sorted);
+    });
+
     it("should update a racer name and den", async () => {
       const response = await fetch(`${baseUrl}/api/racers/${racerId}`, {
         method: "PATCH",

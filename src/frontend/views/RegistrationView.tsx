@@ -146,7 +146,13 @@ export function RegistrationView() {
   const inspectedCount = racers.filter(r => r.weight_ok).length;
   const inspectionPercent = racers.length > 0 ? Math.round((inspectedCount / racers.length) * 100) : 0;
 
-  const filteredRacers = racers.filter(r => {
+  const sortedRacers = useMemo(() => {
+    return [...racers].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [racers]);
+
+  const filteredRacers = sortedRacers.filter(r => {
     const nameMatch = (r.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const carMatch = (r.car_number || '').includes(searchTerm);
     return nameMatch || carMatch;
@@ -181,7 +187,7 @@ export function RegistrationView() {
         </TabsContent>
         
         <TabsContent value="inspection">
-          <InspectionTab />
+          <InspectionTab racers={filteredRacers} />
         </TabsContent>
       </Tabs>
     </div>
@@ -811,8 +817,8 @@ function RacersTab({ racers, searchTerm, setSearchTerm }: { racers: Racer[], sea
   );
 }
 
-function InspectionTab() {
-  const { racers, refreshData } = useApp();
+function InspectionTab({ racers }: { racers: Racer[] }) {
+  const { refreshData } = useApp();
 
   const handleInspect = async (racerId: string, pass: boolean) => {
     await api.inspectRacer(racerId, pass);

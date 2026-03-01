@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, Activity, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -26,9 +26,8 @@ function App() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const refreshData = async () => {
+  const fetchData = async () => {
     if (!currentEvent) return;
-    setLoading(true);
     const [racersData, heatsData, standingsData] = await Promise.all([
       api.getRacers(currentEvent.id),
       api.getHeats(currentEvent.id),
@@ -37,8 +36,50 @@ function App() {
     setRacers(racersData);
     setHeats(heatsData);
     setStandings(standingsData);
-    setLoading(false);
   };
+
+  useEffect(() => {
+    let socket: WebSocket | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      socket = new WebSocket(wsUrl);
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (currentEvent && data.eventId === currentEvent.id) {
+            fetchData();
+          }
+        } catch (e) {
+          console.error('Error parsing WebSocket message:', e);
+        }
+      };
+
+      socket.onclose = () => {
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+
+      socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        socket?.close();
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (socket) {
+        socket.onclose = null;
+        socket.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [currentEvent]);
 
   const selectEvent = async (event: Event | null) => {
     if (!event) {
@@ -69,7 +110,11 @@ function App() {
     racers,
     heats,
     standings,
-    refreshData,
+    refreshData: async () => {
+      setLoading(true);
+      await fetchData();
+      setLoading(false);
+    },
     selectEvent
   };
 

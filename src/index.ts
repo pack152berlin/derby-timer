@@ -487,8 +487,21 @@ const maybeMarkEventComplete = (eventId: string, settings: EventPlanningSettings
 const parsedPort = Number(Bun.env.PORT ?? "3000");
 const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3000;
 
-Bun.serve({
+const broadcast = (message: any) => {
+  server.publish("updates", JSON.stringify(message));
+};
+
+const server = Bun.serve({
   port,
+  websocket: {
+    open(ws) {
+      ws.subscribe("updates");
+    },
+    message(ws, _message) {},
+    close(ws) {
+      ws.unsubscribe("updates");
+    },
+  },
   routes: {
     // Serve the main UI
     "/": index,
@@ -498,6 +511,13 @@ Bun.serve({
     "/standings": index,
     "/format": index,
     "/display": display,
+
+    "/ws": (req, server) => {
+      if (server.upgrade(req)) {
+        return;
+      }
+      return new Response("WebSocket upgrade failed", { status: 400 });
+    },
 
     // ===== EVENTS API =====
     "/api/events": {
@@ -587,6 +607,9 @@ Bun.serve({
 
             const nextCarNumber = getNextValidCarNumber(candidateCarNumber + 1);
             nextCarNumberByEvent.set(req.params.eventId, nextCarNumber);
+            
+            broadcast({ type: "RACERS_UPDATED", eventId: req.params.eventId });
+            
             return respondJson(racer, 201);
           } catch (error) {
             if (
@@ -659,15 +682,22 @@ Bun.serve({
 
         const racer = racersRepo.update(req.params.id, updatePayload);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
+
+        broadcast({ type: "RACERS_UPDATED", eventId: racer.event_id });
+
         return respondJson(racer);
       },
       DELETE: (req) => {
         const racer = racersRepo.findById(req.params.id);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
 
+        const eventId = racer.event_id;
         const deleted = racersRepo.delete(req.params.id);
         if (!deleted) return respondJson({ error: "Racer not found" }, 404);
         deletePhotoFile(racer.car_photo_filename);
+
+        broadcast({ type: "RACERS_UPDATED", eventId });
+
         return respondJson({ success: true });
       },
     },
@@ -754,6 +784,8 @@ Bun.serve({
           deletePhotoFile(racer.car_photo_filename);
         }
 
+        broadcast({ type: "RACERS_UPDATED", eventId: updatedRacer.event_id });
+
         return respondJson(updatedRacer);
       },
 
@@ -775,6 +807,8 @@ Bun.serve({
           return respondJson({ error: "Racer not found" }, 404);
         }
 
+        broadcast({ type: "RACERS_UPDATED", eventId: updatedRacer.event_id });
+
         return respondJson(updatedRacer);
       },
     },
@@ -784,6 +818,9 @@ Bun.serve({
         const body = (await req.json()) as { weight_ok: boolean };
         const racer = racersRepo.inspect(req.params.id, body.weight_ok ?? false);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
+
+        broadcast({ type: "RACERS_UPDATED", eventId: racer.event_id });
+
         return respondJson(racer);
       },
     },
