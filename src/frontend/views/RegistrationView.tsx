@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   Camera,
+  Car,
   CheckCircle,
   CheckSquare,
+  HelpCircle,
   ImagePlus,
   Loader2,
   Pencil,
@@ -27,7 +29,23 @@ import {
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+const CUB_SCOUT_LEVELS = [
+  'Lions',
+  'Tigers',
+  'Wolves',
+  'Bears',
+  'Webelos',
+  'AOLs'
+];
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -144,6 +162,7 @@ export function RegistrationView() {
   const [activeTab, setActiveTab] = useState('racers');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'car'>('newest');
+  const [showHelp, setShowHelp] = useState(false);
 
   if (!currentEvent) {
     return (
@@ -174,21 +193,76 @@ export function RegistrationView() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
-          Registration
-        </h1>
-        <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
-          <div className="flex items-center gap-2 text-slate-600">
-            <Users size={18} className="text-[#003F87]" />
-            <span className="font-semibold">{racers.length} Racers</span>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
+              Registration
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHelp(true)}
+              className="h-8 gap-2 text-slate-600 border-slate-300 hover:text-[#003F87] hover:bg-blue-50 font-bold uppercase text-xs tracking-wider"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span>Help</span>
+            </Button>
           </div>
-          <div className="flex items-center gap-2 text-slate-600">
-            <CheckCircle size={18} className="text-emerald-500" />
-            <span className="font-semibold">{inspectedCount} Inspected ({inspectionPercent}%)</span>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
+            <div className="flex items-center gap-2 text-slate-600">
+              <Users size={18} className="text-[#003F87]" />
+              <span className="font-semibold">{racers.length} Racers</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-600">
+              <CheckCircle size={18} className="text-emerald-500" />
+              <span className="font-semibold">{inspectedCount} Inspected ({inspectionPercent}%)</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+              <HelpCircle className="h-6 w-6 text-[#003F87]" />
+              Registration Instructions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-1.5">
+              <h3 className="font-bold text-[#003F87] uppercase text-sm tracking-wider">Automated Car Numbers</h3>
+              <p className="text-slate-900 font-medium leading-snug">
+                Car numbers are **assigned automatically** when you save. The system skips numbers with repeated digits (like 11, 22) to ensure they are easy for everyone to read during the race.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="font-bold text-[#003F87] uppercase text-sm tracking-wider">Real-Time Updates</h3>
+              <p className="text-slate-900 font-medium leading-snug">
+                Multiple people can register racers at the same time. The list will update automatically on every screen as soon as someone hits save.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="font-bold text-[#003F87] uppercase text-sm tracking-wider">Bulk Import</h3>
+              <p className="text-slate-900 font-medium leading-snug">
+                Have a large list? You can upload a CSV file to add everyone at once. Look for the import tool in the **Race Format** tab.
+              </p>
+            </div>
+
+            <div className="mt-2 p-4 rounded-xl bg-blue-100 border-2 border-blue-200 text-blue-950 font-bold text-sm leading-tight">
+              PRO TIP: Use the "Newest" sort toggle to keep your most recent entries at the top of the list for quick verification.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowHelp(false)} className="bg-[#003F87] text-white w-full sm:w-auto font-black uppercase tracking-widest h-12">
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
@@ -231,7 +305,7 @@ function RacersTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRacerName, setNewRacerName] = useState('');
   const [newRacerDen, setNewRacerDen] = useState('');
-  const [newRacerInspected, setNewRacerInspected] = useState(true);
+  const [newRacerInspected, setNewRacerInspected] = useState(false);
   const [newRacerPhoto, setNewRacerPhoto] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
@@ -246,29 +320,9 @@ function RacersTab({
   const [editRacerDen, setEditRacerDen] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [racerToDelete, setRacerToDelete] = useState<Racer | null>(null);
+  const [photoToRemoveRacer, setPhotoToRemoveRacer] = useState<Racer | null>(null);
+  const [lastAddedRacer, setLastAddedRacer] = useState<Racer | null>(null);
   const cardPhotoInputRef = useRef<HTMLInputElement | null>(null);
-
-  const denSuggestions = useMemo(() => {
-    const seen = new Set<string>();
-    const suggestions: string[] = [];
-
-    for (const racer of allRacers) {
-      const den = racer.den?.trim();
-      if (!den) {
-        continue;
-      }
-
-      const normalizedDen = den.toLowerCase();
-      if (seen.has(normalizedDen)) {
-        continue;
-      }
-
-      seen.add(normalizedDen);
-      suggestions.push(den);
-    }
-
-    return suggestions.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [allRacers]);
 
   useEffect(() => {
     return () => {
@@ -293,7 +347,7 @@ function RacersTab({
   const resetForm = () => {
     setNewRacerName('');
     setNewRacerDen('');
-    setNewRacerInspected(true);
+    setNewRacerInspected(false);
     clearPhotoSelection();
   };
 
@@ -379,6 +433,7 @@ function RacersTab({
 
       resetForm();
       setShowAddForm(false);
+      setLastAddedRacer(racer);
 
       if (warning) {
         setNotice(`Racer was added, but photo upload failed: ${warning}`);
@@ -473,21 +528,18 @@ function RacersTab({
     }
   };
 
-  const handleRemoveRacerPhoto = async (racer: Racer) => {
-    if (!racer.car_photo_filename) {
-      return;
-    }
-
-    if (!confirm(`Remove car photo for ${racer.name}?`)) {
+  const confirmRemovePhoto = async () => {
+    if (!photoToRemoveRacer?.car_photo_filename) {
       return;
     }
 
     setNotice(null);
-    setActivePhotoRacerId(racer.id);
+    setActivePhotoRacerId(photoToRemoveRacer.id);
 
     try {
-      await api.deleteRacerPhoto(racer.id);
-      setNotice(`Removed ${racer.name} photo.`);
+      await api.deleteRacerPhoto(photoToRemoveRacer.id);
+      setNotice(`Removed ${photoToRemoveRacer.name} photo.`);
+      setPhotoToRemoveRacer(null);
       await refreshData();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not remove photo.';
@@ -499,14 +551,6 @@ function RacersTab({
 
   return (
     <div>
-      {denSuggestions.length > 0 && (
-        <datalist id="den-suggestions">
-          {denSuggestions.map((den) => (
-            <option key={den} value={den} />
-          ))}
-        </datalist>
-      )}
-
       <input
         ref={cardPhotoInputRef}
         type="file"
@@ -528,8 +572,8 @@ function RacersTab({
             <CardTitle className="text-lg">Add New Racer</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 items-end">
-              <div className="md:col-span-2 xl:col-span-2">
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3 items-start">
+              <div className="md:col-span-3">
                 <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
                   Full Name *
                 </label>
@@ -541,24 +585,24 @@ function RacersTab({
                   className="h-12"
                 />
               </div>
-              <div className="xl:col-span-1">
+
+              <div className="md:col-span-1">
                 <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
                   Den
                 </label>
-                <Input 
-                  value={newRacerDen}
-                  onChange={(e) => setNewRacerDen(e.target.value)}
-                  placeholder="Wolf"
-                  list="den-suggestions"
-                  className="h-12"
-                />
+                <Select value={newRacerDen} onValueChange={setNewRacerDen}>
+                  <SelectTrigger className="h-12 bg-white border-slate-300 w-full">
+                    <SelectValue placeholder="Select Level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CUB_SCOUT_LEVELS.map(level => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <p className="md:col-span-2 xl:col-span-3 text-sm font-semibold text-slate-600">
-                Car numbers are assigned sequentially when you save, skipping numbers with repeated digits.
-              </p>
-
-              <div className="md:col-span-2 xl:col-span-4">
+              <div className="md:col-span-2">
                 <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
                   Car Photo (optional)
                 </label>
@@ -586,7 +630,7 @@ function RacersTab({
                   {isProcessingPhoto && (
                     <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 font-semibold">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Preparing photo for fast local upload...
+                      Preparing photo...
                     </p>
                   )}
 
@@ -596,12 +640,6 @@ function RacersTab({
 
                   {photoStatus && !photoError && (
                     <p className="mt-2 text-sm font-semibold text-emerald-700">{photoStatus}</p>
-                  )}
-
-                  {!photoError && (
-                    <p className="mt-2 text-xs font-medium text-slate-500">
-                      Accepts common mobile formats, auto-resized to keep files manageable on your local network.
-                    </p>
                   )}
 
                   {photoPreviewUrl && (
@@ -616,21 +654,22 @@ function RacersTab({
                 </div>
               </div>
 
-              <div className="md:col-span-2 xl:col-span-4 flex items-center gap-3 py-2">
+              <div className="md:col-span-3 flex items-center gap-3 py-2">
                 <Checkbox 
                   id="inspected" 
                   checked={newRacerInspected}
                   onCheckedChange={(checked) => setNewRacerInspected(checked === true)}
+                  className="size-5 border-slate-400"
                 />
                 <Label htmlFor="inspected" className="font-semibold cursor-pointer text-slate-700">
                   Inspected (ready to race)
                 </Label>
               </div>
-              <div className="md:col-span-2 xl:col-span-4 flex flex-col sm:flex-row gap-2">
+              <div className="md:col-span-3 flex flex-col sm:flex-row gap-2">
                 <Button
                   type="submit"
                   disabled={isSubmitting || isProcessingPhoto}
-                  className="flex-1 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold h-12"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -694,7 +733,7 @@ function RacersTab({
 
           <Button 
             onClick={() => setShowAddForm(true)}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-semibold h-12 w-full sm:w-auto"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12 w-full sm:w-auto"
           >
             <Plus className="w-5 h-5 mr-2" />
             Add Racer
@@ -716,7 +755,7 @@ function RacersTab({
               variant="ghost"
               size="sm"
               onClick={() => setRacerToDelete(racer)}
-              className="absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-all z-10 flex items-center gap-1"
+              className="absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 transition-all z-10 flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
               title="Delete Racer"
             >
               <X className="h-3 w-3" />
@@ -734,17 +773,30 @@ function RacersTab({
                 </div>
 
                 {racer.car_photo_filename ? (
-                  <img
-                    src={api.getRacerPhotoUrl(racer.id, racer.updated_at)}
-                    alt={`${racer.name} car photo`}
-                    className="w-14 h-14 rounded-lg border-2 border-slate-300 object-cover"
-                    loading="lazy"
-                  />
+                  <div className="relative group/photo shrink-0">
+                    <img
+                      src={api.getRacerPhotoUrl(racer.id, racer.updated_at)}
+                      alt={`${racer.name} car photo`}
+                      className="w-14 h-14 rounded-lg border-2 border-slate-300 object-cover"
+                      loading="lazy"
+                    />
+                    <button
+                      onClick={() => setPhotoToRemoveRacer(racer)}
+                      className="hidden sm:flex absolute inset-0 rounded-lg items-center justify-center bg-black/50 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity"
+                      title="Remove Photo"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
                 ) : (
-                  <div className="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 flex flex-col items-center justify-center bg-slate-50">
+                  <button
+                    onClick={() => beginCardPhotoUpload(racer.id)}
+                    className="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-colors cursor-pointer shrink-0"
+                    title="Add Photo"
+                  >
                     <Camera className="w-4 h-4" />
                     <span className="text-[10px] font-bold uppercase">No Pic</span>
-                  </div>
+                  </button>
                 )}
 
                 <div className="min-w-0 flex-1">
@@ -757,20 +809,33 @@ function RacersTab({
                         className="h-10 bg-white"
                         autoFocus
                       />
-                      <Input
-                        value={editRacerDen}
-                        onChange={(event) => setEditRacerDen(event.target.value)}
-                        placeholder="Den"
-                        list="den-suggestions"
-                        className="h-10 bg-white"
-                      />
+                      <Select value={editRacerDen} onValueChange={setEditRacerDen}>
+                        <SelectTrigger className="h-10 bg-white border-slate-300 w-full">
+                          <SelectValue placeholder="Select Level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CUB_SCOUT_LEVELS.map(level => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   ) : (
                     <>
                       <p className="font-bold text-lg text-slate-900 truncate">{racer.name}</p>
-                      <div className="flex gap-2 text-sm text-slate-500 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         {racer.den && (
                           <Badge variant="secondary" className="font-medium">{racer.den}</Badge>
+                        )}
+                        {racer.weight_ok ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Inspected
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-slate-400 border-slate-200 font-medium">
+                            Pending
+                          </Badge>
                         )}
                       </div>
                     </>
@@ -779,15 +844,6 @@ function RacersTab({
               </div>
 
               <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                {racer.weight_ok ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Inspected
-                  </Badge>
-                ) : (
-                  <span className="text-slate-400 text-sm mr-auto sm:mr-0">Pending</span>
-                )}
-
                 {isEditing ? (
                   <>
                     <Button
@@ -840,7 +896,7 @@ function RacersTab({
                       ) : (
                         <ImagePlus className="w-4 h-4 mr-2" />
                       )}
-                      {racer.car_photo_filename ? 'Change Photo' : 'Add Photo'}
+                      {racer.car_photo_filename ? 'New Photo' : 'Add Photo'}
                     </Button>
 
                     {racer.car_photo_filename && (
@@ -849,10 +905,11 @@ function RacersTab({
                         variant="outline"
                         size="sm"
                         disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                        onClick={() => handleRemoveRacerPhoto(racer)}
-                        className="h-10 px-3 border-slate-300"
+                        onClick={() => setPhotoToRemoveRacer(racer)}
+                        className="h-10 px-3 border-slate-300 text-red-600 hover:bg-red-50"
                       >
-                        Remove Photo
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Photo
                       </Button>
                     )}
                   </>
@@ -888,6 +945,71 @@ function RacersTab({
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Delete Racer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!photoToRemoveRacer} onOpenChange={(open) => !open && setPhotoToRemoveRacer(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Photo</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove the car photo for <strong>{photoToRemoveRacer?.name}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setPhotoToRemoveRacer(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmRemovePhoto}>
+              Remove Photo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!lastAddedRacer} onOpenChange={(open) => !open && setLastAddedRacer(null)}>
+        <DialogContent className="max-w-md border-emerald-200 p-4 sm:p-6">
+          <DialogHeader className="text-center sm:text-center items-center pb-2">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-2 [animation-iteration-count:3] animate-bounce">
+              <span className="text-3xl">🎈</span>
+            </div>
+            <DialogTitle className="text-xl font-black uppercase text-emerald-700 tracking-tight">Racer Registered!</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border-2 border-slate-200">
+            <div className="text-5xl font-black text-[#003F87] leading-none">
+              #{lastAddedRacer?.car_number}
+            </div>
+            <div className="flex-1 min-w-0 border-l-2 border-slate-200 pl-4">
+              <p className="font-bold text-lg text-slate-900 truncate leading-tight">
+                {lastAddedRacer?.name}
+              </p>
+              {lastAddedRacer?.den && (
+                <p className="text-xs font-black uppercase tracking-widest text-[#CE1126] mt-1">
+                  {lastAddedRacer.den}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col items-center gap-2 mt-4 sm:flex-col sm:items-center">
+            <Button 
+              onClick={() => {
+                setLastAddedRacer(null);
+                setShowAddForm(true);
+              }} 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-14 text-base w-full"
+            >
+              Next Racer
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => setLastAddedRacer(null)}
+              className="text-slate-400 hover:text-white hover:bg-slate-600 font-bold uppercase text-xs tracking-wider h-10 w-full transition-colors"
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

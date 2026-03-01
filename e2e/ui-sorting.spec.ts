@@ -27,16 +27,18 @@ test.describe('Registration Sorting UI', () => {
     await page.fill('input[placeholder="Johnny Smith"]', 'Older Racer');
     await page.click('button:has-text("Add Racer")');
     
-    // Wait for first racer to appear
-    await expect(page.locator('text=Older Racer')).toBeVisible();
+    // Wait for confirmation modal and close it
+    await expect(page.locator('text=Racer Registered!')).toBeVisible();
+    await page.click('text=Close');
 
     // Racer 2 (will be newer)
     await page.click('text=Add Racer');
     await page.fill('input[placeholder="Johnny Smith"]', 'Newer Racer');
     await page.click('button:has-text("Add Racer")');
 
-    // Wait for second racer to appear
-    await expect(page.locator('text=Newer Racer')).toBeVisible();
+    // Wait for confirmation modal and close it
+    await expect(page.locator('text=Racer Registered!')).toBeVisible();
+    await page.click('text=Close');
 
     // 4. Verify default sorting (Newest First)
     const racerCards = page.locator('[data-testid="racer-card"]');
