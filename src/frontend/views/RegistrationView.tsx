@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const CUB_SCOUT_LEVELS = [
+const CUB_SCOUT_DENS = [
   'Lions',
   'Tigers',
   'Wolves',
@@ -318,6 +318,7 @@ function RacersTab({
   const [editingRacerId, setEditingRacerId] = useState<string | null>(null);
   const [editRacerName, setEditRacerName] = useState('');
   const [editRacerDen, setEditRacerDen] = useState('');
+  const [editRacerInspected, setEditRacerInspected] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [racerToDelete, setRacerToDelete] = useState<Racer | null>(null);
   const [photoToRemoveRacer, setPhotoToRemoveRacer] = useState<Racer | null>(null);
@@ -463,6 +464,7 @@ function RacersTab({
     setEditingRacerId(racer.id);
     setEditRacerName(racer.name);
     setEditRacerDen(racer.den ?? '');
+    setEditRacerInspected(!!racer.weight_ok);
   };
 
   const handleSaveEdit = async (racer: Racer) => {
@@ -478,6 +480,7 @@ function RacersTab({
       await api.updateRacer(racer.id, {
         name,
         den: editRacerDen.trim() || null,
+        weight_ok: editRacerInspected,
       });
       setNotice(`Updated ${name}.`);
       resetEditForm();
@@ -592,11 +595,11 @@ function RacersTab({
                 </label>
                 <Select value={newRacerDen} onValueChange={setNewRacerDen}>
                   <SelectTrigger className="h-12 bg-white border-slate-300 w-full">
-                    <SelectValue placeholder="Select Level" />
+                    <SelectValue placeholder="Select Den" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CUB_SCOUT_LEVELS.map(level => (
-                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                    {CUB_SCOUT_DENS.map(den => (
+                      <SelectItem key={den} value={den}>{den}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -801,24 +804,37 @@ function RacersTab({
 
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
-                    <div className="grid gap-2 sm:min-w-[280px]">
+                    <div className="flex flex-wrap items-center gap-2 sm:min-w-[400px]">
                       <Input
                         value={editRacerName}
                         onChange={(event) => setEditRacerName(event.target.value)}
                         placeholder="Racer name"
-                        className="h-10 bg-white"
+                        className="h-10 bg-white flex-1 min-w-[150px]"
                         autoFocus
                       />
-                      <Select value={editRacerDen} onValueChange={setEditRacerDen}>
-                        <SelectTrigger className="h-10 bg-white border-slate-300 w-full">
-                          <SelectValue placeholder="Select Level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CUB_SCOUT_LEVELS.map(level => (
-                            <SelectItem key={level} value={level}>{level}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="w-[140px]">
+                        <Select value={editRacerDen} onValueChange={setEditRacerDen}>
+                          <SelectTrigger className="h-10 bg-white border-slate-300 w-full">
+                            <SelectValue placeholder="Select Den" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CUB_SCOUT_DENS.map(den => (
+                              <SelectItem key={den} value={den}>{den}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 h-10 rounded-md border border-slate-200 bg-slate-50">
+                        <Checkbox 
+                          id={`edit-inspect-${racer.id}`}
+                          checked={editRacerInspected}
+                          onCheckedChange={(checked) => setEditRacerInspected(checked === true)}
+                          className="size-4 border-slate-400"
+                        />
+                        <Label htmlFor={`edit-inspect-${racer.id}`} className="text-xs font-bold uppercase text-slate-500 cursor-pointer select-none">
+                          Inspected
+                        </Label>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -833,7 +849,7 @@ function RacersTab({
                             Inspected
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-slate-400 border-slate-200 font-medium">
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 font-bold uppercase tracking-tighter">
                             Pending
                           </Badge>
                         )}

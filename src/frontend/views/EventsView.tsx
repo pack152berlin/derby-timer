@@ -50,7 +50,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
             Race Events
           </h1>
-          <p className="text-slate-500 mt-1">Select an event or create a new race day</p>
+          <p className="text-slate-500 mt-1">Select an event or create a new race event!</p>
         </div>
         <Button 
           onClick={() => setShowForm(!showForm)}
@@ -119,10 +119,10 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           return (
             <Card 
               key={event.id}
-              className="cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2"
+              className="cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2 gap-2"
               onClick={() => onSelectEvent(event)}
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-xl">{event.name}</CardTitle>
                   <Badge 
@@ -134,17 +134,17 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-slate-500 text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="text-slate-500 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Clock size={16} className="text-[#CE1126]" />
                     <span className="font-medium">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Flag size={16} className="text-slate-400" />
-                    <span className="font-medium">{event.lane_count} Racing Lanes</span>
+                    <span className="font-medium">{event.racer_count} Racers / {event.lane_count} Lanes</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center text-[#003F87] font-semibold text-sm">
+                <div className="mt-4 pt-4 flex items-center justify-end text-[#003F87] font-semibold text-sm">
                   Select Event
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </div>

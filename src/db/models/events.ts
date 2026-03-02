@@ -6,6 +6,7 @@ export interface Event {
   name: string;
   date: string;
   lane_count: number;
+  racer_count: number;
   status: 'draft' | 'checkin' | 'racing' | 'complete';
   created_at: string;
   updated_at: string;
@@ -46,6 +47,7 @@ export class EventRepository {
       name: input.name,
       date: input.date,
       lane_count: input.lane_count ?? 4,
+      racer_count: 0,
       status: 'draft',
       created_at: now,
       updated_at: now
@@ -54,13 +56,17 @@ export class EventRepository {
 
   findById(id: string): Event | null {
     const row = this.db.query(
-      "SELECT * FROM events WHERE id = ?"
+      `SELECT e.*, (SELECT COUNT(*) FROM racers r WHERE r.event_id = e.id) as racer_count 
+       FROM events e WHERE e.id = ?`
     ).get(id) as Event | undefined;
     return row ?? null;
   }
 
   findAll(): Event[] {
-    return this.db.query("SELECT * FROM events ORDER BY date DESC").all() as Event[];
+    return this.db.query(
+      `SELECT e.*, (SELECT COUNT(*) FROM racers r WHERE r.event_id = e.id) as racer_count 
+       FROM events e ORDER BY date DESC`
+    ).all() as Event[];
   }
 
   update(id: string, input: UpdateEventInput): Event | null {

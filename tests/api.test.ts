@@ -165,13 +165,14 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(carNumbers).toEqual(sorted);
     });
 
-    it("should update a racer name and den", async () => {
+    it("should update a racer name, den, and weight status", async () => {
       const response = await fetch(`${baseUrl}/api/racers/${racerId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "  Johnny Updated  ",
           den: "   ",
+          weight_ok: true,
         }),
       });
 
@@ -179,6 +180,7 @@ describe("DerbyTimer API Integration Tests", () => {
       const racer = await response.json();
       expect(racer.name).toBe("Johnny Updated");
       expect(racer.den).toBeNull();
+      expect(racer.weight_ok).toBe(1);
     });
 
     it("should reject empty racer name updates", async () => {
