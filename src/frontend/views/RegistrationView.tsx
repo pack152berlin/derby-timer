@@ -36,8 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
 const CUB_SCOUT_DENS = [
   'Lions',
   'Tigers',
@@ -193,31 +191,29 @@ export function RegistrationView() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
-              Registration
-            </h1>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowHelp(true)}
-              className="h-8 gap-2 text-slate-600 border-slate-300 hover:text-[#003F87] hover:bg-blue-50 font-bold uppercase text-xs tracking-wider"
-            >
-              <HelpCircle className="h-4 w-4" />
-              <span>Help</span>
-            </Button>
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
+            Registration
+          </h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowHelp(true)}
+            className="h-10 gap-2 text-slate-600 border-slate-300 hover:text-[#003F87] hover:bg-blue-50 font-bold uppercase text-xs tracking-wider shadow-sm shrink-0"
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span>Help</span>
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
+          <div className="flex items-center gap-2 text-slate-600">
+            <Users size={18} className="text-[#003F87]" />
+            <span className="font-semibold">{racers.length} Racers</span>
           </div>
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
-            <div className="flex items-center gap-2 text-slate-600">
-              <Users size={18} className="text-[#003F87]" />
-              <span className="font-semibold">{racers.length} Racers</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-600">
-              <CheckCircle size={18} className="text-emerald-500" />
-              <span className="font-semibold">{inspectedCount} Inspected ({inspectionPercent}%)</span>
-            </div>
+          <div className="flex items-center gap-2 text-slate-600">
+            <CheckCircle size={18} className="text-emerald-500" />
+            <span className="font-semibold">{inspectedCount} Inspected ({inspectionPercent}%)</span>
           </div>
         </div>
       </div>
@@ -264,26 +260,17 @@ export function RegistrationView() {
         </DialogContent>
       </Dialog>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="racers" className="font-semibold">Racers</TabsTrigger>
-          <TabsTrigger value="inspection" className="font-semibold">Inspection</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="racers">
-          <RacersTab 
-            racers={filteredRacers} 
-            searchTerm={searchTerm} 
-            setSearchTerm={setSearchTerm}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-          />
-        </TabsContent>
-        
-        <TabsContent value="inspection">
-          <InspectionTab racers={filteredRacers} />
-        </TabsContent>
-      </Tabs>
+      <div className="w-full">
+        <RacersTab 
+          racers={filteredRacers} 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+      </div>
     </div>
   );
 }
@@ -293,13 +280,17 @@ function RacersTab({
   searchTerm, 
   setSearchTerm,
   sortBy,
-  setSortBy
+  setSortBy,
+  activeTab,
+  setActiveTab
 }: { 
   racers: Racer[], 
   searchTerm: string, 
   setSearchTerm: (s: string) => void,
   sortBy: 'newest' | 'car',
-  setSortBy: (s: 'newest' | 'car') => void
+  setSortBy: (s: 'newest' | 'car') => void,
+  activeTab: string,
+  setActiveTab: (s: string) => void
 }) {
   const { currentEvent, racers: allRacers, refreshData } = useApp();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -697,8 +688,8 @@ function RacersTab({
           </CardContent>
         </Card>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-          <div className="relative flex-1 sm:max-w-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="relative sm:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <Input
               type="text"
@@ -709,26 +700,51 @@ function RacersTab({
             />
           </div>
           
-          <div className="flex items-center gap-3 px-4 h-12 rounded-lg border border-slate-200 bg-white">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sort:</span>
-            <div className="flex items-center gap-3">
-              <span className={cn(
-                "text-sm font-semibold transition-colors",
-                sortBy === 'newest' ? "text-slate-900" : "text-slate-400"
-              )}>
-                Newest
-              </span>
-              <Switch 
-                checked={sortBy === 'car'} 
-                onCheckedChange={(checked) => setSortBy(checked ? 'car' : 'newest')}
-                className="data-[size=default]:h-6 data-[size=default]:w-11"
-              />
-              <span className={cn(
-                "text-sm font-semibold transition-colors",
-                sortBy === 'car' ? "text-slate-900" : "text-slate-400"
-              )}>
-                Car #
-              </span>
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter:</span>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-xs font-bold uppercase transition-colors",
+                  activeTab === 'racers' ? "text-slate-900" : "text-slate-400"
+                )}>
+                  Register
+                </span>
+                <Switch 
+                  checked={activeTab === 'inspection'} 
+                  onCheckedChange={(checked) => setActiveTab(checked ? 'inspection' : 'racers')}
+                  className="data-[size=default]:h-5 data-[size=default]:w-9"
+                />
+                <span className={cn(
+                  "text-xs font-bold uppercase transition-colors",
+                  activeTab === 'inspection' ? "text-emerald-600" : "text-slate-400"
+                )}>
+                  Inspect
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100" data-testid="sort-toggle">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort:</span>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-xs font-bold uppercase transition-colors",
+                  sortBy === 'newest' ? "text-slate-900" : "text-slate-400"
+                )}>
+                  New
+                </span>
+                <Switch 
+                  checked={sortBy === 'car'} 
+                  onCheckedChange={(checked) => setSortBy(checked ? 'car' : 'newest')}
+                  className="data-[size=default]:h-5 data-[size=default]:w-9"
+                />
+                <span className={cn(
+                  "text-xs font-bold uppercase transition-colors",
+                  sortBy === 'car' ? "text-slate-900" : "text-slate-400"
+                )}>
+                  #
+                </span>
+              </div>
             </div>
           </div>
 
@@ -744,7 +760,10 @@ function RacersTab({
         </div>
       )}
 
-      <div className="grid gap-3" data-testid="racer-list">
+      <div className={cn(
+        "grid gap-3 p-1 rounded-2xl transition-colors",
+        activeTab === 'inspection' && "bg-slate-100/50"
+      )} data-testid="racer-list">
         {racers.map((racer) => {
           const isEditing = editingRacerId === racer.id;
 
@@ -752,7 +771,12 @@ function RacersTab({
           <Card 
             key={racer.id}
             data-testid="racer-card"
-            className="group relative hover:border-blue-300 transition-all"
+            className={cn(
+              "group relative transition-all duration-200 border-2",
+              activeTab === 'inspection' 
+                ? (racer.weight_ok ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200 shadow-sm")
+                : "hover:border-blue-300"
+            )}
           >
             <Button
               variant="ghost"
@@ -860,73 +884,115 @@ function RacersTab({
               </div>
 
               <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                {isEditing ? (
-                  <>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleSaveEdit(racer)}
-                      disabled={isSavingEdit || !editRacerName.trim()}
-                      className="h-10 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
-                    >
-                      {isSavingEdit ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      Save
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={resetEditForm}
-                      disabled={isSavingEdit}
-                      className="h-10 px-3"
-                    >
-                      Cancel
-                    </Button>
-                  </>
+                {activeTab === 'inspection' ? (
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {racer.weight_ok ? (
+                      <>
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 mr-auto sm:mr-4">
+                          <CheckSquare className="w-3 h-3 mr-1" />
+                          PASSED
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => api.inspectRacer(racer.id, false).then(refreshData)}
+                          className="h-11 px-4"
+                        >
+                          Reset
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          onClick={() => api.inspectRacer(racer.id, true).then(refreshData)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11 flex-1 sm:flex-none"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          PASS
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => api.inspectRacer(racer.id, false).then(refreshData)}
+                          className="border-red-300 text-red-500 hover:bg-red-50 h-11 flex-1 sm:flex-none"
+                        >
+                          <XSquare className="w-4 h-4 mr-1" />
+                          FAIL
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                      onClick={() => beginEdit(racer)}
-                      className="h-10 px-3"
-                    >
-                      <Pencil className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
+                    {isEditing ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveEdit(racer)}
+                          disabled={isSavingEdit || !editRacerName.trim()}
+                          className="h-10 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
+                        >
+                          {isSavingEdit ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : null}
+                          Save
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={resetEditForm}
+                          disabled={isSavingEdit}
+                          className="h-10 px-3"
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                          onClick={() => beginEdit(racer)}
+                          className="h-10 px-3"
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                      onClick={() => beginCardPhotoUpload(racer.id)}
-                      className="h-10 px-3"
-                    >
-                      {activePhotoRacerId === racer.id ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <ImagePlus className="w-4 h-4 mr-2" />
-                      )}
-                      {racer.car_photo_filename ? 'New Photo' : 'Add Photo'}
-                    </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                          onClick={() => beginCardPhotoUpload(racer.id)}
+                          className="h-10 px-3"
+                        >
+                          {activePhotoRacerId === racer.id ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <ImagePlus className="w-4 h-4 mr-2" />
+                          )}
+                          {racer.car_photo_filename ? 'New Photo' : 'Add Photo'}
+                        </Button>
 
-                    {racer.car_photo_filename && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                        onClick={() => setPhotoToRemoveRacer(racer)}
-                        className="h-10 px-3 border-slate-300 text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Photo
-                      </Button>
+                        {racer.car_photo_filename && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={activePhotoRacerId === racer.id || isSavingEdit}
+                            onClick={() => setPhotoToRemoveRacer(racer)}
+                            className="h-10 px-3 border-slate-300 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Photo
+                          </Button>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -1030,107 +1096,6 @@ function RacersTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function InspectionTab({ racers }: { racers: Racer[] }) {
-  const { refreshData } = useApp();
-
-  const handleInspect = async (racerId: string, pass: boolean) => {
-    await api.inspectRacer(racerId, pass);
-    refreshData();
-  };
-
-  if (racers.length === 0) {
-    return (
-      <Card className="border-2 border-dashed border-slate-300">
-        <CardContent className="text-center py-12 text-slate-500">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-          <p>No racers to inspect yet</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="space-y-3" data-testid="racer-list">
-      {racers.map(racer => (
-        <Card 
-          key={racer.id}
-          data-testid="racer-card"
-          className={cn(
-            "border-2",
-            racer.weight_ok 
-              ? "bg-emerald-50 border-emerald-300" 
-              : "border-slate-200"
-          )}
-        >
-          <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className={cn(
-                "w-14 h-14 rounded-lg flex items-center justify-center font-black text-xl border-2",
-                racer.weight_ok 
-                  ? "bg-emerald-100 text-emerald-700 border-emerald-300" 
-                  : "bg-slate-100 text-slate-500 border-slate-300"
-              )}>
-                #{racer.car_number}
-              </div>
-              {racer.car_photo_filename ? (
-                <img
-                  src={api.getRacerPhotoUrl(racer.id, racer.updated_at)}
-                  alt={`${racer.name} car photo`}
-                  className="w-12 h-12 rounded-lg border-2 border-slate-300 object-cover"
-                  loading="lazy"
-                />
-              ) : null}
-              <div>
-                <p className="font-bold text-lg text-slate-900">{racer.name}</p>
-                {racer.den && (
-                  <Badge variant="secondary" className="mt-1">{racer.den}</Badge>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {racer.weight_ok ? (
-                <>
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 mr-auto sm:mr-4">
-                    <CheckSquare className="w-3 h-3 mr-1" />
-                    PASSED
-                  </Badge>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleInspect(racer.id, false)}
-                    className="h-11 px-4"
-                  >
-                    Reset
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button 
-                    onClick={() => handleInspect(racer.id, true)}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11 flex-1 sm:flex-none"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    PASS
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleInspect(racer.id, false)}
-                    className="border-red-300 text-red-500 hover:bg-red-50 h-11 flex-1 sm:flex-none"
-                  >
-                    <XSquare className="w-4 h-4 mr-1" />
-                    FAIL
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
     </div>
   );
 }
