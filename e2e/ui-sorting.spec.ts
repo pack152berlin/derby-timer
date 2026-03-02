@@ -49,8 +49,8 @@ test.describe('Registration Sorting UI', () => {
     await expect(racerCards.nth(1)).toContainText('Older Racer');
 
     // 5. Toggle the switch to "Car #"
-    // The switch is inside our new Sort toggle box
-    await page.click('button[role="switch"]');
+    // The switch is inside our new Sort toggle box.
+    await page.locator('[data-testid="sort-toggle"] button[role="switch"]').click();
 
     // 6. Verify sorting changed to Car #
     // Older Racer should have car #1, Newer Racer should have car #2
