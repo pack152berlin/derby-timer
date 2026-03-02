@@ -28,6 +28,20 @@ Default to using Bun instead of Node.js.
 
 Use `bun test` to run tests. Create comprehensive test files that describe how the API works.
 
+### Test script rules
+
+The `test`, `test:integration`, and `test:ui` scripts start a server before running. **Never use `sleep N` to wait for the server.** Use a curl health-check loop instead:
+
+```bash
+# Good: wait until server is actually ready
+PORT=3000 bun src/index.ts & until curl -sf http://localhost:3000/api/events > /dev/null; do sleep 0.2; done && bun test ./tests/api.test.ts; kill $!
+
+# Bad: arbitrary sleep that causes flaky tests
+PORT=3000 bun src/index.ts & sleep 2 && bun test ./tests/api.test.ts && kill $!
+```
+
+Do not modify the `test`, `test:integration`, or `test:ui` scripts unless explicitly asked.
+
 ```ts#tests/api.test.ts
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 
@@ -61,6 +75,23 @@ Always use Tailwind utility classes over custom CSS:
 
 // Bad: Custom CSS
 <div className="my-custom-card">
+```
+
+**Never use empty divs as spacers.** Use `justify-between`, `justify-end`, `ml-auto`, or `gap-*` instead:
+
+```tsx
+// Good
+<div className="flex items-center justify-between">
+  <div>Left</div>
+  <Button>Right</Button>
+</div>
+
+// Bad
+<div className="flex items-center">
+  <div>Left</div>
+  <div className="flex-1"></div>  {/* ❌ spacer div */}
+  <Button>Right</Button>
+</div>
 ```
 
 ## Design Principles - Projector-Optimized & "Derp" UX

@@ -858,6 +858,9 @@ const server = Bun.serve({
         heatsRepo.deleteByEvent(req.params.eventId);
         planningStateRepo.clearSettings(req.params.eventId);
         clearRoundRacerCache(req.params.eventId);
+
+        broadcast({ type: "HEATS_UPDATED", eventId: req.params.eventId });
+
         return respondJson({ success: true });
       },
     },
@@ -883,6 +886,8 @@ const server = Bun.serve({
         const heat = heatsRepo.updateStatus(req.params.id, "running");
         if (!heat) return respondJson({ error: "Heat not found" }, 404);
 
+        broadcast({ type: "HEATS_UPDATED", eventId: heat.event_id });
+
         return respondJson(heat);
       },
     },
@@ -901,6 +906,9 @@ const server = Bun.serve({
           topUpHeatQueue(event.id, settings);
           maybeMarkEventComplete(event.id, settings);
         }
+
+        broadcast({ type: "HEATS_UPDATED", eventId: heat.event_id });
+        broadcast({ type: "STANDINGS_UPDATED", eventId: heat.event_id });
 
         return respondJson(heat);
       },
@@ -1004,6 +1012,9 @@ const server = Bun.serve({
           topUpHeatQueue(event.id, settings);
           maybeMarkEventComplete(event.id, settings);
         }
+
+        broadcast({ type: "HEATS_UPDATED", eventId: heat.event_id });
+        broadcast({ type: "STANDINGS_UPDATED", eventId: heat.event_id });
 
         return respondJson(savedResults);
       },

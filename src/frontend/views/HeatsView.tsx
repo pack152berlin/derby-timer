@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AlertCircle, Clock, Flag, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { api } from '../api';
 import { useApp } from '../context';
@@ -10,6 +18,8 @@ import { useApp } from '../context';
 export function HeatsView() {
   const { currentEvent, racers, heats, refreshData } = useApp();
   const [lookahead, setLookahead] = useState<2 | 3>(3);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending'>('all');
+  const [roundFilter, setRoundFilter] = useState<string>('all');
 
   if (!currentEvent) {
     return (
@@ -19,6 +29,28 @@ export function HeatsView() {
       </div>
     );
   }
+
+  const rounds = Array.from(new Set(heats.map(h => h.round))).sort((a, b) => a - b);
+
+  const filteredHeats = useMemo(() => {
+    let result = [...heats];
+    
+    if (roundFilter !== 'all') {
+      result = result.filter(h => h.round === parseInt(roundFilter));
+    }
+
+    if (statusFilter === 'pending') {
+      result = result.filter(h => h.status !== 'complete');
+    }
+
+    // Default to oldest first (standard race order)
+    result.sort((a, b) => {
+      if (a.round !== b.round) return a.round - b.round;
+      return a.heat_number - b.heat_number;
+    });
+
+    return result;
+  }, [heats, statusFilter, roundFilter]);
 
   const eligibleRacers = racers.filter(r => r.weight_ok);
   const queuedHeats = heats.filter((heat) => heat.status !== 'complete').length;
@@ -41,7 +73,7 @@ export function HeatsView() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
             Heat Schedule
@@ -50,7 +82,19 @@ export function HeatsView() {
             {heats.length} generated • {queuedHeats} queued • {currentEvent.lane_count} lanes • {eligibleRacers.length} eligible racers
           </p>
         </div>
-        {heats.length === 0 ? (
+        
+        {heats.length > 0 && (
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleClear}
+            className="border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
+          >
+            Clear All
+          </Button>
+        )}
+
+        {heats.length === 0 && (
           <div className="flex items-center gap-3">
             <div className="rounded-lg border border-slate-200 bg-white p-1 flex items-center gap-1">
               {[2, 3].map((value) => (
@@ -77,22 +121,59 @@ export function HeatsView() {
               Start Rolling Heats
             </Button>
           </div>
-        ) : (
-          <Button 
-            variant="outline"
-            onClick={handleClear}
-            className="border-red-300 text-red-500 hover:bg-red-50"
-          >
-            Clear All
-          </Button>
         )}
       </div>
 
       {heats.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Round:</span>
+              <Select value={roundFilter} onValueChange={setRoundFilter}>
+                <SelectTrigger className="h-8 bg-white border-slate-300 w-[120px] text-xs font-bold">
+                  <SelectValue placeholder="All Rounds" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Rounds</SelectItem>
+                  {rounds.map(r => (
+                    <SelectItem key={r} value={r.toString()}>Round {r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100" data-testid="status-toggle">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status:</span>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-xs font-bold uppercase transition-colors",
+                  statusFilter === 'all' ? "text-slate-900" : "text-slate-400"
+                )}>
+                  All
+                </span>
+                <Switch 
+                  checked={statusFilter === 'pending'} 
+                  onCheckedChange={(checked) => setStatusFilter(checked ? 'pending' : 'all')}
+                  className="data-[size=default]:h-5 data-[size=default]:w-9"
+                />
+                <span className={cn(
+                  "text-xs font-bold uppercase transition-colors",
+                  statusFilter === 'pending' ? "text-orange-600" : "text-slate-400"
+                )}>
+                  Pending
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {heats.length > 0 && (
         <div className="grid gap-4">
-          {heats.map(heat => (
+          {filteredHeats.map(heat => (
             <Card 
               key={heat.id}
+              data-testid="heat-card"
               className={cn(
                 "border-2",
                 heat.status === 'pending' && "border-slate-200",
@@ -115,15 +196,23 @@ export function HeatsView() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   {heat.lanes?.map(lane => (
-                    <Card key={lane.id} className="bg-slate-50">
-                      <CardContent className="p-4">
-                        <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-bold">Lane {lane.lane_number}</p>
-                        <p className="text-2xl font-black text-[#003F87]">#{lane.car_number}</p>
-                        <p className="text-sm text-slate-700 mt-1">{lane.racer_name}</p>
-                      </CardContent>
-                    </Card>
+                    <div 
+                      key={lane.id} 
+                      className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm"
+                    >
+                      <div className="flex flex-col items-center justify-center w-10 h-10 bg-slate-200 rounded-md shrink-0">
+                        <span className="text-[10px] font-black text-slate-500 leading-none uppercase">Lane</span>
+                        <span className="text-lg font-black text-slate-700 leading-none">{lane.lane_number}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col">
+                          <span className="text-xl font-black text-[#003F87] leading-none">Car #{lane.car_number}</span>
+                          <span className="text-xs font-bold text-slate-500 truncate mt-1">{lane.racer_name}</span>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </CardContent>

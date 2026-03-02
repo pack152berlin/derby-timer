@@ -10,10 +10,10 @@
     "serial:k1": "bun run src/electronics/k1-serial.ts",
     "serial:k1:harness": "bun run src/electronics/k1-harness.ts",
     "serial:k1:probe": "bun run src/electronics/k1-probe.ts",
-    "test": "bun test",
+    "test": "npm run test:unit && npm run test:integration",
     "test:unit": "bun test ./tests/elimination-policy.test.ts ./tests/heat-generation.test.ts ./tests/k1-protocol.test.ts ./tests/rolling-heat-planner.test.ts",
-    "test:integration": "PORT=3000 bun src/index.ts & until curl -sf http://localhost:3000/api/events > /dev/null; do sleep 0.2; done && bun test ./tests/api.test.ts ./tests/websocket.test.ts; kill $!",
-    "test:ui": "PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test --project=chromium; kill $!"
+    "test:integration": "DERBY_DB_PATH=test-integration.db PORT=3000 bun src/index.ts & until curl -sf http://localhost:3000/api/events > /dev/null; do sleep 0.2; done && bun test ./tests/api.test.ts ./tests/websocket.test.ts; EXIT_CODE=$?; kill $!; rm test-integration.db; exit $EXIT_CODE",
+    "test:ui": "DERBY_DB_PATH=test-ui.db PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test ./e2e --project=chromium; EXIT_CODE=$?; kill $!; rm test-ui.db; exit $EXIT_CODE"
   },
   "devDependencies": {
     "@types/bun": "latest",

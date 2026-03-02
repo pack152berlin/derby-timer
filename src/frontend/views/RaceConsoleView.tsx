@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Flag, CheckCircle, ChevronRight, Trophy, BarChart3 } from 'lucide-react';
+import { Activity, AlertCircle, Flag, CheckCircle, ChevronRight, Trophy, BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -132,23 +132,43 @@ export function RaceConsoleView() {
         </p>
       </div>
 
-      <Card className="mb-6 bg-slate-900 text-white border-0">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm uppercase tracking-wider mb-1 font-semibold">Current Heat</p>
-              <h2 className="text-4xl font-black">Round {currentHeat.round} • Heat {currentHeat.heat_number}</h2>
+      <Card className="mb-6 bg-slate-900 text-white border-0 shadow-xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-col sm:flex-row sm:items-stretch min-h-[100px]">
+            <div className="flex-1 p-6 flex flex-col justify-center">
+              <p className="text-slate-400 text-xs uppercase tracking-[0.2em] mb-1 font-black">Current Heat</p>
+              <h2 className="text-3xl sm:text-4xl font-black">Round {currentHeat.round} • Heat {currentHeat.heat_number}</h2>
             </div>
-            <Badge 
-              className={cn(
-                "px-6 py-3 text-lg font-bold uppercase",
-                currentHeat.status === 'pending' && "bg-slate-700",
-                currentHeat.status === 'running' && "bg-[#CE1126] text-white",
-                currentHeat.status === 'complete' && "bg-emerald-500"
+            
+            <div className="w-full sm:w-auto flex items-center px-6 pb-6 sm:pb-0">
+              {currentHeat.status === 'pending' && (
+                <Button 
+                  onClick={handleStart}
+                  disabled={isStartingHeat}
+                  size="lg"
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest h-12 px-8 shadow-lg"
+                >
+                  {isStartingHeat ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Flag className="w-5 h-5 mr-2" />
+                  )}
+                  {isStartingHeat ? 'Starting...' : 'Start Heat'}
+                </Button>
               )}
-            >
-              {currentHeat.status}
-            </Badge>
+
+              {currentHeat.status === 'running' && (
+                <Badge className="bg-[#CE1126] text-white px-6 py-2 text-lg font-black uppercase tracking-widest animate-pulse border-0">
+                  Racing
+                </Badge>
+              )}
+
+              {currentHeat.status === 'complete' && (
+                <Badge className="bg-emerald-500 text-white px-6 py-2 text-lg font-black uppercase tracking-widest border-0">
+                  Complete
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -232,17 +252,6 @@ export function RaceConsoleView() {
       </div>
 
       <div className="flex justify-center gap-4">
-        {currentHeat.status === 'pending' && (
-          <Button 
-            onClick={handleStart}
-            disabled={isStartingHeat}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl px-12 py-6 shadow-lg"
-          >
-            <Flag className="w-6 h-6 mr-3" />
-            {isStartingHeat ? 'STARTING...' : 'START HEAT'}
-          </Button>
-        )}
-        
         {currentHeat.status === 'running' && (
           <Button 
             onClick={handleComplete}
