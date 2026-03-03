@@ -562,12 +562,16 @@ const server = Bun.serve({
       },
       DELETE: (req) => {
         const eventRacers = racersRepo.findByEvent(req.params.id);
+        if (eventRacers.length > 0) {
+          return respondJson(
+            { error: "Cannot delete an event that has registered racers. Remove all racers first." },
+            400
+          );
+        }
+
         const deleted = eventsRepo.delete(req.params.id);
         if (!deleted) return respondJson({ error: "Event not found" }, 404);
         nextCarNumberByEvent.delete(req.params.id);
-        for (const racer of eventRacers) {
-          deletePhotoFile(racer.car_photo_filename);
-        }
         planningStateRepo.clearSettings(req.params.id);
         clearRoundRacerCache(req.params.id);
         return respondJson({ success: true });

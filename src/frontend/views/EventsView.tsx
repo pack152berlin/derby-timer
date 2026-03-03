@@ -32,9 +32,13 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
 
   const confirmDeleteEvent = async () => {
     if (!eventToDelete) return;
-    await api.deleteEvent(eventToDelete.id);
-    setEventToDelete(null);
-    loadEvents();
+    try {
+      await api.deleteEvent(eventToDelete.id);
+      setEventToDelete(null);
+      loadEvents();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete event.');
+    }
   };
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {

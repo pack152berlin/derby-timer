@@ -19,7 +19,11 @@ export const api = {
   },
   
   async deleteEvent(id: string): Promise<void> {
-    await fetch(`/api/events/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to delete event (${res.status})`);
+    }
   },
   
   async createEvent(data: Partial<Event>): Promise<Event> {

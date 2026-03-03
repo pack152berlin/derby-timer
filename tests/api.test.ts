@@ -61,6 +61,59 @@ describe("DerbyTimer API Integration Tests", () => {
       const event = await response.json();
       expect(event.status).toBe("checkin");
     });
+
+    it("should fail to delete an event that has racers", async () => {
+      // 1. Create a fresh event
+      const createRes = await fetch(`${baseUrl}/api/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Event with Racers",
+          date: "2026-03-01",
+        }),
+      });
+      const event = await createRes.json();
+
+      // 2. Add a racer to it
+      await fetch(`${baseUrl}/api/events/${event.id}/racers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Obstacle Racer" }),
+      });
+
+      // 3. Attempt to delete
+      const response = await fetch(`${baseUrl}/api/events/${event.id}`, {
+        method: "DELETE",
+      });
+
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      expect(error.error).toContain("registered racers");
+    });
+
+    it("should delete a separate event that has 0 racers", async () => {
+      // 1. Create a fresh empty event
+      const createRes = await fetch(`${baseUrl}/api/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Event to be deleted",
+          date: "2026-03-01",
+        }),
+      });
+      const tempEvent = await createRes.json();
+      const tempId = tempEvent.id;
+
+      // 2. Delete it
+      const deleteRes = await fetch(`${baseUrl}/api/events/${tempId}`, {
+        method: "DELETE",
+      });
+      expect(deleteRes.status).toBe(200);
+
+      // 3. Verify it's gone
+      const getRes = await fetch(`${baseUrl}/api/events/${tempId}`);
+      expect(getRes.status).toBe(404);
+    });
   });
 
   // Test Racer Registration (merged car + racer)
