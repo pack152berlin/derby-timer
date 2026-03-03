@@ -11,6 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { api } from '../api';
 import { useApp } from '../context';
@@ -20,6 +28,8 @@ export function HeatsView() {
   const [lookahead, setLookahead] = useState<2 | 3>(3);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending'>('all');
   const [roundFilter, setRoundFilter] = useState<string>('all');
+  const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   if (!currentEvent) {
     return (
@@ -60,13 +70,21 @@ export function HeatsView() {
       alert('No racers have passed inspection. Please inspect racers first.');
       return;
     }
-    if (!confirm(`Generate heats for ${eligibleRacers.length} eligible racers?`)) return;
+    setShowGenerateConfirm(true);
+  };
+
+  const confirmGenerate = async () => {
+    setShowGenerateConfirm(false);
     await api.generateHeats(currentEvent.id, { lookahead, rounds: 1 });
     refreshData();
   };
 
-  const handleClear = async () => {
-    if (!confirm('Clear all heats? This cannot be undone.')) return;
+  const handleClear = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClear = async () => {
+    setShowClearConfirm(false);
     await api.clearHeats(currentEvent.id);
     refreshData();
   };
@@ -87,6 +105,7 @@ export function HeatsView() {
           <Button 
             variant="outline"
             size="sm"
+            data-testid="btn-clear-heats"
             onClick={handleClear}
             className="border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
           >
@@ -113,6 +132,7 @@ export function HeatsView() {
               ))}
             </div>
             <Button
+              data-testid="btn-generate-heats"
               onClick={handleGenerate}
               size="lg"
               className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-6 shadow-lg"
@@ -222,7 +242,7 @@ export function HeatsView() {
       )}
 
       {heats.length === 0 && (
-        <Card className="border-2 border-dashed border-slate-300">
+        <Card data-testid="empty-heats" className="border-2 border-dashed border-slate-300">
           <CardContent className="text-center py-16">
             <Clock className="w-16 h-16 mx-auto mb-4 text-slate-300" />
             <p className="text-lg text-slate-500 font-medium mb-2">No heats generated yet</p>
@@ -230,6 +250,44 @@ export function HeatsView() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={showGenerateConfirm} onOpenChange={(open) => !open && setShowGenerateConfirm(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Heats</DialogTitle>
+            <DialogDescription>
+              Generate heats for <strong>{eligibleRacers.length}</strong> eligible racers?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowGenerateConfirm(false)}>
+              Cancel
+            </Button>
+            <Button className="bg-[#003F87] hover:bg-[#002f66] text-white" onClick={confirmGenerate}>
+              Generate Heats
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showClearConfirm} onOpenChange={(open) => !open && setShowClearConfirm(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear All Heats</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to clear all heats? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowClearConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmClear}>
+              Clear All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

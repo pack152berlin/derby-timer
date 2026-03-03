@@ -19,26 +19,26 @@ test.describe('Registration Sorting UI', () => {
     // Select the event if needed (assuming the UI shows event selection first)
     // Based on RegistrationView.tsx, if no event is selected it shows a message.
     // We'll click the event card in the EventsView
-    await page.click(`text=${event.name}`);
+    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
 
     // 3. Add two racers
     // Racer 1 (will be older)
-    await page.click('text=Add Racer');
-    await page.fill('input[placeholder="Johnny Smith"]', 'Older Racer');
-    await page.click('button:has-text("Add Racer")');
+    await page.click('[data-testid="btn-add-racer"]');
+    await page.fill('[data-testid="input-racer-name"]', 'Older Racer');
+    await page.click('[data-testid="btn-submit-racer"]');
     
     // Wait for confirmation modal and close it
     await expect(page.locator('text=Racer Registered!')).toBeVisible();
-    await page.click('text=Close');
+    await page.click('[data-testid="btn-close-success"]');
 
     // Racer 2 (will be newer)
-    await page.click('text=Add Racer');
-    await page.fill('input[placeholder="Johnny Smith"]', 'Newer Racer');
-    await page.click('button:has-text("Add Racer")');
+    await page.click('[data-testid="btn-add-racer"]');
+    await page.fill('[data-testid="input-racer-name"]', 'Newer Racer');
+    await page.click('[data-testid="btn-submit-racer"]');
 
     // Wait for confirmation modal and close it
     await expect(page.locator('text=Racer Registered!')).toBeVisible();
-    await page.click('text=Close');
+    await page.click('[data-testid="btn-close-success"]');
 
     // 4. Verify default sorting (Newest First)
     const racerCards = page.locator('[data-testid="racer-card"]');

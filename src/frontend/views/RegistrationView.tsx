@@ -575,6 +575,7 @@ function RacersTab({
                   value={newRacerName}
                   onChange={(e) => setNewRacerName(e.target.value)}
                   required 
+                  data-testid="input-racer-name"
                   placeholder="Johnny Smith"
                   className="h-12"
                 />
@@ -662,6 +663,7 @@ function RacersTab({
               <div className="md:col-span-3 flex flex-col sm:flex-row gap-2">
                 <Button
                   type="submit"
+                  data-testid="btn-submit-racer"
                   disabled={isSubmitting || isProcessingPhoto}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12"
                 >
@@ -752,6 +754,7 @@ function RacersTab({
 
           <Button 
             onClick={() => setShowAddForm(true)}
+            data-testid="btn-add-racer"
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12 w-full sm:w-auto"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -1088,6 +1091,7 @@ function RacersTab({
             </Button>
             <Button 
               variant="ghost" 
+              data-testid="btn-close-success"
               onClick={() => setLastAddedRacer(null)}
               className="text-slate-400 hover:text-white hover:bg-slate-600 font-bold uppercase text-xs tracking-wider h-10 w-full transition-colors"
             >
