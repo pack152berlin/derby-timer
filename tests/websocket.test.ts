@@ -1,8 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
 describe("Real-time Updates (WebSocket)", () => {
-  const baseUrl = "http://localhost:3000";
-  const wsUrl = "ws://localhost:3000/ws";
+  const port = Bun.env.PORT ?? "3000";
+  const baseUrl = `http://localhost:${port}`;
+  const wsUrl = `ws://localhost:${port}/ws`;
 
   it("should receive a RACERS_UPDATED message when a racer is created", async () => {
     // 1. Create an event first
