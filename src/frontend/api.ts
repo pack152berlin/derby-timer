@@ -18,6 +18,10 @@ export const api = {
     return res.ok ? res.json() : [];
   },
   
+  async deleteEvent(id: string): Promise<void> {
+    await fetch(`/api/events/${id}`, { method: 'DELETE' });
+  },
+  
   async createEvent(data: Partial<Event>): Promise<Event> {
     const res = await fetch('/api/events', {
       method: 'POST',
