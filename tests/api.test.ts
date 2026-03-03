@@ -5,7 +5,8 @@ const hasRepeatedDigits = (value: string) => {
 };
 
 describe("DerbyTimer API Integration Tests", () => {
-  const baseUrl = "http://localhost:3000";
+  const port = Bun.env.PORT ?? "3000";
+  const baseUrl = `http://localhost:${port}`;
   let eventId: string;
   let racerId: string;
   let firstCarNumber: string;
