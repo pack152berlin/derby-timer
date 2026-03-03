@@ -3,13 +3,14 @@ import { Activity, AlertCircle, Flag, CheckCircle, ChevronRight, Trophy, BarChar
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { HeatLaneGrid } from '@/components/HeatLaneGrid';
 import { cn } from '@/lib/utils';
 import type { HeatResult } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
 
 export function RaceConsoleView() {
-  const { currentEvent, heats, refreshData } = useApp();
+  const { currentEvent, racers, heats, refreshData } = useApp();
   const [heatResults, setHeatResults] = useState<Record<string, HeatResult[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [isStartingHeat, setIsStartingHeat] = useState(false);
@@ -142,7 +143,8 @@ export function RaceConsoleView() {
             
             <div className="w-full sm:w-auto flex items-center px-6 pb-6 sm:pb-0">
               {currentHeat.status === 'pending' && (
-                <Button 
+                <Button
+                  data-testid="btn-start-heat"
                   onClick={handleStart}
                   disabled={isStartingHeat}
                   size="lg"
@@ -179,77 +181,89 @@ export function RaceConsoleView() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        {currentHeat.lanes?.map(lane => {
-          const result = currentResults.find(r => r.lane_number === lane.lane_number);
-          return (
-            <Card 
-              key={lane.id} 
-              className={cn(
-                "border-2 transition-all",
-                result ? "border-emerald-400 bg-emerald-50" : "border-slate-200"
-              )}
-            >
-              <CardContent className="p-5">
-                <div className="mb-3">
-                  <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Lane {lane.lane_number}</p>
-                  <p className="text-3xl font-black text-[#003F87]">#{lane.car_number}</p>
-                  <p className="text-base text-slate-700">{lane.racer_name}</p>
-                </div>
-                
-                {currentHeat.status === 'running' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: currentHeat.lanes?.length ?? currentEvent.lane_count }, (_, idx) => idx + 1).map((place) => {
-                      const placeTakenByOtherLane = currentResults.some((entry) => {
-                        return !entry.dnf && entry.place === place && entry.lane_number !== lane.lane_number;
-                      });
+      {currentHeat.status === 'pending' && (
+        <Card className="mb-6 overflow-hidden border-2 border-slate-200 py-0 gap-0">
+          <HeatLaneGrid
+            heat={currentHeat}
+            racers={racers}
+            laneCount={currentEvent.lane_count}
+          />
+        </Card>
+      )}
 
-                      return (
-                        <Button
-                          key={place}
-                          variant={result?.place === place ? "default" : "outline"}
-                          onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
-                          disabled={placeTakenByOtherLane}
-                          className={cn(
-                            "h-12 font-bold",
-                            result?.place === place && "bg-yellow-400 text-slate-900 hover:bg-yellow-500",
-                            placeTakenByOtherLane && "opacity-50"
-                          )}
-                        >
-                          {place}{place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'}
-                        </Button>
-                      );
-                    })}
-                    <Button
-                      variant={result?.dnf ? "default" : "outline"}
-                      onClick={() => recordDNF(currentHeat.id, lane.lane_number, lane.racer_id!)}
-                      className={cn(
-                        "col-span-full h-12 font-bold",
-                        result?.dnf && "bg-red-500 text-white hover:bg-red-600"
-                      )}
-                    >
-                      DNF
-                    </Button>
-                  </div>
+      {currentHeat.status !== 'pending' && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          {currentHeat.lanes?.map(lane => {
+            const result = currentResults.find(r => r.lane_number === lane.lane_number);
+            return (
+              <Card
+                key={lane.id}
+                className={cn(
+                  "border-2 transition-all",
+                  result ? "border-emerald-400 bg-emerald-50" : "border-slate-200"
                 )}
-                
-                {result && (
-                  <div className="mt-3 text-center">
-                    <Badge 
-                      className={cn(
-                        "px-4 py-2 text-sm font-bold",
-                        result.dnf ? "bg-red-500" : "bg-emerald-500"
-                      )}
-                    >
-                      {result.dnf ? 'DNF' : `${result.place}${result.place === 1 ? 'st' : result.place === 2 ? 'nd' : result.place === 3 ? 'rd' : 'th'} Place`}
-                    </Badge>
+              >
+                <CardContent className="p-5">
+                  <div className="mb-3">
+                    <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Lane {lane.lane_number}</p>
+                    <p className="text-3xl font-black text-[#003F87]">#{lane.car_number}</p>
+                    <p className="text-base text-slate-700">{lane.racer_name}</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+
+                  {currentHeat.status === 'running' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: currentHeat.lanes?.length ?? currentEvent.lane_count }, (_, idx) => idx + 1).map((place) => {
+                        const placeTakenByOtherLane = currentResults.some((entry) => {
+                          return !entry.dnf && entry.place === place && entry.lane_number !== lane.lane_number;
+                        });
+
+                        return (
+                          <Button
+                            key={place}
+                            variant={result?.place === place ? "default" : "outline"}
+                            onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
+                            disabled={placeTakenByOtherLane}
+                            className={cn(
+                              "h-12 font-bold",
+                              result?.place === place && "bg-yellow-400 text-slate-900 hover:bg-yellow-500",
+                              placeTakenByOtherLane && "opacity-50"
+                            )}
+                          >
+                            {place}{place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'}
+                          </Button>
+                        );
+                      })}
+                      <Button
+                        variant={result?.dnf ? "default" : "outline"}
+                        onClick={() => recordDNF(currentHeat.id, lane.lane_number, lane.racer_id!)}
+                        className={cn(
+                          "col-span-full h-12 font-bold",
+                          result?.dnf && "bg-red-500 text-white hover:bg-red-600"
+                        )}
+                      >
+                        DNF
+                      </Button>
+                    </div>
+                  )}
+
+                  {result && (
+                    <div className="mt-3 text-center">
+                      <Badge
+                        className={cn(
+                          "px-4 py-2 text-sm font-bold",
+                          result.dnf ? "bg-red-500" : "bg-emerald-500"
+                        )}
+                      >
+                        {result.dnf ? 'DNF' : `${result.place}${result.place === 1 ? 'st' : result.place === 2 ? 'nd' : result.place === 3 ? 'rd' : 'th'} Place`}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex justify-center gap-4">
         {currentHeat.status === 'running' && (

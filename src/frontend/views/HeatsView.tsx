@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { AlertCircle, Clock, Flag, Play } from 'lucide-react';
+import { AlertCircle, Clock, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { HeatLaneGrid } from '@/components/HeatLaneGrid';
 import { cn } from '@/lib/utils';
 import { api } from '../api';
 import { useApp } from '../context';
@@ -44,7 +45,7 @@ export function HeatsView() {
 
   const filteredHeats = useMemo(() => {
     let result = [...heats];
-    
+
     if (roundFilter !== 'all') {
       result = result.filter(h => h.round === parseInt(roundFilter));
     }
@@ -53,7 +54,6 @@ export function HeatsView() {
       result = result.filter(h => h.status !== 'complete');
     }
 
-    // Default to oldest first (standard race order)
     result.sort((a, b) => {
       if (a.round !== b.round) return a.round - b.round;
       return a.heat_number - b.heat_number;
@@ -100,9 +100,9 @@ export function HeatsView() {
             {heats.length} generated • {queuedHeats} queued • {currentEvent.lane_count} lanes • {eligibleRacers.length} eligible racers
           </p>
         </div>
-        
+
         {heats.length > 0 && (
-          <Button 
+          <Button
             variant="outline"
             size="sm"
             data-testid="btn-clear-heats"
@@ -171,8 +171,8 @@ export function HeatsView() {
                 )}>
                   All
                 </span>
-                <Switch 
-                  checked={statusFilter === 'pending'} 
+                <Switch
+                  checked={statusFilter === 'pending'}
                   onCheckedChange={(checked) => setStatusFilter(checked ? 'pending' : 'all')}
                   className="data-[size=default]:h-5 data-[size=default]:w-9"
                 />
@@ -191,51 +191,49 @@ export function HeatsView() {
       {heats.length > 0 && (
         <div className="grid gap-4">
           {filteredHeats.map(heat => (
-            <Card 
+            <Card
               key={heat.id}
               data-testid="heat-card"
               className={cn(
-                "border-2",
+                "border-2 overflow-hidden py-0 gap-0",
                 heat.status === 'pending' && "border-slate-200",
-                heat.status === 'running' && "border-red-300 bg-red-50",
-                heat.status === 'complete' && "border-emerald-300 bg-emerald-50"
+                heat.status === 'running' && "border-red-300",
+                heat.status === 'complete' && "border-emerald-300"
               )}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl">Round {heat.round} • Heat {heat.heat_number}</CardTitle>
-                  <Badge 
-                    className={cn(
-                      heat.status === 'pending' && "bg-slate-200 text-slate-700",
-                      heat.status === 'running' && "bg-[#CE1126] text-white",
-                      heat.status === 'complete' && "bg-emerald-500 text-white"
-                    )}
-                  >
-                    {heat.status}
-                  </Badge>
+              {/* Heat header */}
+              <div className={cn(
+                "flex items-center justify-between px-5 py-3 border-b",
+                heat.status === 'pending' && "bg-white border-slate-100",
+                heat.status === 'running' && "bg-red-50 border-red-200",
+                heat.status === 'complete' && "bg-emerald-50 border-emerald-200"
+              )}>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    Round {heat.round}
+                  </span>
+                  <span className="text-2xl font-black text-slate-900">
+                    Heat {heat.heat_number}
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                  {heat.lanes?.map(lane => (
-                    <div 
-                      key={lane.id} 
-                      className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm"
-                    >
-                      <div className="flex flex-col items-center justify-center w-10 h-10 bg-slate-200 rounded-md shrink-0">
-                        <span className="text-[10px] font-black text-slate-500 leading-none uppercase">Lane</span>
-                        <span className="text-lg font-black text-slate-700 leading-none">{lane.lane_number}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col">
-                          <span className="text-xl font-black text-[#003F87] leading-none">Car #{lane.car_number}</span>
-                          <span className="text-xs font-bold text-slate-500 truncate mt-1">{lane.racer_name}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
+                <Badge
+                  className={cn(
+                    "uppercase tracking-wider text-xs font-bold",
+                    heat.status === 'pending' && "bg-slate-100 text-slate-600",
+                    heat.status === 'running' && "bg-[#CE1126] text-white",
+                    heat.status === 'complete' && "bg-emerald-500 text-white"
+                  )}
+                >
+                  {heat.status}
+                </Badge>
+              </div>
+
+              {/* Lane grid */}
+              <HeatLaneGrid
+                heat={heat}
+                racers={racers}
+                laneCount={currentEvent.lane_count}
+              />
             </Card>
           ))}
         </div>
@@ -243,11 +241,11 @@ export function HeatsView() {
 
       {heats.length === 0 && (
         <Card data-testid="empty-heats" className="border-2 border-dashed border-slate-300">
-          <CardContent className="text-center py-16">
+          <div className="text-center py-16">
             <Clock className="w-16 h-16 mx-auto mb-4 text-slate-300" />
             <p className="text-lg text-slate-500 font-medium mb-2">No heats generated yet</p>
             <p className="text-slate-400">DerbyTimer will queue only 2-3 heats at a time and keep matching by lane needs and wins.</p>
-          </CardContent>
+          </div>
         </Card>
       )}
 
