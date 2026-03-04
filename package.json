@@ -11,10 +11,10 @@
     "serial:k1:harness": "bun run src/electronics/k1-harness.ts",
     "serial:k1:probe": "bun run src/electronics/k1-probe.ts",
     "test": "bun run test:unit && bun run test:integration",
-    "test:unit": "bun test ./tests/elimination-policy.test.ts ./tests/heat-generation.test.ts ./tests/k1-protocol.test.ts ./tests/rolling-heat-planner.test.ts",
-    "test:integration": "DERBY_DB_PATH=test-integration.db PORT=3099 bun src/index.ts & until curl -sf http://localhost:3099/api/events > /dev/null; do sleep 0.2; done && PORT=3099 bun test ./tests/api.test.ts ./tests/websocket.test.ts; EXIT_CODE=$?; kill $!; rm -f test-integration.db; exit $EXIT_CODE",
-    "test:ui": "DERBY_DB_PATH=test-ui.db PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test ./e2e --project=chromium --ignore-glob='**/screenshots.spec.ts'; EXIT_CODE=$?; kill $!; rm -f test-ui.db; exit $EXIT_CODE",
-    "screenshots": "DERBY_DB_PATH=screenshot.db PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test e2e/screenshots.spec.ts --project=chromium; EXIT_CODE=$?; kill $!; rm -f screenshot.db; exit $EXIT_CODE"
+    "test:unit": "bun test ./tests",
+    "test:integration": "DERBY_DB_PATH=test-integration.db PORT=3099 bun src/index.ts & until curl -sf http://localhost:3099/api/events > /dev/null; do sleep 0.2; done && PORT=3099 bun test ./tests/*.integration.ts; EXIT_CODE=$?; kill $!; rm -f test-integration.db; exit $EXIT_CODE",
+    "test:ui": "DERBY_DB_PATH=test-ui.db PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test --project=chromium; EXIT_CODE=$?; kill $!; rm -f test-ui.db; exit $EXIT_CODE",
+    "screenshots": "DERBY_DB_PATH=screenshot.db PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test --project=screenshots; EXIT_CODE=$?; kill $!; rm -f screenshot.db; exit $EXIT_CODE"
   },
   "devDependencies": {
     "@types/bun": "latest",

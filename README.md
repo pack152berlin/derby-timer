@@ -44,10 +44,11 @@ bun start
 ## Testing
 
 ```bash
-bun test              # unit + integration tests (self-contained, no server needed)
-bun run test:unit     # unit tests only
-bun run test:integration  # API + websocket tests (spins up an isolated server on :3099)
-bun run test:ui       # Playwright e2e tests (spins up an isolated server on :3001)
+bun test                    # Run all unit and integration tests
+bun run test:unit           # Run unit tests only
+bun run test:integration    # Run API + websocket tests (spins up isolated server on :3099)
+bun run test:ui             # Run Playwright E2E tests (ignores screenshots)
+bun run screenshots         # Run Playwright to capture UI screenshots
 ```
 
 ## Race-Day Rehearsal Command
