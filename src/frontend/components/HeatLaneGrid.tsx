@@ -20,6 +20,7 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
   }, [racers]);
 
   const cols = heat.lanes?.length ?? laneCount;
+  const anyPhotos = heat.lanes?.some(lane => racerById.get(lane.racer_id)?.car_photo_filename) ?? false;
 
   return (
     <div
@@ -50,22 +51,24 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
               <span className="text-3xl font-black text-white leading-none">{lane.lane_number}</span>
             </div>
 
-            {/* Photo */}
-            <div className="aspect-square w-full bg-slate-300 relative overflow-hidden">
-              {photoUrl ? (
-                <img
-                  src={photoUrl}
-                  alt={`Car #${lane.car_number}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-slate-100">
-                  <Car className="w-10 h-10 text-slate-500" />
-                  <span className="text-lg font-black text-slate-500">#{lane.car_number}</span>
-                </div>
-              )}
-            </div>
+            {/* Photo — only rendered when at least one car in the heat has a photo */}
+            {anyPhotos && (
+              <div className="aspect-square w-full bg-slate-300 relative overflow-hidden">
+                {photoUrl ? (
+                  <img
+                    src={photoUrl}
+                    alt={`Car #${lane.car_number}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-slate-100">
+                    <Car className="w-10 h-10 text-slate-500" />
+                    <span className="text-lg font-black text-slate-500">#{lane.car_number}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Car info */}
             <div className="px-3 pb-3 bg-white flex-1 text-center">
