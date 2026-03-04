@@ -44,9 +44,10 @@ bun start
 ## Testing
 
 ```bash
-bun test              # unit + integration tests (requires server on :3000)
-bun run test:unit     # unit tests only — no server needed
-bun run test:ui       # Playwright e2e tests (optional locally, always runs in CI)
+bun test              # unit + integration tests (self-contained, no server needed)
+bun run test:unit     # unit tests only
+bun run test:integration  # API + websocket tests (spins up an isolated server on :3099)
+bun run test:ui       # Playwright e2e tests (spins up an isolated server on :3001)
 ```
 
 ## Race-Day Rehearsal Command
