@@ -27,16 +27,18 @@ describe("Real-time Updates (WebSocket)", () => {
     });
 
     const messagePromise = new Promise<any>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("WebSocket message timeout")), 5000);
-      socket.onmessage = (msg) => {
+      let timeout: ReturnType<typeof setTimeout>;
+      const cleanup = () => {
         clearTimeout(timeout);
-        resolve(JSON.parse(msg.data));
-        socket.close();
+        socket.onmessage = null;
+        socket.onerror = null;
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
       };
-      socket.onerror = (err) => {
-        clearTimeout(timeout);
-        reject(err);
-      };
+      timeout = setTimeout(() => { cleanup(); reject(new Error("WebSocket message timeout")); }, 5000);
+      socket.onmessage = (msg) => { cleanup(); resolve(JSON.parse(msg.data)); };
+      socket.onerror = (err) => { cleanup(); reject(err); };
     });
 
     // 3. Create a racer to trigger broadcast
@@ -92,12 +94,18 @@ describe("Real-time Updates (WebSocket)", () => {
     });
 
     const messagePromise = new Promise<any>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("WebSocket message timeout")), 5000);
-      socket.onmessage = (msg) => {
+      let timeout: ReturnType<typeof setTimeout>;
+      const cleanup = () => {
         clearTimeout(timeout);
-        resolve(JSON.parse(msg.data));
-        socket.close();
+        socket.onmessage = null;
+        socket.onerror = null;
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
       };
+      timeout = setTimeout(() => { cleanup(); reject(new Error("WebSocket message timeout")); }, 5000);
+      socket.onmessage = (msg) => { cleanup(); resolve(JSON.parse(msg.data)); };
+      socket.onerror = (err) => { cleanup(); reject(err); };
     });
 
     // 3. Start heat to trigger broadcast
