@@ -40,7 +40,7 @@ PORT=3000 bun src/index.ts & until curl -sf http://localhost:3000/api/events > /
 PORT=3000 bun src/index.ts & sleep 2 && bun test ./tests/api.test.ts && kill $!
 ```
 
-Do not modify the `test`, `test:integration`, or `test:ui` scripts unless explicitly asked.
+As an autonomous agent, do not modify the `test`, `test:integration`, or `test:ui` scripts in `package.json` unless the task explicitly instructs you to change those scripts.
 
 ```ts#tests/api.test.ts
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
