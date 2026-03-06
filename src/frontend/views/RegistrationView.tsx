@@ -199,6 +199,7 @@ export function RegistrationView() {
           <Button
             variant="outline"
             size="sm"
+            data-testid="btn-help"
             onClick={() => setShowHelp(true)}
             className="h-10 gap-2 text-slate-600 border-slate-300 hover:text-[#003F87] hover:bg-blue-50 font-bold uppercase text-xs tracking-wider shadow-sm shrink-0"
           >
@@ -713,6 +714,7 @@ function RacersTab({
                   Register
                 </span>
                 <Switch 
+                  data-testid="switch-inspection"
                   checked={activeTab === 'inspection'} 
                   onCheckedChange={(checked) => setActiveTab(checked ? 'inspection' : 'racers')}
                   className="data-[size=default]:h-5 data-[size=default]:w-9"

@@ -217,6 +217,7 @@ export function RaceConsoleView() {
             return (
               <div
                 key={lane.id}
+                data-testid={`lane-row-${lane.lane_number}`}
                 className={cn(
                   'flex items-center gap-4 px-4 py-3 transition-colors',
                   idx !== 0 && 'border-t border-slate-100',
@@ -266,6 +267,7 @@ export function RaceConsoleView() {
                       return (
                         <button
                           key={place}
+                          data-testid={`place-btn-${place}`}
                           disabled={!!takenByLane}
                           onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
                           className={cn(
@@ -324,6 +326,7 @@ export function RaceConsoleView() {
       <div className="flex justify-center gap-4">
         {currentHeat.status === 'running' && (
           <Button 
+            data-testid="btn-complete-heat"
             onClick={handleComplete}
             disabled={!canCompleteHeat}
             className="bg-[#CE1126] hover:bg-[#ad0e20] text-white font-bold text-xl px-12 py-6 shadow-lg disabled:opacity-50"
