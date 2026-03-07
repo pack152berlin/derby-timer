@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Trophy, Clock, Flag, CheckCircle, ChevronDown } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Trophy, 
+ Clock, Flag, CheckCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -128,21 +132,22 @@ function ProfileBanner({ carNumber, rank, totalRacers }: {
 // ===== MAIN VIEW =====
 
 export function RacerProfileView() {
-  const { currentRacerId, setCurrentRacerId, racers, standings, heats } = useApp();
+  const { id } = useParams<{ id: string }>();
+  const { setCurrentRacerId, racers, standings, heats } = useApp();
   const [history, setHistory] = useState<RacerHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const racer = racers.find(r => r.id === currentRacerId);
-  const standing = standings.find(s => s.racer_id === currentRacerId);
+  const racer = racers.find(r => r.id === id);
+  const standing = standings.find(s => s.racer_id === id);
 
   useEffect(() => {
-    if (currentRacerId) {
+    if (id) {
       setLoading(true);
-      api.getRacerHistory(currentRacerId)
+      api.getRacerHistory(id)
         .then(data => setHistory(data))
         .finally(() => setLoading(false));
     }
-  }, [currentRacerId]);
+  }, [id]);
 
   if (!racer) {
     return (
@@ -168,6 +173,7 @@ export function RacerProfileView() {
     <div className="max-w-5xl mx-auto pb-12">
       <Button
         variant="ghost"
+        data-testid="btn-back"
         onClick={() => setCurrentRacerId(null)}
         className="mb-6 -ml-2 text-slate-500 hover:text-slate-900 font-bold uppercase text-xs tracking-widest gap-2"
       >
@@ -246,7 +252,7 @@ export function RacerProfileView() {
             history={history}
             loading={loading}
             heats={heats}
-            currentRacerId={currentRacerId!}
+            currentRacerId={id!}
             racers={racers}
           />
         </div>

@@ -1,2 +1,7 @@
 [serve.static]
 plugins = ["bun-plugin-tailwind"]
+
+[test]
+# Keep bun test focused on unit/integration files.
+# Playwright tests are handled separately via bun run test:ui.
+exclude = ["e2e/*", "**/*.spec.ts"]

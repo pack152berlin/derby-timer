@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, Activity, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -17,31 +18,55 @@ import { StandingsView } from './views/StandingsView';
 import { RaceFormatView } from './views/RaceFormatView';
 import { RacerProfileView } from './views/RacerProfileView';
 
-// ===== MAIN APP =====
+// ===== MAIN APP ROUTES =====
 
-function App() {
-  type View = 'events' | 'register' | 'heats' | 'race' | 'standings' | 'format' | 'racer-profile';
-  const [currentView, setCurrentView] = useState<View>('events');
-  const [returnView, setReturnView] = useState<View>('standings');
+function AppRoutes() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [currentRacerId, setCurrentRacerId] = useState<string | null>(null);
+  const [returnPath, setReturnPath] = useState<string>('/standings');
   const [racers, setRacers] = useState<Racer[]>([]);
   const [heats, setHeats] = useState<Heat[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const fetchData = async () => {
-    if (!currentEvent) return;
+  const fetchData = async (eventId: string) => {
     const [racersData, heatsData, standingsData] = await Promise.all([
-      api.getRacers(currentEvent.id),
-      api.getHeats(currentEvent.id),
-      api.getStandings(currentEvent.id)
+      api.getRacers(eventId),
+      api.getHeats(eventId),
+      api.getStandings(eventId)
     ]);
     setRacers(racersData);
     setHeats(heatsData);
     setStandings(standingsData);
   };
 
+  // Hydrate from localStorage on initial load
+  useEffect(() => {
+    const hydrate = async () => {
+      const savedEventId = localStorage.getItem('derby_current_event_id');
+      if (savedEventId) {
+        try {
+          const events = await api.getEvents();
+          const event = events.find(e => e.id === savedEventId);
+          if (event) {
+            setCurrentEvent(event);
+            await fetchData(event.id);
+          } else {
+            localStorage.removeItem('derby_current_event_id');
+          }
+        } catch (e) {
+          console.error('Failed to hydrate event:', e);
+        }
+      }
+      setIsHydrated(true);
+    };
+    hydrate();
+  }, []);
+
+  // Sync with WebSocket
   useEffect(() => {
     let socket: WebSocket | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -55,7 +80,7 @@ function App() {
         try {
           const data = JSON.parse(event.data);
           if (currentEvent && data.eventId === currentEvent.id) {
-            fetchData();
+            fetchData(currentEvent.id);
           }
         } catch (e) {
           console.error('Error parsing WebSocket message:', e);
@@ -72,7 +97,7 @@ function App() {
       };
     };
 
-    connect();
+    if (currentEvent) connect();
 
     return () => {
       if (socket) {
@@ -83,7 +108,7 @@ function App() {
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [currentEvent]);
+  }, [currentEvent?.id]);
 
   const selectEvent = async (event: Event | null) => {
     if (!event) {
@@ -91,22 +116,17 @@ function App() {
       setRacers([]);
       setHeats([]);
       setStandings([]);
-      setCurrentView('events');
+      localStorage.removeItem('derby_current_event_id');
+      navigate('/');
       return;
     }
     
     setCurrentEvent(event);
+    localStorage.setItem('derby_current_event_id', event.id);
     setLoading(true);
-    const [racersData, heatsData, standingsData] = await Promise.all([
-      api.getRacers(event.id),
-      api.getHeats(event.id),
-      api.getStandings(event.id)
-    ]);
-    setRacers(racersData);
-    setHeats(heatsData);
-    setStandings(standingsData);
+    await fetchData(event.id);
     setLoading(false);
-    setCurrentView('register');
+    navigate('/register');
   };
 
   const contextValue = {
@@ -118,28 +138,33 @@ function App() {
     setCurrentRacerId: (id: string | null) => {
       setCurrentRacerId(id);
       if (id) {
-        setReturnView(currentView);
-        setCurrentView('racer-profile');
+        setReturnPath(location.pathname);
+        navigate(`/racer/${id}`);
       } else {
-        setCurrentView(returnView);
+        navigate(returnPath);
       }
     },
     refreshData: async () => {
+      if (!currentEvent) return;
       setLoading(true);
-      await fetchData();
+      await fetchData(currentEvent.id);
       setLoading(false);
     },
     selectEvent
   };
 
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Activity className="animate-spin text-[#003F87]" size={48} />
+      </div>
+    );
+  }
+
   return (
     <AppContext.Provider value={contextValue}>
       <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-        <Navigation 
-          currentView={currentView} 
-          onNavigate={setCurrentView}
-          onGoHome={() => selectEvent(null)}
-        />
+        <Navigation onGoHome={() => selectEvent(null)} />
         <main className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
           {loading && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -152,40 +177,71 @@ function App() {
             </div>
           )}
           
-          {currentView === 'events' && <EventsView onSelectEvent={selectEvent} />}
-          {currentView === 'register' && <RegistrationView />}
-          {currentView === 'heats' && <HeatsView />}
-          {currentView === 'race' && <RaceConsoleView />}
-          {currentView === 'standings' && <StandingsView />}
-          {currentView === 'format' && <RaceFormatView />}
-          {currentView === 'racer-profile' && <RacerProfileView />}
+          <Routes>
+            <Route path="/" element={<EventsView onSelectEvent={selectEvent} />} />
+            
+            {/* Protected Routes - redirect to / if no event is active */}
+            <Route 
+              path="/register" 
+              element={currentEvent ? <RegistrationView /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/heats" 
+              element={currentEvent ? <HeatsView /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/race" 
+              element={currentEvent ? <RaceConsoleView /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/standings" 
+              element={currentEvent ? <StandingsView /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/format" 
+              element={currentEvent ? <RaceFormatView /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/racer/:id" 
+              element={currentEvent ? <RacerProfileView /> : <Navigate to="/" replace />} 
+            />
+            
+            {/* Catch-all: back to events */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
     </AppContext.Provider>
   );
 }
 
+// ===== MAIN APP WRAPPER =====
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
+}
+
 // ===== NAVIGATION =====
 
 function Navigation({ 
-  currentView, 
-  onNavigate,
   onGoHome
 }: { 
-  currentView: string; 
-  onNavigate: (view: any) => void;
   onGoHome: () => void;
 }) {
   const { currentEvent } = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const navItems = [
-    { id: 'register', label: 'Registration', icon: Users },
-    { id: 'heats', label: 'Schedule', icon: Clock },
-    { id: 'race', label: 'Race Control', icon: Flag },
-    { id: 'standings', label: 'Standings', icon: BarChart3 }
+    { id: 'register', label: 'Registration', icon: Users, path: '/register' },
+    { id: 'heats', label: 'Schedule', icon: Clock, path: '/heats' },
+    { id: 'race', label: 'Race Control', icon: Flag, path: '/race' },
+    { id: 'standings', label: 'Standings', icon: BarChart3, path: '/standings' }
   ];
-
-  const formatIsActive = currentView === 'format';
 
   return (
     <nav className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
@@ -212,10 +268,10 @@ function Navigation({
           
           <div className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible sm:pb-0">
             <button
-              onClick={() => onNavigate('format')}
+              onClick={() => navigate('/format')}
               className={cn(
                 "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
-                formatIsActive
+                location.pathname === '/format'
                   ? "bg-[#003F87] text-white shadow-md"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               )}
@@ -232,12 +288,12 @@ function Navigation({
               <>
                 {navItems.map(item => {
                   const Icon = item.icon;
-                  const isActive = currentView === item.id;
+                  const isActive = location.pathname === item.path;
                   return (
                     <button
                       key={item.id}
                       data-testid={`nav-${item.id}`}
-                      onClick={() => onNavigate(item.id)}
+                      onClick={() => navigate(item.path)}
                       className={cn(
                         "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
                         isActive

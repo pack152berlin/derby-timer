@@ -79,12 +79,10 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-standings"]');
-    await page.waitForTimeout(5000);
-
+    
     await page.click('[data-testid="standing-card-1"]');
-    await page.waitForTimeout(5000);
-
-    await expect(page.locator('text=Dean Kim')).toBeVisible();
+    
+    await expect(page.locator('h1')).toContainText('Dean Kim');
     await expect(page.locator('text=Wolves')).toBeVisible();
     await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText('#1');
   });
@@ -95,10 +93,8 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-standings"]');
-    await page.waitForTimeout(5000);
 
     await page.click('[data-testid="standing-card-1"]');
-    await page.waitForTimeout(5000);
 
     await expect(page.locator('img[alt="Dean Kim"]')).toBeVisible();
   });
@@ -109,12 +105,10 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-standings"]');
-    await page.waitForTimeout(5000);
 
     await page.click('[data-testid="standing-card-2"]');
-    await page.waitForTimeout(5000);
 
-    await expect(page.locator('text=Lyile Bowers')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Lyile Bowers');
     await expect(page.locator('img[alt="Lyile Bowers"]')).not.toBeVisible();
   });
 
@@ -124,10 +118,8 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-standings"]');
-    await page.waitForTimeout(5000);
 
     await page.click('[data-testid="standing-card-1"]');
-    await page.waitForTimeout(5000);
 
     await expect(page.locator('text=Race History')).toBeVisible();
     await expect(page.locator('text=No races completed yet')).not.toBeVisible();
@@ -139,14 +131,11 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-standings"]');
-    await page.waitForTimeout(5000);
 
     // Dean Kim got place 1 → 1 win
     await page.click('[data-testid="standing-card-1"]');
-    await page.waitForTimeout(5000);
 
-    // StatsCard renders: <span>{label}</span> inside a flex row, with the value div as sibling.
-    // Going up two levels from the "Wins" span reaches CardContent, which contains the value "1".
+    // Wait for the stats to load
     const winsCardContent = page.locator('span', { hasText: 'Wins' }).first().locator('../..');
     await expect(winsCardContent).toContainText('1');
   });
@@ -157,16 +146,31 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-standings"]');
-    await page.waitForTimeout(5000);
 
     await page.click('[data-testid="standing-card-1"]');
-    await page.waitForTimeout(5000);
+    
+    // Ensure we are on the profile
+    await expect(page.locator('text=Race History')).toBeVisible();
 
-    await page.click('text=Back');
-    await page.waitForTimeout(1000);
+    await page.click('[data-testid="btn-back"]');
 
     // Profile is gone; standings cards are visible again
     await expect(page.locator('text=Race History')).not.toBeVisible();
     await expect(page.locator('[data-testid="standing-card-1"]')).toBeVisible();
+  });
+
+  test('shows winners in the heat schedule', async ({ page }) => {
+    const { event } = await seedTwoRacers();
+
+    await page.goto(`${baseUrl}/`);
+    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click('[data-testid="nav-heats"]');
+
+    // Heat 1 was completed in seedTwoRacers. 
+    // It should show a Winner badge in the header and a result badge in the lane.
+    const heatCard = page.locator('[data-testid="heat-card"]').first();
+    await expect(heatCard.locator('text="Winner:"')).toBeVisible();
+    await expect(heatCard.locator('text="Winner"').first()).toBeVisible();
+    await expect(heatCard.locator('text="2nd"')).toBeVisible();
   });
 });

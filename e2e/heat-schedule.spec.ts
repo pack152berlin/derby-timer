@@ -163,12 +163,12 @@ test.describe('Heat Schedule', () => {
     await fetch(`${baseUrl}/api/heats/${heatId}/complete`, { method: 'POST' });
 
     // Force a full reload to ensure the most recent data is fetched
+    // Because event is persisted in localStorage, we should land back on /heats
     await page.reload();
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
-    await page.click('[data-testid="nav-heats"]');
     
     // Verify specific heat status changed to complete
     const targetHeatCard = page.locator('[data-testid="heat-card"]', { hasText: `Heat ${heats[0].heat_number}` });
+    await expect(targetHeatCard).toBeVisible();
     await expect(targetHeatCard).toContainText('complete');
 
     // 4. Toggle filter to "Pending"
