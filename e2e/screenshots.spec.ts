@@ -303,3 +303,71 @@ test('10-external-display', async ({ page }) => {
 
   await page.screenshot({ path: 'screenshots/10-external-display.png' });
 });
+
+test('11-racer-profile-with-photo', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Final Standings' });
+
+  // Complete 5 heats (same setup as 09-standings)
+  const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
+  const heats = await heatsRes.json();
+
+  for (let h = 0; h < 5 && h < heats.length; h++) {
+    const heatId = heats[h].id;
+    const results = heats[h].lanes.map((lane: any, idx: number) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+      place: ((idx + h) % 4) + 1
+    }));
+    await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results }),
+    });
+  }
+
+  await page.goto(`${baseUrl}/`);
+  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click('[data-testid="nav-standings"]');
+  await page.waitForTimeout(600);
+
+  // Click Dean Kim (car #1, has photo)
+  await page.click('[data-testid="standing-card-1"]');
+  await page.waitForTimeout(1000);
+
+  await page.screenshot({ path: 'screenshots/11-racer-profile-with-photo.png' });
+});
+
+test('12-racer-profile-no-photo', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Final Standings' });
+
+  // Complete 5 heats (same setup as 09-standings)
+  const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
+  const heats = await heatsRes.json();
+
+  for (let h = 0; h < 5 && h < heats.length; h++) {
+    const heatId = heats[h].id;
+    const results = heats[h].lanes.map((lane: any, idx: number) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+      place: ((idx + h) % 4) + 1
+    }));
+    await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results }),
+    });
+  }
+
+  await page.goto(`${baseUrl}/`);
+  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click('[data-testid="nav-standings"]');
+  await page.waitForTimeout(600);
+
+  // Click Lyile Bowers (car #2, no photo)
+  await page.click('[data-testid="standing-card-2"]');
+  await page.waitForTimeout(1000);
+
+  await page.screenshot({ path: 'screenshots/12-racer-profile-no-photo.png' });
+});

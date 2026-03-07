@@ -37,9 +37,21 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
         const photoUrl = racer?.car_photo_filename
           ? api.getRacerPhotoUrl(lane.racer_id, racer.updated_at)
           : null;
+        
+        const result = heat.results?.find(r => r.racer_id === lane.racer_id);
 
         return (
-          <div key={lane.id} className="flex flex-col bg-white overflow-hidden">
+          <div key={lane.id} className="flex flex-col bg-white overflow-hidden relative">
+            {/* Result Badge Overlay */}
+            {heat.status === 'complete' && result && (
+              <div className={cn(
+                "absolute top-12 left-2 z-10 px-2 py-1 rounded shadow-md font-black text-xs uppercase tracking-wider border-2",
+                result.place === 1 ? "bg-amber-400 border-amber-500 text-amber-950" : "bg-white border-slate-200 text-slate-600"
+              )}>
+                {result.dnf ? 'DNF' : (result.place === 1 ? 'Winner' : `${result.place}${result.place === 2 ? 'nd' : (result.place === 3 ? 'rd' : 'th')}`)}
+              </div>
+            )}
+
             {/* Lane number band */}
             <div className={cn(
               'flex items-center justify-center gap-2 px-3 py-2',

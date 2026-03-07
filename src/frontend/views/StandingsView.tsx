@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useApp } from '../context';
 
 export function StandingsView() {
-  const { standings } = useApp();
+  const { standings, setCurrentRacerId } = useApp();
 
   const getRankStyle = (rank: number) => {
     if (rank === 1) return { bg: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-yellow-700', numBg: 'bg-yellow-400' };
@@ -33,10 +33,12 @@ export function StandingsView() {
             return (
               <Card 
                 key={standing.racer_id}
+                data-testid={`standing-card-${standing.car_number}`}
                 className={cn(
-                  "border-2",
+                  "border-2 cursor-pointer hover:scale-[1.01] transition-all active:scale-95",
                   style.bg, style.border
                 )}
+                onClick={() => setCurrentRacerId(standing.racer_id)}
               >
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-xl font-black", style.numBg, rank <= 3 ? 'text-slate-900' : 'text-white')}>

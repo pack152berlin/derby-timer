@@ -293,7 +293,7 @@ function RacersTab({
   activeTab: string,
   setActiveTab: (s: string) => void
 }) {
-  const { currentEvent, racers: allRacers, refreshData } = useApp();
+  const { currentEvent, racers: allRacers, refreshData, setCurrentRacerId } = useApp();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRacerName, setNewRacerName] = useState('');
   const [newRacerDen, setNewRacerDen] = useState('');
@@ -795,12 +795,16 @@ function RacersTab({
             </Button>
             <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <div className={cn(
-                  "w-14 h-14 rounded-lg flex items-center justify-center font-black text-xl border-2",
-                  racer.weight_ok 
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-300"
-                    : "bg-slate-100 text-slate-500 border-slate-300"
-                )}>
+                <div 
+                  data-testid={`car-number-${racer.car_number}`}
+                  onClick={() => setCurrentRacerId(racer.id)}
+                  className={cn(
+                    "w-14 h-14 rounded-lg flex items-center justify-center font-black text-xl border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90",
+                    racer.weight_ok 
+                      ? "bg-emerald-100 text-emerald-700 border-emerald-300"
+                      : "bg-slate-100 text-slate-500 border-slate-300"
+                  )}
+                >
                   #{racer.car_number}
                 </div>
 

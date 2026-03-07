@@ -208,13 +208,32 @@ export function HeatsView() {
                 heat.status === 'running' && "bg-red-50 border-red-200",
                 heat.status === 'complete' && "bg-emerald-50 border-emerald-200"
               )}>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-                    Round {heat.round}
-                  </span>
-                  <span className="text-2xl font-black text-slate-900">
-                    Heat {heat.heat_number}
-                  </span>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      Round {heat.round}
+                    </span>
+                    <span className="text-2xl font-black text-slate-900">
+                      Heat {heat.heat_number}
+                    </span>
+                  </div>
+
+                  {heat.status === 'complete' && heat.results && (
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-100 border border-emerald-200 rounded-full">
+                      <span className="text-[10px] font-black uppercase text-emerald-700">Winner:</span>
+                      {(() => {
+                        const winner = heat.results.find(r => r.place === 1);
+                        const lane = heat.lanes?.find(l => l.racer_id === winner?.racer_id);
+                        return winner && lane ? (
+                          <span className="text-sm font-black text-emerald-900">
+                            #{lane.car_number} {lane.racer_name}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-bold text-emerald-600 italic">None</span>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <Badge
                   className={cn(

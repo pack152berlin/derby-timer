@@ -15,12 +15,16 @@ import { HeatsView } from './views/HeatsView';
 import { RaceConsoleView } from './views/RaceConsoleView';
 import { StandingsView } from './views/StandingsView';
 import { RaceFormatView } from './views/RaceFormatView';
+import { RacerProfileView } from './views/RacerProfileView';
 
 // ===== MAIN APP =====
 
 function App() {
-  const [currentView, setCurrentView] = useState<'events' | 'register' | 'heats' | 'race' | 'standings' | 'format'>('events');
+  type View = 'events' | 'register' | 'heats' | 'race' | 'standings' | 'format' | 'racer-profile';
+  const [currentView, setCurrentView] = useState<View>('events');
+  const [returnView, setReturnView] = useState<View>('standings');
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [currentRacerId, setCurrentRacerId] = useState<string | null>(null);
   const [racers, setRacers] = useState<Racer[]>([]);
   const [heats, setHeats] = useState<Heat[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
@@ -110,6 +114,16 @@ function App() {
     racers,
     heats,
     standings,
+    currentRacerId,
+    setCurrentRacerId: (id: string | null) => {
+      setCurrentRacerId(id);
+      if (id) {
+        setReturnView(currentView);
+        setCurrentView('racer-profile');
+      } else {
+        setCurrentView(returnView);
+      }
+    },
     refreshData: async () => {
       setLoading(true);
       await fetchData();
@@ -144,6 +158,7 @@ function App() {
           {currentView === 'race' && <RaceConsoleView />}
           {currentView === 'standings' && <StandingsView />}
           {currentView === 'format' && <RaceFormatView />}
+          {currentView === 'racer-profile' && <RacerProfileView />}
         </main>
       </div>
     </AppContext.Provider>
