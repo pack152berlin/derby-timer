@@ -817,6 +817,13 @@ const server = Bun.serve({
       },
     },
 
+    "/api/racers/:id/history": {
+      GET: (req) => {
+        const history = resultsRepo.findByRacer(req.params.id);
+        return respondJson(history);
+      },
+    },
+
     "/api/racers/:id/inspect": {
       POST: async (req) => {
         const body = (await req.json()) as { weight_ok: boolean };
@@ -833,7 +840,23 @@ const server = Bun.serve({
     "/api/events/:eventId/heats": {
       GET: (req) => {
         const heats = heatsRepo.findByEventWithLanes(req.params.eventId);
-        return respondJson(heats);
+        const results = resultsRepo.findByEvent(req.params.eventId);
+        
+        // Map results to heats
+        const heatsWithResults = heats.map(heat => {
+          const heatResults = results.filter(r => r.heat_id === heat.id);
+          return {
+            ...heat,
+            results: heatResults.map(r => ({
+              lane_number: r.lane_number,
+              racer_id: r.racer_id,
+              place: r.place,
+              dnf: r.dnf === 1
+            }))
+          };
+        });
+        
+        return respondJson(heatsWithResults);
       },
       POST: async (req) => {
         const body = (await req.json()) as {

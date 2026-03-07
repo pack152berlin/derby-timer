@@ -162,6 +162,13 @@ interface Racer {
 }
 ```
 
+## Type Management & Domain Boundaries
+
+- **Separation of Concerns** - Never import backend database models or repository interfaces (from `src/db/**`) into frontend components.
+- **Shared Types** - Use `src/frontend/types.ts` as the single source of truth for interfaces shared across views and the API client.
+- **API Mapping** - The frontend API client (`src/frontend/api.ts`) is responsible for mapping backend response shapes (e.g., SQLite 0/1 integers) to frontend-friendly types (e.g., booleans).
+- **Type Safety** - Avoid the use of `any` in API methods. Every request should have a defined return type.
+
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
 
 ## Simplicity and offline

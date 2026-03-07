@@ -42,6 +42,7 @@ export interface Heat {
   started_at: string | null;
   finished_at: string | null;
   lanes?: HeatLane[];
+  results?: HeatResult[];
 }
 
 export interface Standing {
@@ -59,4 +60,18 @@ export interface HeatResult {
   racer_id: string;
   place: number;
   dnf?: boolean;
+}
+
+export interface RacerHistoryEntry {
+  id: string;
+  heat_id: string;
+  lane_number: number;
+  racer_id: string;
+  place: number | null;
+  time_ms: number | null;
+  dnf: boolean;
+  round: number;
+  heat_number: number;
+  created_at: string;
+  updated_at: string;
 }

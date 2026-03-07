@@ -159,5 +159,15 @@ export const api = {
   async getStandings(eventId: string): Promise<Standing[]> {
     const res = await fetch(`/api/events/${eventId}/standings`);
     return res.ok ? res.json() : [];
+  },
+
+  async getRacerHistory(racerId: string): Promise<RacerHistoryEntry[]> {
+    const res = await fetch(`/api/racers/${racerId}/history`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map((r: any) => ({
+      ...r,
+      dnf: !!r.dnf
+    }));
   }
 };

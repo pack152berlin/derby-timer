@@ -1,212 +1,246 @@
-# Derby Race Manager 🏁
+# Derby Race Manager
 
-A comprehensive Pinewood Derby race management system inspired by DerbyNet. Built with Bun, SQLite, and a bold racing aesthetic optimized for projection displays.
+A Pinewood Derby race management system built with Bun, SQLite, and React. Designed for fast race-day operation with projection display support.
 
 ## Features
 
-### 🏎️ Race Management
-- **Event Management**: Create and manage race day events
-- **Racer Registration**: Add racers with den/rank information
-- **Car Registration**: Assign car numbers, names, and classes
-- **Inspection Tracking**: Pass/fail inspection workflow
-- **Heat Generation**: Automatic balanced lane rotation algorithm
-- **Live Race Console**: Real-time heat management with big buttons
-- **Standings**: Auto-calculated win/loss rankings with tie-breaking
-- **Projection Display**: Full-screen display optimized for walls/projectors
-
-### 🎯 Key Design Decisions
-- **Win/Loss Priority**: Records place (1st, 2nd, 3rd, 4th) rather than times
-- **Optional Times**: Can capture times for tie-breaking but not required
-- **Balanced Lanes**: Heat generation ensures even lane distribution
-- **Fast Race Day Flow**: Minimal clicks, obvious actions, big buttons
-- **50 Car Support**: Designed for ~50 cars and ~100 people
+- **Event Management** — Create and manage race day events
+- **Racer Registration** — Add racers with den/rank, car numbers, and photos
+- **Inspection Tracking** — Pass/fail weight inspection workflow
+- **Heat Generation** — Balanced lane rotation algorithm (every racer runs every lane)
+- **Live Race Console** — Record finish order with one click per lane
+- **Standings** — Auto-calculated rankings: Wins → Losses → Avg Time
+- **Racer Profiles** — Per-racer stats, heat history, timing breakdown
+- **Projection Display** — Full-screen view optimised for wall projectors
 
 ## Requirements
 
-- [Bun](https://bun.com) (v1.2+)
+- [Bun](https://bun.com) v1.2+
 - Modern web browser
 
 ## Quick Start
 
 ```bash
-# Install dependencies
 bun install
-
-# Run database migrations
-bun run src/migrate.ts
-
-# Start the server with hot reload
-bun start
-
+bun start          # Runs migrations automatically, starts server with hot reload
 # Open http://localhost:3000
+```
+
+## Dev Scripts
+
+### Seed the Database
+
+Populate the database with realistic test data. Both scripts create 40 racers with random Cub Scout names, dens, and car photos (roughly 80% get photos). Event names and dates are randomised so the scripts can be run multiple times.
+
+```bash
+# Mid-race: 2 rounds completed, remaining rounds pending
+bun run seed:mid-race
+
+# Completed race: all rounds finished, final standings available
+bun run seed:complete
+```
+
+**Options** (both scripts):
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--lanes N` | `4` | Number of track lanes |
+| `--rounds N` | `3` | Total rounds to generate |
+| `--times` | off | Include realistic race times in results |
+| `--db PATH` | `derby.db` | Database file to seed into |
+| `--port N` | `3101`/`3102` | Temp server port (avoids conflicts) |
+
+```bash
+# 4-lane race, no times
+bun run seed:mid-race --lanes 4
+
+# 8-lane race with timing data
+bun run seed:complete --lanes 8 --times
+
+# Custom database file
+bun run seed:mid-race --db my-test.db
+```
+
+### Clear the Database
+
+```bash
+bun run clear:derbies    # Delete all events (keeps DB file and schema)
+```
+
+To fully reset: delete `derby.db` — migrations run automatically on next start.
+
+### Race-Day Rehearsal
+
+End-to-end integration test: spins up an isolated server, creates an event, runs a full race including a mid-heat server restart, then verifies results and cleans up.
+
+```bash
+bun run rehearsal:race-day
+
+# Options
+bun run rehearsal:race-day --cars 50 --lanes 4 --rounds 2 --keep-db
 ```
 
 ## Testing
 
 ```bash
-bun test                    # Run all unit and integration tests
-bun run test:unit           # Run unit tests only
-bun run test:integration    # Run API + websocket tests (spins up isolated server on :3099)
-bun run test:ui             # Run Playwright E2E tests (ignores screenshots)
-bun run screenshots         # Run Playwright to capture UI screenshots
-```
-
-## Race-Day Rehearsal Command
-
-Run a full simulated race flow (check-in -> heat generation -> partial run -> server restart -> finish) in an isolated SQLite file:
-
-```bash
-bun run rehearsal:race-day
-```
-
-Useful options:
-
-```bash
-# Keep the rehearsal DB for post-run inspection
-bun run rehearsal:race-day --keep-db
-
-# Customize scale/format
-bun run rehearsal:race-day --cars 50 --lookahead 2 --pre-restart-heats 20
+bun test                 # Unit + integration tests
+bun run test:unit        # Unit tests only
+bun run test:integration # API + WebSocket tests (isolated server on :3099)
+bun run test:ui          # Playwright E2E tests
+bun run screenshots      # Capture UI screenshots with Playwright
 ```
 
 ## Race Day Workflow
 
 ### 1. Event Setup
-1. Navigate to the home page
-2. Click "Create Event"
-3. Enter event name, date, and lane count (typically 4)
+1. Open the home page and click **Create Event**
+2. Enter event name, date, and lane count
 
 ### 2. Registration
-1. Click "Register" in the nav
-2. Add racers (first name, last name, den/rank optional)
-3. Add cars for each racer (car number, name, class)
-4. Run inspection and mark cars as passed
+1. Click **Registration** in the nav
+2. Add racers — name, den, optional photo upload
+3. Run inspection and mark cars as passed
 
 ### 3. Generate Heats
-1. Go to "Heats" page
-2. Click "Generate Heats"
-3. System creates balanced lane assignments automatically
+1. Click **Schedule** in the nav
+2. Click **Generate Heats** — balanced lane assignments are created automatically
 
-### 4. Race Day
-1. Go to "Race" page for the race console
-2. Project the "Display" view on a wall (open in new tab)
+### 4. Racing
+1. Open **Race Control** for the operator console
+2. Open **Display** in a new tab and project it on the wall
 3. For each heat:
-   - Click "START HEAT" to begin
-   - Cars race down the track
-   - Record finish order by clicking 1st, 2nd, 3rd, 4th or DNF
-   - Click "Complete Heat & Save" to record results
-4. System auto-advances to next heat
+   - Click **START HEAT**
+   - Cars race; record finish order (1st–Nth or DNF)
+   - Click **Complete Heat & Save**
+4. System advances to the next heat automatically
 
 ### 5. Awards
-1. Go to "Standings" page to see rankings
-2. Winners calculated by: Wins DESC, Losses ASC, Avg Time ASC
-3. Top 3 highlighted with gold/silver/bronze styling
+1. Click **Standings** to see final rankings
+2. Rankings: Wins → Losses → Avg Time
+3. Top 3 highlighted with gold / silver / bronze styling
 
-## API Endpoints
+## API Reference
 
 ### Events
-- `GET /api/events` - List all events
-- `POST /api/events` - Create event
-- `GET /api/events/:id` - Get event details
-- `PATCH /api/events/:id` - Update event
-- `DELETE /api/events/:id` - Delete event
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/events` | List all events |
+| `POST` | `/api/events` | Create event (`name`, `date`, `lane_count`) |
+| `GET` | `/api/events/:id` | Get event |
+| `PATCH` | `/api/events/:id` | Update event |
+| `DELETE` | `/api/events/:id` | Delete event (only if no racers) |
 
 ### Racers
-- `GET /api/events/:eventId/racers` - List racers for event
-- `POST /api/events/:eventId/racers` - Add racer
-- `GET /api/racers/:id` - Get racer details
-- `PATCH /api/racers/:id` - Update racer
-- `DELETE /api/racers/:id` - Delete racer
-
-### Cars
-- `GET /api/events/:eventId/cars` - List cars for event
-- `POST /api/events/:eventId/cars` - Add car
-- `GET /api/cars/:id` - Get car details
-- `PATCH /api/cars/:id` - Update car
-- `DELETE /api/cars/:id` - Delete car
-- `POST /api/cars/:id/inspect` - Mark inspection pass/fail
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/events/:id/racers` | List racers for event |
+| `POST` | `/api/events/:id/racers` | Add racer (`name`, `den`) |
+| `GET` | `/api/racers/:id` | Get racer |
+| `PATCH` | `/api/racers/:id` | Update racer |
+| `DELETE` | `/api/racers/:id` | Delete racer |
+| `GET` | `/api/racers/:id/photo` | Download car photo |
+| `POST` | `/api/racers/:id/photo` | Upload car photo (multipart) |
+| `DELETE` | `/api/racers/:id/photo` | Remove car photo |
+| `POST` | `/api/racers/:id/inspect` | Mark inspection pass/fail |
+| `GET` | `/api/racers/:id/history` | Racer's full heat history |
 
 ### Heats
-- `GET /api/events/:eventId/heats` - List heats with lanes
-- `POST /api/events/:eventId/heats` - Create heat manually
-- `DELETE /api/events/:eventId/heats` - Clear all heats
-- `GET /api/heats/:id` - Get heat details
-- `POST /api/heats/:id/start` - Start a heat
-- `POST /api/heats/:id/complete` - Complete a heat
-- `POST /api/events/:eventId/generate-heats` - Auto-generate balanced heats
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/events/:id/heats` | List heats with lane assignments and results |
+| `POST` | `/api/events/:id/generate-heats` | Auto-generate balanced heats (`rounds`, `lane_count`) |
+| `DELETE` | `/api/events/:id/heats` | Clear all heats |
+| `GET` | `/api/heats/:id` | Get heat with lanes |
+| `POST` | `/api/heats/:id/start` | Start heat |
+| `POST` | `/api/heats/:id/complete` | Complete heat |
+| `POST` | `/api/heats/:id/results` | Record batch results |
+| `GET` | `/api/heats/:id/results` | Get results for heat |
 
-### Results & Standings
-- `GET /api/heats/:heatId/results` - Get results for heat
-- `POST /api/heats/:heatId/results` - Record results (batch)
-- `GET /api/events/:eventId/standings` - Get race standings
-- `GET /api/events/:eventId/standings/:className` - Get class-specific standings
+### Standings
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/events/:id/standings` | Get race rankings |
+
+### Live Console
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/race/active` | Current running heat + elapsed time |
+| `POST` | `/api/race/stop` | Stop running heat |
 
 ## Database Schema
 
-SQLite database with the following tables:
+SQLite database via `bun:sqlite`. Migrations run automatically on startup.
 
-- **events**: Race day events with lane count and status
-- **racers**: Scout racers with den/rank info
-- **cars**: Car entries linked to racers
-- **heats**: Race heats with round/heat number
-- **heat_lanes**: Assignment of cars to lanes per heat
-- **results**: Finish results with place and optional time
-- **standings**: Materialized win/loss statistics
+| Table | Description |
+|-------|-------------|
+| `events` | Race day events (name, date, lane count, status) |
+| `racers` | Scout racers with den, car number, inspection status, photo |
+| `heats` | Race heats (round, heat number, status, timestamps) |
+| `heat_lanes` | Lane assignments per heat |
+| `results` | Finish results (place, optional time, DNF flag) |
+| `standings` | Materialised win/loss stats, recalculated after each heat |
+| `event_planning_settings` | Heat generation parameters per event |
+| `round_racer_rosters` | Racer participation per round |
 
-Migrations handled by Umzug.
+**Scoring**: 1st place = win; 2nd–Nth and DNF = loss. Rankings: Wins DESC, Losses ASC, Avg Time ASC.
 
 ## UI Views
 
-- **/** - Event selector and creation
-- **/register** - Racer and car registration with inspection
-- **/heats** - Heat schedule preview and generation
-- **/race** - Live race console for recording results
-- **/standings** - Race results and rankings
-- **/display** - Full-screen projection view (auto-rotates)
+| Route | Description |
+|-------|-------------|
+| `/` | Event selector and creation |
+| `/register` | Racer registration with photo upload and inspection |
+| `/heats` | Heat schedule preview and generation controls |
+| `/race` | Live race console (operator) |
+| `/standings` | Rankings with win/loss and timing |
+| `/format` | Race format configuration |
+| `/display` | Full-screen projection view (auto-rotates through standings, current heat) |
+
+Individual racer profiles are accessible from the Standings and Registration views.
 
 ## Architecture
 
 ```
 derby-timer/
 ├── src/
-│   ├── index.ts          # Bun server with routes
-│   ├── migrate.ts        # Database migration runner
+│   ├── index.ts               # Bun server, all API routes, WebSocket
+│   ├── migrate.ts             # Standalone migration runner
 │   ├── db/
-│   │   ├── connection.ts # SQLite connection
-│   │   ├── umzug.ts      # Migration setup
-│   │   ├── migrations/
-│   │   │   └── 001_initial_schema.ts
-│   │   └── models/
-│   │       ├── events.ts
-│   │       ├── racers.ts
-│   │       ├── cars.ts
-│   │       ├── heats.ts
-│   │       └── results.ts
-├── frontend.ts           # SPA frontend
-├── index.html            # HTML entry
-├── styles.css            # Racing-themed styles
-└── docs/
-    ├── race-day-plan.md
-    └── ui-examples/
+│   │   ├── connection.ts      # SQLite singleton
+│   │   ├── umzug.ts           # Migration setup
+│   │   ├── migrations/        # Schema migrations (001–003)
+│   │   └── models/            # Repository classes (events, racers, heats, results)
+│   ├── race/
+│   │   └── heat-planner.ts    # Balanced lane rotation algorithm
+│   ├── electronics/           # Serial port integration for timing hardware
+│   └── frontend/              # React SPA
+│       ├── main.tsx           # App shell + navigation
+│       ├── views/             # Page components
+│       └── components/        # Shared UI components (shadcn/ui)
+├── scripts/
+│   ├── seed-mid-race.ts       # Dev: 40 racers, 2 rounds complete
+│   ├── seed-complete.ts       # Dev: 40 racers, all rounds complete
+│   ├── clear-derbies.ts       # Dev: wipe all events
+│   └── race-day-rehearsal.ts  # CI: full end-to-end race simulation
+├── tests/                     # Unit + integration tests
+└── e2e/                       # Playwright tests
 ```
 
 ## Heat Generation Algorithm
 
-The system uses a balanced lane rotation algorithm:
-
-1. **Fewer cars than lanes**: Rotates starting positions so each car runs in each lane across rounds
-2. **More cars than lanes**: Uses round-robin rotation with lane shifting to distribute cars evenly
-3. **Validation**: Checks that each car hits every lane when mathematically possible
+1. **Every racer runs every lane** when `racers × rounds` allows it
+2. **Even pairing** — minimises how often the same two racers compete
+3. **Performance balancing** — in later rounds, racers with similar records are paired
+4. **Lookahead** — plans 2–3 heats ahead to improve fairness
 
 ## Tech Stack
 
-- **Runtime**: Bun (TypeScript, built-in bundler)
-- **Database**: SQLite via `bun:sqlite`
-- **Migrations**: Umzug
-- **Frontend**: React SPA
-- **Styling**: CSS with racing theme (Oswald + Space Grotesk fonts)
-- **Server**: Bun.serve() with HMR
+- **Runtime**: Bun (TypeScript, built-in bundler + SQLite)
+- **Database**: SQLite via `bun:sqlite` + Umzug migrations
+- **Frontend**: React 19 + Tailwind CSS v4 + shadcn/ui
+- **Server**: `Bun.serve()` with hot reload and WebSocket broadcast
+- **Testing**: Bun test runner + Playwright
 
 ---
 
-Built for fast-paced Pinewood Derby race days. 🏆
+Built for fast-paced Pinewood Derby race days.
