@@ -78,6 +78,15 @@ export class ResultRepository {
     ).all(heatId) as (Result & { car_number: string; racer_name: string })[];
   }
 
+  findByEvent(eventId: string): Result[] {
+    return this.db.query(
+      `SELECT r.*
+       FROM results r
+       JOIN heats h ON r.heat_id = h.id
+       WHERE h.event_id = ?`
+    ).all(eventId) as Result[];
+  }
+
   findByRacer(racerId: string): Result[] {
     return this.db.query(
       `SELECT r.*, h.round, h.heat_number
