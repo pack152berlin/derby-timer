@@ -221,6 +221,7 @@ function Navigation({
                   return (
                     <button
                       key={item.id}
+                      data-testid={`nav-${item.id}`}
                       onClick={() => onNavigate(item.id)}
                       className={cn(
                         "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",

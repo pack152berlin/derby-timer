@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
-import { AlertCircle, Flag, CheckCircle, ChevronRight, Trophy, BarChart3 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { AlertCircle, Car, Flag, CheckCircle, ChevronRight, Trophy, BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { HeatLaneGrid } from '@/components/HeatLaneGrid';
 import { cn } from '@/lib/utils';
 import type { HeatResult } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
 
+function ordinal(n: number) {
+  if (n === 1) return '1st';
+  if (n === 2) return '2nd';
+  if (n === 3) return '3rd';
+  return `${n}th`;
+}
+
 export function RaceConsoleView() {
-  const { currentEvent, heats, refreshData } = useApp();
+  const { currentEvent, racers, heats, refreshData } = useApp();
   const [heatResults, setHeatResults] = useState<Record<string, HeatResult[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [isStartingHeat, setIsStartingHeat] = useState(false);
@@ -114,12 +122,19 @@ export function RaceConsoleView() {
     );
   }
 
+  const racerById = useMemo(() => {
+    const map = new Map<string, typeof racers[0]>();
+    racers.forEach(r => map.set(r.id, r));
+    return map;
+  }, [racers]);
+
   const currentResults = heatResults[currentHeat.id] || [];
   const expectedResults = currentHeat.lanes?.length ?? currentEvent.lane_count;
   const hasAllResults = currentResults.length === expectedResults;
   const nonDnfPlaces = currentResults.filter((result) => !result.dnf).map((result) => result.place);
   const hasDuplicatePlaces = new Set(nonDnfPlaces).size !== nonDnfPlaces.length;
   const canCompleteHeat = hasAllResults && !hasDuplicatePlaces;
+  const laneCount = currentHeat.lanes?.length ?? currentEvent.lane_count;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -132,23 +147,44 @@ export function RaceConsoleView() {
         </p>
       </div>
 
-      <Card className="mb-6 bg-slate-900 text-white border-0">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm uppercase tracking-wider mb-1 font-semibold">Current Heat</p>
-              <h2 className="text-4xl font-black">Round {currentHeat.round} • Heat {currentHeat.heat_number}</h2>
+      <Card className="mb-6 bg-slate-900 text-white border-0 shadow-xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-col sm:flex-row sm:items-stretch min-h-[100px]">
+            <div className="flex-1 p-6 flex flex-col justify-center">
+              <p className="text-slate-400 text-xs uppercase tracking-[0.2em] mb-1 font-black">Current Heat</p>
+              <h2 className="text-3xl sm:text-4xl font-black">Round {currentHeat.round} • Heat {currentHeat.heat_number}</h2>
             </div>
-            <Badge 
-              className={cn(
-                "px-6 py-3 text-lg font-bold uppercase",
-                currentHeat.status === 'pending' && "bg-slate-700",
-                currentHeat.status === 'running' && "bg-[#CE1126] text-white",
-                currentHeat.status === 'complete' && "bg-emerald-500"
+            
+            <div className="w-full sm:w-auto flex items-center px-6 pb-6 sm:pb-0">
+              {currentHeat.status === 'pending' && (
+                <Button
+                  data-testid="btn-start-heat"
+                  onClick={handleStart}
+                  disabled={isStartingHeat}
+                  size="lg"
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest h-12 px-8 shadow-lg"
+                >
+                  {isStartingHeat ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Flag className="w-5 h-5 mr-2" />
+                  )}
+                  {isStartingHeat ? 'Starting...' : 'Start Heat'}
+                </Button>
               )}
-            >
-              {currentHeat.status}
-            </Badge>
+
+              {currentHeat.status === 'running' && (
+                <Badge className="bg-[#CE1126] text-white px-6 py-2 text-lg font-black uppercase tracking-widest animate-pulse border-0">
+                  Racing
+                </Badge>
+              )}
+
+              {currentHeat.status === 'complete' && (
+                <Badge className="bg-emerald-500 text-white px-6 py-2 text-lg font-black uppercase tracking-widest border-0">
+                  Complete
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -159,92 +195,138 @@ export function RaceConsoleView() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        {currentHeat.lanes?.map(lane => {
-          const result = currentResults.find(r => r.lane_number === lane.lane_number);
-          return (
-            <Card 
-              key={lane.id} 
-              className={cn(
-                "border-2 transition-all",
-                result ? "border-emerald-400 bg-emerald-50" : "border-slate-200"
-              )}
-            >
-              <CardContent className="p-5">
-                <div className="mb-3">
-                  <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Lane {lane.lane_number}</p>
-                  <p className="text-3xl font-black text-[#003F87]">#{lane.car_number}</p>
-                  <p className="text-base text-slate-700">{lane.racer_name}</p>
+      {currentHeat.status === 'pending' && (
+        <Card className="mb-6 overflow-hidden border-2 border-slate-200 py-0 gap-0">
+          <HeatLaneGrid
+            heat={currentHeat}
+            racers={racers}
+            laneCount={currentEvent.lane_count}
+          />
+        </Card>
+      )}
+
+      {currentHeat.status !== 'pending' && (
+        <Card className="mb-6 border-2 border-slate-200 py-0 gap-0 overflow-hidden">
+          {currentHeat.lanes?.map((lane, idx) => {
+            const result = currentResults.find(r => r.lane_number === lane.lane_number);
+            const racer = racerById.get(lane.racer_id);
+            const photoUrl = racer?.car_photo_filename
+              ? api.getRacerPhotoUrl(lane.racer_id, racer.updated_at)
+              : null;
+
+            return (
+              <div
+                key={lane.id}
+                data-testid={`lane-row-${lane.lane_number}`}
+                className={cn(
+                  'flex items-center gap-4 px-4 py-3 transition-colors',
+                  idx !== 0 && 'border-t border-slate-100',
+                  result && !result.dnf && 'bg-emerald-50',
+                  result?.dnf && 'bg-red-50',
+                )}
+              >
+                {/* Lane number */}
+                <div className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black text-lg text-white',
+                  currentHeat.status === 'running' ? 'bg-[#CE1126]' : 'bg-emerald-600',
+                )}>
+                  {lane.lane_number}
                 </div>
-                
+
+                {/* Photo */}
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={`Car #${lane.car_number}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                      <Car className="w-6 h-6 text-slate-300" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Car info */}
+                <div className="w-40 shrink-0">
+                  <div className="text-xl font-black text-[#003F87] leading-none">#{lane.car_number}</div>
+                  <div className="text-xs font-bold text-slate-500 truncate mt-0.5">{lane.racer_name}</div>
+                </div>
+
+                {/* Place buttons */}
                 {currentHeat.status === 'running' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: currentHeat.lanes?.length ?? currentEvent.lane_count }, (_, idx) => idx + 1).map((place) => {
-                      const placeTakenByOtherLane = currentResults.some((entry) => {
-                        return !entry.dnf && entry.place === place && entry.lane_number !== lane.lane_number;
-                      });
+                  <div className="flex flex-wrap gap-2 flex-1">
+                    {Array.from({ length: laneCount }, (_, i) => i + 1).map(place => {
+                      const takenByLane = currentResults.find(
+                        e => !e.dnf && e.place === place && e.lane_number !== lane.lane_number
+                      );
+                      const isSelected = result?.place === place;
 
                       return (
-                        <Button
+                        <button
                           key={place}
-                          variant={result?.place === place ? "default" : "outline"}
+                          data-testid={`place-btn-${place}`}
+                          disabled={!!takenByLane}
                           onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
-                          disabled={placeTakenByOtherLane}
                           className={cn(
-                            "h-12 font-bold",
-                            result?.place === place && "bg-yellow-400 text-slate-900 hover:bg-yellow-500",
-                            placeTakenByOtherLane && "opacity-50"
+                            'h-10 min-w-[52px] px-3 rounded-lg border-2 text-sm font-black transition-colors',
+                            isSelected
+                              ? 'bg-amber-400 border-amber-400 text-slate-900'
+                              : takenByLane
+                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-[#003F87] hover:text-[#003F87]',
                           )}
+                          title={takenByLane ? `Assigned to Lane ${takenByLane.lane_number}` : undefined}
                         >
-                          {place}{place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'}
-                        </Button>
+                          {isSelected
+                            ? ordinal(place)
+                            : takenByLane
+                              ? <span className="text-[10px] font-black tracking-wide">L{takenByLane.lane_number}</span>
+                              : ordinal(place)}
+                        </button>
                       );
                     })}
-                    <Button
-                      variant={result?.dnf ? "default" : "outline"}
+                    <button
                       onClick={() => recordDNF(currentHeat.id, lane.lane_number, lane.racer_id!)}
                       className={cn(
-                        "col-span-full h-12 font-bold",
-                        result?.dnf && "bg-red-500 text-white hover:bg-red-600"
+                        'h-10 px-3 rounded-lg border-2 text-sm font-black transition-colors',
+                        result?.dnf
+                          ? 'bg-red-500 border-red-500 text-white'
+                          : 'bg-white border-slate-200 text-slate-500 hover:border-red-400 hover:text-red-600',
                       )}
                     >
                       DNF
-                    </Button>
+                    </button>
                   </div>
                 )}
-                
-                {result && (
-                  <div className="mt-3 text-center">
-                    <Badge 
-                      className={cn(
-                        "px-4 py-2 text-sm font-bold",
-                        result.dnf ? "bg-red-500" : "bg-emerald-500"
-                      )}
-                    >
-                      {result.dnf ? 'DNF' : `${result.place}${result.place === 1 ? 'st' : result.place === 2 ? 'nd' : result.place === 3 ? 'rd' : 'th'} Place`}
-                    </Badge>
+
+                {/* Result summary (complete state or recorded) */}
+                {(currentHeat.status === 'complete' || result) && (
+                  <div className="ml-auto shrink-0">
+                    {result ? (
+                      <Badge className={cn(
+                        'px-4 py-1.5 text-sm font-black',
+                        result.dnf ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white',
+                      )}>
+                        {result.dnf ? 'DNF' : `${ordinal(result.place)} Place`}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-bold">—</span>
+                    )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </Card>
+      )}
 
       <div className="flex justify-center gap-4">
-        {currentHeat.status === 'pending' && (
-          <Button 
-            onClick={handleStart}
-            disabled={isStartingHeat}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl px-12 py-6 shadow-lg"
-          >
-            <Flag className="w-6 h-6 mr-3" />
-            {isStartingHeat ? 'STARTING...' : 'START HEAT'}
-          </Button>
-        )}
-        
         {currentHeat.status === 'running' && (
           <Button 
+            data-testid="btn-complete-heat"
             onClick={handleComplete}
             disabled={!canCompleteHeat}
             className="bg-[#CE1126] hover:bg-[#ad0e20] text-white font-bold text-xl px-12 py-6 shadow-lg disabled:opacity-50"

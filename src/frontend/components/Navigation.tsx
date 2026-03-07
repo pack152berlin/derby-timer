@@ -58,6 +58,7 @@ export function Navigation({
                   return (
                     <button
                       key={item.id}
+                      data-testid={`nav-${item.id}`}
                       onClick={() => onNavigate(item.id)}
                       className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",

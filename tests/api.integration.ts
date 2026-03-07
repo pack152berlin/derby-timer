@@ -5,7 +5,8 @@ const hasRepeatedDigits = (value: string) => {
 };
 
 describe("DerbyTimer API Integration Tests", () => {
-  const baseUrl = "http://localhost:3000";
+  const port = Bun.env.PORT ?? "3000";
+  const baseUrl = `http://localhost:${port}`;
   let eventId: string;
   let racerId: string;
   let firstCarNumber: string;
@@ -60,6 +61,59 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(response.status).toBe(200);
       const event = await response.json();
       expect(event.status).toBe("checkin");
+    });
+
+    it("should fail to delete an event that has racers", async () => {
+      // 1. Create a fresh event
+      const createRes = await fetch(`${baseUrl}/api/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Event with Racers",
+          date: "2026-03-01",
+        }),
+      });
+      const event = await createRes.json();
+
+      // 2. Add a racer to it
+      await fetch(`${baseUrl}/api/events/${event.id}/racers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Obstacle Racer" }),
+      });
+
+      // 3. Attempt to delete
+      const response = await fetch(`${baseUrl}/api/events/${event.id}`, {
+        method: "DELETE",
+      });
+
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      expect(error.error).toContain("registered racers");
+    });
+
+    it("should delete a separate event that has 0 racers", async () => {
+      // 1. Create a fresh empty event
+      const createRes = await fetch(`${baseUrl}/api/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Event to be deleted",
+          date: "2026-03-01",
+        }),
+      });
+      const tempEvent = await createRes.json();
+      const tempId = tempEvent.id;
+
+      // 2. Delete it
+      const deleteRes = await fetch(`${baseUrl}/api/events/${tempId}`, {
+        method: "DELETE",
+      });
+      expect(deleteRes.status).toBe(200);
+
+      // 3. Verify it's gone
+      const getRes = await fetch(`${baseUrl}/api/events/${tempId}`);
+      expect(getRes.status).toBe(404);
     });
   });
 
@@ -165,13 +219,14 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(carNumbers).toEqual(sorted);
     });
 
-    it("should update a racer name and den", async () => {
+    it("should update a racer name, den, and weight status", async () => {
       const response = await fetch(`${baseUrl}/api/racers/${racerId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "  Johnny Updated  ",
           den: "   ",
+          weight_ok: true,
         }),
       });
 
@@ -179,6 +234,7 @@ describe("DerbyTimer API Integration Tests", () => {
       const racer = await response.json();
       expect(racer.name).toBe("Johnny Updated");
       expect(racer.den).toBeNull();
+      expect(racer.weight_ok).toBe(1);
     });
 
     it("should reject empty racer name updates", async () => {

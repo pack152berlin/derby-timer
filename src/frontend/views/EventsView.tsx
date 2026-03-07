@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Flag, Clock, ChevronRight, Plus } from 'lucide-react';
+import { Trophy, Flag, Clock, ChevronRight, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Event } from '../types';
@@ -11,6 +19,7 @@ import { api } from '../api';
 export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => void }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
     loadEvents();
@@ -19,6 +28,17 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
   const loadEvents = async () => {
     const data = await api.getEvents();
     setEvents(data);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!eventToDelete) return;
+    try {
+      await api.deleteEvent(eventToDelete.id);
+      setEventToDelete(null);
+      loadEvents();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete event.');
+    }
   };
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -50,7 +70,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
             Race Events
           </h1>
-          <p className="text-slate-500 mt-1">Select an event or create a new race day</p>
+          <p className="text-slate-500 mt-1">Select an event or create a new race event!</p>
         </div>
         <Button 
           onClick={() => setShowForm(!showForm)}
@@ -119,10 +139,26 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           return (
             <Card 
               key={event.id}
-              className="cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2"
+              data-testid="event-card"
+              className="group relative cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2 gap-2"
               onClick={() => onSelectEvent(event)}
             >
-              <CardHeader className="pb-3">
+              {event.racer_count === 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEventToDelete(event);
+                  }}
+                  className="absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 transition-all z-10 flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
+                  title="Delete Event"
+                >
+                  <X className="h-3 w-3" />
+                  <span className="text-[10px] font-bold uppercase">Delete</span>
+                </Button>
+              )}
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-xl">{event.name}</CardTitle>
                   <Badge 
@@ -134,17 +170,17 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-slate-500 text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="text-slate-500 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Clock size={16} className="text-[#CE1126]" />
                     <span className="font-medium">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Flag size={16} className="text-slate-400" />
-                    <span className="font-medium">{event.lane_count} Racing Lanes</span>
+                    <span className="font-medium">{event.racer_count} Racers / {event.lane_count} Lanes</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center text-[#003F87] font-semibold text-sm">
+                <div className="mt-4 pt-4 flex items-center justify-end text-[#003F87] font-semibold text-sm">
                   Select Event
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </div>
@@ -153,6 +189,25 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           );
         })}
       </div>
+
+      <Dialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{eventToDelete?.name}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setEventToDelete(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteEvent}>
+              Delete Event
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {events.length === 0 && (
         <Card className="border-2 border-dashed border-slate-300">

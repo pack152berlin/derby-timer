@@ -3,6 +3,7 @@ export interface Event {
   name: string;
   date: string;
   lane_count: number;
+  racer_count: number;
   status: 'draft' | 'checkin' | 'racing' | 'complete';
   created_at: string;
   updated_at: string;
