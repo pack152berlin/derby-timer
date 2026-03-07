@@ -1084,6 +1084,9 @@ const server = Bun.serve({
         });
       },
     },
+    
+    // Fallback: Serve index.html for all other paths to support React Router
+    "/:path*": index,
   },
   development: {
     hmr: true,
