@@ -4,6 +4,7 @@
 import { deflateSync } from 'node:zlib';
 import { join } from 'node:path';
 import { readFileSync, existsSync } from 'node:fs';
+import { CUB_SCOUT_DENS } from '../src/frontend/constants';
 
 // ── Randomness ────────────────────────────────────────────────────────────────
 
@@ -45,26 +46,24 @@ export function randomPastDate(): string {
 // ── Racer name generation ─────────────────────────────────────────────────────
 
 const FIRST_NAMES = [
-  'Jack', 'Liam', 'Noah', 'Oliver', 'Elijah', 'James', 'Aiden', 'Lucas',
+  'Jack', 'Liam', 'Noah', 'Oliver', 'Elijah', 'James', 'Flora', 'Lucas',
   'Mason', 'Logan', 'Ethan', 'Jackson', 'Sebastian', 'Mateo', 'Henry',
-  'Alexander', 'Michael', 'Daniel', 'Owen', 'Samuel', 'Wyatt', 'Luke',
+  'Alexander', 'Michael', 'Daniel', 'Rio', 'Samuel', 'Wyatt', 'Luke',
   'Gabriel', 'Dylan', 'Isaac', 'Nathan', 'Carter', 'Caleb', 'Joshua',
   'Connor', 'Eli', 'Lincoln', 'Christian', 'Cameron', 'Ryan', 'Evan',
-  'Hunter', 'Nolan', 'Jaxon', 'Adrian', 'Miles', 'Theo', 'Cole', 'Finn',
+  'Hunter', 'Klara', 'Jaxon', 'Adrian', 'Miles', 'Theo', 'Cole', 'Finn',
   'Leo', 'Axel', 'Bennett', 'Cooper', 'Declan', 'Griffin',
 ];
 
 const LAST_NAMES = [
   'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis',
-  'Garcia', 'Wilson', 'Martinez', 'Anderson', 'Taylor', 'Thomas', 'Moore',
+  'Garcia', 'Wilson', 'Martinez', 'Kny-Flores', 'Taylor', 'Thomas', 'Moore',
   'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris',
   'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young',
   'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill',
-  'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Rivera', 'Campbell',
+  'Flores', 'Bowers', 'Adams', 'Nelson', 'Baker', 'Rivera', 'Campbell',
   'Mitchell', 'Carter', 'Roberts', 'Phillips', 'Evans', 'Turner', 'Parker',
 ];
-
-const DENS = ['Lion', 'Tiger', 'Wolf', 'Bear', 'Webelos', 'Arrow of Light'];
 
 export function randomRacerName(usedNames: Set<string>): string {
   for (let attempt = 0; attempt < 200; attempt++) {
@@ -82,7 +81,7 @@ export function randomRacerName(usedNames: Set<string>): string {
 }
 
 export function randomDen(): string {
-  return pick(DENS);
+  return pick([...CUB_SCOUT_DENS]);
 }
 
 // ── PNG photo generation ──────────────────────────────────────────────────────

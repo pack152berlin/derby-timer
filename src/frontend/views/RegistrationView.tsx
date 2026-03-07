@@ -36,14 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-const CUB_SCOUT_DENS = [
-  'Lions',
-  'Tigers',
-  'Wolves',
-  'Bears',
-  'Webelos',
-  'AOLs'
-];
+import { CUB_SCOUT_DENS } from '../constants';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
