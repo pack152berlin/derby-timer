@@ -864,6 +864,7 @@ const server = Bun.serve({
         clearRoundRacerCache(req.params.eventId);
 
         broadcast({ type: "HEATS_UPDATED", eventId: req.params.eventId });
+        broadcast({ type: "STANDINGS_UPDATED", eventId: req.params.eventId });
 
         return respondJson({ success: true });
       },

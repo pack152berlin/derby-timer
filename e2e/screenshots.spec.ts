@@ -53,13 +53,14 @@ async function seedEvent(options: {
 
   for (let i = 0; i < currentRacers.length; i++) {
     const data = currentRacers[i];
+    if (!data) continue;
     const racerRes = await fetch(`${baseUrl}/api/events/${event.id}/racers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: data.name, den: data.den }),
     });
     const racer = await racerRes.json();
-    
+
     // Inspect racer if within target count
     if (i < targetInspectCount) {
       await fetch(`${baseUrl}/api/racers/${racer.id}/inspect`, {
@@ -72,7 +73,7 @@ async function seedEvent(options: {
     // Upload photo if specified
     if (data.hasPhoto) {
       const photoPath = photoPaths[photoIndex % photoPaths.length];
-      if (fs.existsSync(photoPath)) {
+      if (photoPath && fs.existsSync(photoPath)) {
         const photoBuffer = fs.readFileSync(photoPath);
         const formData = new FormData();
         formData.append("photo", new Blob([photoBuffer], { type: "image/jpeg" }), path.basename(photoPath));

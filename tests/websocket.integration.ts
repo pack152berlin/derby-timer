@@ -32,6 +32,7 @@ describe("Real-time Updates (WebSocket)", () => {
         clearTimeout(timeout);
         socket.onmessage = null;
         socket.onerror = null;
+        socket.onclose = null;
         if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
           socket.close();
         }
@@ -39,6 +40,7 @@ describe("Real-time Updates (WebSocket)", () => {
       timeout = setTimeout(() => { cleanup(); reject(new Error("WebSocket message timeout")); }, 5000);
       socket.onmessage = (msg) => { cleanup(); resolve(JSON.parse(msg.data)); };
       socket.onerror = (err) => { cleanup(); reject(err); };
+      socket.onclose = () => { cleanup(); reject(new Error("WebSocket closed unexpectedly")); };
     });
 
     // 3. Create a racer to trigger broadcast
@@ -99,6 +101,7 @@ describe("Real-time Updates (WebSocket)", () => {
         clearTimeout(timeout);
         socket.onmessage = null;
         socket.onerror = null;
+        socket.onclose = null;
         if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
           socket.close();
         }
@@ -106,6 +109,7 @@ describe("Real-time Updates (WebSocket)", () => {
       timeout = setTimeout(() => { cleanup(); reject(new Error("WebSocket message timeout")); }, 5000);
       socket.onmessage = (msg) => { cleanup(); resolve(JSON.parse(msg.data)); };
       socket.onerror = (err) => { cleanup(); reject(err); };
+      socket.onclose = () => { cleanup(); reject(new Error("WebSocket closed unexpectedly")); };
     });
 
     // 3. Start heat to trigger broadcast
