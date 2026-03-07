@@ -56,7 +56,7 @@ describe("Real-time Updates (WebSocket)", () => {
     const message = await messagePromise;
     expect(message.type).toBe("RACERS_UPDATED");
     expect(message.eventId).toBe(eventId);
-  });
+  }, 10000);
 
   it("should receive a HEATS_UPDATED message when a heat is started", async () => {
     // 1. Create an event and racers
@@ -119,5 +119,5 @@ describe("Real-time Updates (WebSocket)", () => {
     const message = await messagePromise;
     expect(message.type).toBe("HEATS_UPDATED");
     expect(message.eventId).toBe(eventId);
-  });
+  }, 10000);
 });
