@@ -200,7 +200,39 @@ test('05-heat-schedule', async ({ page }) => {
   saveIfChanged('screenshots/05-heat-schedule.png', await page.screenshot({ fullPage: true }));
 });
 
-test('06-race-control-pending', async ({ page }) => {
+test('06-heat-schedule-completed', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Heat Schedule Completed Tab' });
+
+  // Complete 8 heats so the Completed tab has data
+  const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
+  const heats = await heatsRes.json();
+
+  for (let h = 0; h < 8 && h < heats.length; h++) {
+    const heatId = heats[h].id;
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
+    const results = heats[h].lanes.map((lane: any, idx: number) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+      place: ((idx + h) % 4) + 1
+    }));
+    await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results }),
+    });
+  }
+
+  await page.goto(`${baseUrl}/`);
+  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click('[data-testid="nav-heats"]');
+  await page.click('[data-testid="tab-completed"]');
+  await page.waitForTimeout(600);
+
+  saveIfChanged('screenshots/06-heat-schedule-completed.png', await page.screenshot({ fullPage: true }));
+});
+
+test('07-race-control-pending', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({
     name: 'Race Control Pending Heat',
@@ -217,10 +249,10 @@ test('06-race-control-pending', async ({ page }) => {
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
-  saveIfChanged('screenshots/06-race-control-pending.png', await page.screenshot({ fullPage: true }));
+  saveIfChanged('screenshots/07-race-control-pending.png', await page.screenshot({ fullPage: true }));
 });
 
-test('07-race-control-no-photos', async ({ page }) => {
+test('08-race-control-no-photos', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   // Ensure we have a heat with NO photos
   const event = await seedEvent({
@@ -238,10 +270,10 @@ test('07-race-control-no-photos', async ({ page }) => {
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
-  saveIfChanged('screenshots/07-race-control-no-photos.png', await page.screenshot({ fullPage: true }));
+  saveIfChanged('screenshots/08-race-control-no-photos.png', await page.screenshot({ fullPage: true }));
 });
 
-test('08-race-control-running', async ({ page }) => {
+test('09-race-control-running', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent();
 
@@ -258,10 +290,10 @@ test('08-race-control-running', async ({ page }) => {
   await page.click('[data-testid="lane-row-2"] [data-testid="place-btn-2"]');
   await page.waitForTimeout(400);
 
-  saveIfChanged('screenshots/08-race-control-running.png', await page.screenshot({ fullPage: true }));
+  saveIfChanged('screenshots/09-race-control-running.png', await page.screenshot({ fullPage: true }));
 });
 
-test('09-standings', async ({ page }) => {
+test('10-standings', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Final Standings' });
 
@@ -289,7 +321,7 @@ test('09-standings', async ({ page }) => {
   await page.click('[data-testid="nav-standings"]');
   await page.waitForTimeout(600);
 
-  saveIfChanged('screenshots/09-standings.png', await page.screenshot({ fullPage: true }));
+  saveIfChanged('screenshots/10-standings.png', await page.screenshot({ fullPage: true }));
 });
 
 test('00-loader', async ({ page }) => {
@@ -314,7 +346,7 @@ test('00-loader', async ({ page }) => {
   saveIfChanged('screenshots/00-loader.png', await page.screenshot());
 });
 
-test('10-external-display', async ({ page }) => {
+test('11-external-display', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const event = await seedEvent({ name: 'External Projector Display' });
 
@@ -355,10 +387,10 @@ test('10-external-display', async ({ page }) => {
   await page.goto(`${baseUrl}/display`);
   await page.waitForTimeout(1000);
 
-  saveIfChanged('screenshots/10-external-display.png', await page.screenshot());
+  saveIfChanged('screenshots/11-external-display.png', await page.screenshot());
 });
 
-test('11-racer-profile-with-photo', async ({ page }) => {
+test('12-racer-profile-with-photo', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Final Standings' });
 
@@ -390,10 +422,10 @@ test('11-racer-profile-with-photo', async ({ page }) => {
   await page.click('[data-testid="standing-card-1"]');
   await page.waitForTimeout(1000);
 
-  saveIfChanged('screenshots/11-racer-profile-with-photo.png', await page.screenshot());
+  saveIfChanged('screenshots/12-racer-profile-with-photo.png', await page.screenshot());
 });
 
-test('12-racer-profile-no-photo', async ({ page }) => {
+test('13-racer-profile-no-photo', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Final Standings' });
 
@@ -425,5 +457,5 @@ test('12-racer-profile-no-photo', async ({ page }) => {
   await page.click('[data-testid="standing-card-2"]');
   await page.waitForTimeout(1000);
 
-  saveIfChanged('screenshots/12-racer-profile-no-photo.png', await page.screenshot());
+  saveIfChanged('screenshots/13-racer-profile-no-photo.png', await page.screenshot());
 });
