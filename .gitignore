@@ -38,5 +38,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 .envrc
 .xdg
-screenshots/
 test-results/
