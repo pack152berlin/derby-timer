@@ -12,7 +12,7 @@ interface AppTabsProps {
   activeTab: string;
   onChange: (id: string) => void;
   children: React.ReactNode;
-  /** Extra classes for the content panel (e.g. padding). Defaults to p-4. */
+  /** Extra classes for the content panel (e.g. padding). */
   contentClassName?: string;
   className?: string;
 }

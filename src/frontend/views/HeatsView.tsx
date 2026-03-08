@@ -155,31 +155,30 @@ export function HeatsView() {
     [heats],
   );
 
+  const allCompleted = useMemo(() => heats.filter(h => h.status === 'complete'), [heats]);
+
   const completedRounds = useMemo(() =>
-    Array.from(new Set(heats.filter(h => h.status === 'complete').map(h => h.round))).sort((a, b) => a - b),
-    [heats],
+    Array.from(new Set(allCompleted.map(h => h.round))).sort((a, b) => a - b),
+    [allCompleted],
   );
 
   const completedHeats = useMemo(() => {
-    let result = heats.filter(h => h.status === 'complete');
+    let result = allCompleted;
     if (roundFilter !== 'all') result = result.filter(h => h.round === parseInt(roundFilter));
-    result.sort((a, b) => {
+    result = [...result].sort((a, b) => {
       const aKey = a.round * 1000 + a.heat_number;
       const bKey = b.round * 1000 + b.heat_number;
       return sortOrder === 'recent' ? bKey - aKey : aKey - bKey;
     });
     return result;
-  }, [heats, roundFilter, sortOrder]);
-
-  const allCompleted = heats.filter(h => h.status === 'complete');
+  }, [allCompleted, roundFilter, sortOrder]);
 
   const lastCompletedHeat = useMemo(() => {
-    const completed = heats.filter(h => h.status === 'complete');
-    if (completed.length === 0) return null;
-    return completed.reduce((best, h) =>
+    if (allCompleted.length === 0) return null;
+    return allCompleted.reduce((best, h) =>
       h.round * 1000 + h.heat_number > best.round * 1000 + best.heat_number ? h : best
     );
-  }, [heats]);
+  }, [allCompleted]);
 
   const eligibleRacers = racers.filter(r => r.weight_ok);
   const queuedHeats = pendingHeats.length;
@@ -309,9 +308,7 @@ export function HeatsView() {
                       const place = result?.place ?? null;
                       const medal = place !== null ? PLACE_MEDAL[place] : null;
                       const nameColor = isDNF ? 'text-slate-400 italic' :
-                        place === 1 ? 'text-amber-600' :
-                        place === 2 ? 'text-slate-700' :
-                        place === 3 ? 'text-orange-600' : 'text-slate-800';
+                        (place !== null ? (FIRST_NAME_COLOR[place] ?? 'text-slate-800') : 'text-slate-800');
                       const { first } = splitName(lane.racer_name ?? '');
                       return (
                         <div key={laneNum} className={cn('flex items-center gap-1.5 px-3 py-2.5', i > 0 && 'border-l border-slate-200')}>
