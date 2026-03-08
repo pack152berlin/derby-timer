@@ -66,16 +66,19 @@ describe("Standings den filter — end-to-end", () => {
     const heat = heats[0];
 
     // 5. Start and record results so standings get populated
-    await fetch(`${baseUrl}/api/heats/${heat.id}/start`, { method: "POST" });
+    const startRes = await fetch(`${baseUrl}/api/heats/${heat.id}/start`, { method: "POST" });
+    expect(startRes.status).toBe(200);
 
     // Find which lane each racer is in
     const heatRes = await fetch(`${baseUrl}/api/events/${eventId}/heats`);
     const allHeats = await heatRes.json();
     const firstHeat = allHeats.find((h: any) => h.id === heat.id);
+    expect(firstHeat.status).toBe("running");
+    
     const r1Lane = firstHeat.lanes?.find((l: any) => l.racer_id === r1.id)?.lane_number ?? 1;
     const r2Lane = firstHeat.lanes?.find((l: any) => l.racer_id === r2.id)?.lane_number ?? 2;
 
-    await fetch(`${baseUrl}/api/heats/${heat.id}/results`, {
+    const resultsRes = await fetch(`${baseUrl}/api/heats/${heat.id}/results`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -85,6 +88,7 @@ describe("Standings den filter — end-to-end", () => {
         ],
       }),
     });
+    expect(resultsRes.status).toBe(200);
 
     // 6. Fetch standings and racers (same as the StandingsView component does)
     const standingsRes = await fetch(`${baseUrl}/api/events/${eventId}/standings`);
