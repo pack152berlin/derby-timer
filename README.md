@@ -83,6 +83,7 @@ bun run rehearsal:race-day --cars 50 --lanes 4 --rounds 2 --keep-db
 ## Testing
 
 ```bash
+bun run test:all         # All tests (unit + integration + UI)
 bun test                 # Unit + integration tests
 bun run test:unit        # Unit tests only
 bun run test:integration # API + WebSocket tests (isolated server on :3099)
