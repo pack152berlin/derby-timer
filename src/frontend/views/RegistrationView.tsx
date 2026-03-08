@@ -691,14 +691,13 @@ function RacersTab({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
             <SearchInput
-              variant="inset"
               value={searchTerm}
               onChange={setSearchTerm}
               placeholder="Search racers or car numbers..."
               className="flex-1 min-w-[180px]"
             />
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter:</span>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Filter:</span>
               <div className="flex items-center gap-2">
                 <span className={cn(
                   "text-xs font-bold uppercase transition-colors",
@@ -722,7 +721,7 @@ function RacersTab({
             </div>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100" data-testid="sort-toggle">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort:</span>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Sort:</span>
               <div className="flex items-center gap-2">
                 <span className={cn(
                   "text-xs font-bold uppercase transition-colors",
@@ -745,12 +744,10 @@ function RacersTab({
             </div>
           </div>
 
-          <div className="flex-1"></div>
-
-          <Button 
+          <Button
             onClick={() => setShowAddForm(true)}
             data-testid="btn-add-racer"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12 w-full sm:w-auto"
+            className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12 w-full sm:w-auto"
           >
             <Plus className="w-5 h-5 mr-2" />
             Add Racer
