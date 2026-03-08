@@ -8,6 +8,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'list',
+  // Set timeout to 5s. Most tests should complete in under 3s.
   timeout: 5000,
   use: {
     baseURL: 'http://localhost:3001',

@@ -8,6 +8,7 @@ export interface AppContextType {
   standings: Standing[];
   setCurrentRacerId: (id: string | null) => void;
   refreshData: () => Promise<void>;
+  refreshDataSilent: () => Promise<void>;
   selectEvent: (event: Event | null) => Promise<void>;
 }
 

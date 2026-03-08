@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import type { Racer } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
+import { SearchInput } from '../components/SearchInput';
 
 const CLIENT_MAX_PHOTO_BYTES = 1_200_000;
 const CLIENT_MAX_PHOTO_DIMENSION = 1600;
@@ -286,7 +287,10 @@ function RacersTab({
   activeTab: string,
   setActiveTab: (s: string) => void
 }) {
-  const { currentEvent, racers: allRacers, refreshData, setCurrentRacerId } = useApp();
+  const { currentEvent, racers: allRacers, refreshData, refreshDataSilent, setCurrentRacerId } = useApp();
+  const [inspectingIds, setInspectingIds] = useState<Set<string>>(new Set());
+  const addInspecting = (id: string) => setInspectingIds(prev => new Set(prev).add(id));
+  const removeInspecting = (id: string) => setInspectingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRacerName, setNewRacerName] = useState('');
   const [newRacerDen, setNewRacerDen] = useState('');
@@ -685,18 +689,14 @@ function RacersTab({
         </Card>
       ) : (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div className="relative sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <Input
-              type="text"
-              placeholder="Search racers or car numbers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 bg-white border-slate-300"
-            />
-          </div>
-          
           <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <SearchInput
+              variant="inset"
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search racers or car numbers..."
+              className="flex-1 min-w-[180px]"
+            />
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter:</span>
               <div className="flex items-center gap-2">
@@ -898,30 +898,33 @@ function RacersTab({
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => api.inspectRacer(racer.id, false).then(refreshData)}
-                          className="h-11 px-4"
+                          disabled={inspectingIds.has(racer.id)}
+                          onClick={async () => {
+                            addInspecting(racer.id);
+                            await api.inspectRacer(racer.id, false);
+                            await refreshDataSilent();
+                            removeInspecting(racer.id);
+                          }}
+                          className="h-11 px-4 min-w-[4.5rem]"
                         >
-                          Reset
+                          {inspectingIds.has(racer.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
                         </Button>
                       </>
                     ) : (
-                      <>
-                        <Button 
-                          onClick={() => api.inspectRacer(racer.id, true).then(refreshData)}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11 flex-1 sm:flex-none"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          PASS
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={() => api.inspectRacer(racer.id, false).then(refreshData)}
-                          className="border-red-300 text-red-500 hover:bg-red-50 h-11 flex-1 sm:flex-none"
-                        >
-                          <XSquare className="w-4 h-4 mr-1" />
-                          FAIL
-                        </Button>
-                      </>
+                      <Button
+                        disabled={inspectingIds.has(racer.id)}
+                        onClick={async () => {
+                          addInspecting(racer.id);
+                          await api.inspectRacer(racer.id, true);
+                          await refreshDataSilent();
+                          removeInspecting(racer.id);
+                        }}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11 flex-1 sm:flex-none min-w-[5rem]"
+                      >
+                        {inspectingIds.has(racer.id)
+                          ? <><Loader2 className="w-4 h-4 animate-spin mr-1" />PASS</>
+                          : <><CheckCircle className="w-4 h-4 mr-1" />PASS</>}
+                      </Button>
                     )}
                   </div>
                 ) : (
