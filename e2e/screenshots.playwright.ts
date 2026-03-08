@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
@@ -6,6 +6,7 @@ import path from 'path';
  * Screenshot capture spec. Run with:
  *   bun run screenshots
  * Outputs to screenshots/ in the project root.
+ * Only writes a file if the pixels changed from the existing screenshot.
  */
 
 const PORT = 3001;
@@ -25,18 +26,29 @@ const racers = [
   { name: 'Emma Johnson',     den: 'Tigers',   hasPhoto: false },
 ];
 
-async function seedEvent(options: { 
-  name?: string, 
+function saveIfChanged(screenshotPath: string, buffer: Buffer) {
+  const existing = fs.existsSync(screenshotPath) ? fs.readFileSync(screenshotPath) : null;
+  if (!existing || !existing.equals(buffer)) {
+    fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+    fs.writeFileSync(screenshotPath, buffer);
+    console.log(`  updated: ${path.basename(screenshotPath)}`);
+  } else {
+    console.log(`  unchanged: ${path.basename(screenshotPath)}`);
+  }
+}
+
+async function seedEvent(options: {
+  name?: string,
   racers?: typeof racers,
   inspectCount?: number // Number of racers to mark as inspected (default all)
 } = {}) {
   const eventRes = await fetch(`${baseUrl}/api/events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      name: options.name || 'Pack 152 Pinewood Derby 2026', 
-      date: '2026-03-15', 
-      lane_count: 4 
+    body: JSON.stringify({
+      name: options.name || 'Pack 152 Pinewood Derby 2026',
+      date: '2026-03-15',
+      lane_count: 4
     }),
   });
   const event = await eventRes.json();
@@ -108,7 +120,7 @@ test('01-registration-list', async ({ page }) => {
   await page.click('[data-testid="nav-register"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/01-registration-list.png', fullPage: true });
+  saveIfChanged('screenshots/01-registration-list.png', await page.screenshot({ fullPage: true }));
 });
 
 test('02-registration-form', async ({ page }) => {
@@ -123,7 +135,7 @@ test('02-registration-form', async ({ page }) => {
   await page.click('[data-testid="btn-add-racer"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/02-registration-form.png' });
+  saveIfChanged('screenshots/02-registration-form.png', await page.screenshot());
 });
 
 test('03-registration-list-help', async ({ page }) => {
@@ -138,7 +150,7 @@ test('03-registration-list-help', async ({ page }) => {
   await page.click('[data-testid="btn-help"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/03-registration-list-help.png' });
+  saveIfChanged('screenshots/03-registration-list-help.png', await page.screenshot());
 });
 
 test('04-registration-inspection-list', async ({ page }) => {
@@ -154,7 +166,7 @@ test('04-registration-inspection-list', async ({ page }) => {
   await page.locator('[data-testid="switch-inspection"]').click();
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/04-registration-inspection-list.png', fullPage: true });
+  saveIfChanged('screenshots/04-registration-inspection-list.png', await page.screenshot({ fullPage: true }));
 });
 
 test('05-heat-schedule', async ({ page }) => {
@@ -167,6 +179,7 @@ test('05-heat-schedule', async ({ page }) => {
 
   for (let h = 0; h < 8 && h < heats.length; h++) {
     const heatId = heats[h].id;
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
       racer_id: lane.racer_id,
@@ -184,12 +197,12 @@ test('05-heat-schedule', async ({ page }) => {
   await page.click('[data-testid="nav-heats"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/05-heat-schedule.png', fullPage: true });
+  saveIfChanged('screenshots/05-heat-schedule.png', await page.screenshot({ fullPage: true }));
 });
 
 test('06-race-control-pending', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  const event = await seedEvent({ 
+  const event = await seedEvent({
     name: 'Race Control Pending Heat',
     racers: [
       { name: 'Dean Kim',         den: 'Wolves',  hasPhoto: true },
@@ -204,13 +217,13 @@ test('06-race-control-pending', async ({ page }) => {
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/06-race-control-pending.png', fullPage: true });
+  saveIfChanged('screenshots/06-race-control-pending.png', await page.screenshot({ fullPage: true }));
 });
 
 test('07-race-control-no-photos', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   // Ensure we have a heat with NO photos
-  const event = await seedEvent({ 
+  const event = await seedEvent({
     name: 'Race Control No Photos',
     racers: [
       { name: 'Lyile Bowers',   den: 'Bears',   hasPhoto: false },
@@ -225,7 +238,7 @@ test('07-race-control-no-photos', async ({ page }) => {
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/07-race-control-no-photos.png', fullPage: true });
+  saveIfChanged('screenshots/07-race-control-no-photos.png', await page.screenshot({ fullPage: true }));
 });
 
 test('08-race-control-running', async ({ page }) => {
@@ -239,13 +252,13 @@ test('08-race-control-running', async ({ page }) => {
 
   await page.click('[data-testid="btn-start-heat"]');
   await page.waitForTimeout(600);
-  
+
   // Select 1st and 2nd place
   await page.click('[data-testid="lane-row-1"] [data-testid="place-btn-1"]');
   await page.click('[data-testid="lane-row-2"] [data-testid="place-btn-2"]');
   await page.waitForTimeout(400);
 
-  await page.screenshot({ path: 'screenshots/08-race-control-running.png', fullPage: true });
+  saveIfChanged('screenshots/08-race-control-running.png', await page.screenshot({ fullPage: true }));
 });
 
 test('09-standings', async ({ page }) => {
@@ -258,13 +271,12 @@ test('09-standings', async ({ page }) => {
 
   for (let h = 0; h < 12 && h < heats.length; h++) {
     const heatId = heats[h].id;
-    // Vary the winners significantly
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
       racer_id: lane.racer_id,
       place: ((idx + h) % 4) + 1
     }));
-    
     await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -277,7 +289,7 @@ test('09-standings', async ({ page }) => {
   await page.click('[data-testid="nav-standings"]');
   await page.waitForTimeout(600);
 
-  await page.screenshot({ path: 'screenshots/09-standings.png', fullPage: true });
+  saveIfChanged('screenshots/09-standings.png', await page.screenshot({ fullPage: true }));
 });
 
 test('00-loader', async ({ page }) => {
@@ -295,11 +307,11 @@ test('00-loader', async ({ page }) => {
   // Click the event — this triggers selectEvent → loading=true → loader appears
   await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
 
-  // Wait for loader to fully fade in (the text is just 'Loading' in the component)
-  await expect(page.locator('text=Loading')).toBeVisible();
+  // Wait for loader to fully fade in
+  await page.locator('text=Loading').waitFor();
   await page.waitForTimeout(1000); // let cars get mid-track
 
-  await page.screenshot({ path: 'screenshots/00-loader.png' });
+  saveIfChanged('screenshots/00-loader.png', await page.screenshot());
 });
 
 test('10-external-display', async ({ page }) => {
@@ -311,6 +323,7 @@ test('10-external-display', async ({ page }) => {
   const heats = await heatsRes.json();
   for (let h = 0; h < 8 && h < heats.length; h++) {
     const heatId = heats[h].id;
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
       racer_id: lane.racer_id,
@@ -342,7 +355,7 @@ test('10-external-display', async ({ page }) => {
   await page.goto(`${baseUrl}/display`);
   await page.waitForTimeout(1000);
 
-  await page.screenshot({ path: 'screenshots/10-external-display.png' });
+  saveIfChanged('screenshots/10-external-display.png', await page.screenshot());
 });
 
 test('11-racer-profile-with-photo', async ({ page }) => {
@@ -355,6 +368,7 @@ test('11-racer-profile-with-photo', async ({ page }) => {
 
   for (let h = 0; h < 12 && h < heats.length; h++) {
     const heatId = heats[h].id;
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
       racer_id: lane.racer_id,
@@ -376,7 +390,7 @@ test('11-racer-profile-with-photo', async ({ page }) => {
   await page.click('[data-testid="standing-card-1"]');
   await page.waitForTimeout(1000);
 
-  await page.screenshot({ path: 'screenshots/11-racer-profile-with-photo.png' });
+  saveIfChanged('screenshots/11-racer-profile-with-photo.png', await page.screenshot());
 });
 
 test('12-racer-profile-no-photo', async ({ page }) => {
@@ -389,6 +403,7 @@ test('12-racer-profile-no-photo', async ({ page }) => {
 
   for (let h = 0; h < 12 && h < heats.length; h++) {
     const heatId = heats[h].id;
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
       racer_id: lane.racer_id,
@@ -410,5 +425,5 @@ test('12-racer-profile-no-photo', async ({ page }) => {
   await page.click('[data-testid="standing-card-2"]');
   await page.waitForTimeout(1000);
 
-  await page.screenshot({ path: 'screenshots/12-racer-profile-no-photo.png' });
+  saveIfChanged('screenshots/12-racer-profile-no-photo.png', await page.screenshot());
 });
