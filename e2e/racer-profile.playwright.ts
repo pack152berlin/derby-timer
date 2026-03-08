@@ -194,4 +194,25 @@ test.describe('Racer Profile', () => {
     await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer2.car_number}`);
     await expect(page.url()).toContain(`/racer/`);
   });
+
+  test('back button returns to standings after navigating between profiles', async ({ page }) => {
+    const { event, racer1, racer2 } = await seedTwoRacers();
+
+    await page.goto(`${baseUrl}/`);
+    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click('[data-testid="nav-standings"]');
+
+    // Open racer1's profile from standings
+    await page.click(`[data-testid="standing-card-${racer1.car_number}"]`);
+    await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer1.car_number}`);
+
+    // Navigate to racer2's profile from within racer1's heat history
+    await page.click(`text=#${racer2.car_number}`);
+    await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer2.car_number}`);
+
+    // Back from racer2 should go to standings, not loop back to racer1
+    await page.click('[data-testid="btn-back"]');
+    await expect(page.locator('[data-testid^="standing-card-"]')).toBeVisible();
+    await expect(page.url()).not.toContain('/racer/');
+  });
 });
