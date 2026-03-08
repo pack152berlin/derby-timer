@@ -57,6 +57,7 @@ test.describe('Racer Profile', () => {
     const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
     const heats = await heatsRes.json();
     const heat = heats[0];
+    await fetch(`${baseUrl}/api/heats/${heat.id}/start`, { method: 'POST' });
     await fetch(`${baseUrl}/api/heats/${heat.id}/results`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

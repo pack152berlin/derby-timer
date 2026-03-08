@@ -148,7 +148,7 @@ export function HeatsView() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
           <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Round:</span>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Round:</span>
               <Select value={roundFilter} onValueChange={setRoundFilter}>
                 <SelectTrigger className="h-8 bg-white border-slate-300 w-[120px] text-xs font-bold">
                   <SelectValue placeholder="All Rounds" />
@@ -163,7 +163,7 @@ export function HeatsView() {
             </div>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100" data-testid="status-toggle">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status:</span>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Status:</span>
               <div className="flex items-center gap-2">
                 <span className={cn(
                   "text-xs font-bold uppercase transition-colors",
