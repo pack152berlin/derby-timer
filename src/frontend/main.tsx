@@ -136,7 +136,9 @@ function AppRoutes() {
     standings,
     setCurrentRacerId: (id: string | null) => {
       if (id) {
-        setReturnPath(location.pathname);
+        if (!location.pathname.startsWith('/racer/')) {
+          setReturnPath(location.pathname);
+        }
         navigate(`/racer/${id}`);
       } else {
         navigate(returnPath);

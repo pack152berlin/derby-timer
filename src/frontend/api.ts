@@ -1,4 +1,4 @@
-import type { Event, Racer, Heat, Standing, HeatResult } from './types';
+import type { Event, Racer, Heat, Standing, HeatResult, RacerHistoryEntry } from './types';
 
 type CreateRacerInput = {
   name: string;

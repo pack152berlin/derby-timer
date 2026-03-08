@@ -166,8 +166,8 @@ export function RacerProfileView() {
     ? standings.findIndex(s => s.racer_id === racer.id) + 1
     : null;
 
-  const seconds = history.filter(r => r.place === 2).length;
-  const thirds  = history.filter(r => r.place === 3).length;
+  const seconds = history.filter(r => r.place === 2 && !r.dnf).length;
+  const thirds  = history.filter(r => r.place === 3 && !r.dnf).length;
 
   return (
     <div className="max-w-5xl mx-auto pb-12">
@@ -309,7 +309,7 @@ const PLACE_LABEL_STYLES: Record<number, string> = {
   3: 'text-orange-600',
 };
 
-function SidebarStats({ history, heats }: { history: HistoryEntry[]; heats: Heat[] }) {
+function SidebarStats({ history, heats }: { history: RacerHistoryEntry[]; heats: Heat[] }) {
   if (history.length === 0) return null;
 
   const timed = history.filter(h => h.time_ms != null && !h.dnf);
@@ -390,7 +390,7 @@ function SideStatRow({ label, value, sub, labelClass }: {
 // ===== HEAT HISTORY =====
 
 function HeatHistory({ history, loading, heats, currentRacerId, racers }: {
-  history: HistoryEntry[];
+  history: RacerHistoryEntry[];
   loading: boolean;
   heats: Heat[];
   currentRacerId: string;
@@ -442,7 +442,7 @@ function HeatHistory({ history, loading, heats, currentRacerId, racers }: {
 
 function LaneHeader({ heats, history, racers, currentRacerId }: {
   heats: Heat[];
-  history: HistoryEntry[];
+  history: RacerHistoryEntry[];
   racers: Racer[];
   currentRacerId: string;
 }) {
@@ -497,7 +497,7 @@ function PlaceBadge({ col }: { col: LaneCol }) {
 }
 
 function HeatSection({ entry, cols, hasBorder }: {
-  entry: HistoryEntry;
+  entry: RacerHistoryEntry;
   cols: LaneCol[];
   hasBorder: boolean;
 }) {
