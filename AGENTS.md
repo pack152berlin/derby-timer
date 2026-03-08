@@ -42,6 +42,18 @@ PORT=3000 bun src/index.ts & sleep 2 && bun test ./tests/api.test.ts && kill $!
 
 As an autonomous agent, do not modify the `test`, `test:integration`, or `test:ui` scripts in `package.json` unless the task explicitly instructs you to change those scripts.
 
+### Test File Partitioning
+
+- **Bun Tests** - Use `.test.ts` for unit tests and `.integration.ts` for integration tests.
+- **Playwright Tests** - Use `.playwright.ts` for all E2E and screenshot capture tests.
+- **Why?** This prevents the built-in `bun test` runner from attempting to execute browser-specific code, which causes unhandled errors.
+
+### Interaction Selectors & data-testid
+
+- **Standardized Targeting** - Every interactive element (buttons, cards, switches, links) must have a unique `data-testid` attribute.
+- **Rigor** - Avoid selecting elements by text labels, generic HTML roles, or CSS classes in E2E tests.
+- **Why?** Using `data-testid` ensures that tests remain stable even if the UI text changes or the app is translated.
+
 ```ts#tests/api.test.ts
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 
@@ -171,6 +183,13 @@ interface Racer {
 - **Shared Types** - Use `src/frontend/types.ts` as the single source of truth for interfaces shared across views and the API client.
 - **API Mapping** - The frontend API client (`src/frontend/api.ts`) is responsible for mapping backend response shapes (e.g., SQLite 0/1 integers) to frontend-friendly types (e.g., booleans).
 - **Type Safety** - Avoid the use of `any` in API methods. Every request should have a defined return type.
+
+## Git & Workflow Rigor
+
+- **Pre-Edit Verification** - Before creating a new file, always check if a similar file already exists using `glob` or `list_directory`. Never assume a path is free.
+- **Inclusive Commits** - Lean toward grouping all related changes (UI, backend, and tests) into a single logical commit. Avoid fragmented micro-commits for a single feature.
+- **Message Quality** - Commit messages must be **clear but concise**. Focus on *intent* rather than listing files.
+- **Self-Review** - Review every proposed commit message before execution. Strip filler words and ensure it provides high signal for other developers.
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
 

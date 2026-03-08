@@ -161,22 +161,23 @@ test('05-heat-schedule', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Heat Schedule Overview' });
 
-  // Complete one heat
+  // Complete 8 heats for a more data-rich schedule
   const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
   const heats = await heatsRes.json();
-  const heatId = heats[0].id;
-  
-  const results = heats[0].lanes.map((lane: any, idx: number) => ({
-    lane_number: lane.lane_number,
-    racer_id: lane.racer_id,
-    place: idx + 1
-  }));
 
-  await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ results }),
-  });
+  for (let h = 0; h < 8 && h < heats.length; h++) {
+    const heatId = heats[h].id;
+    const results = heats[h].lanes.map((lane: any, idx: number) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+      place: ((idx + h) % 4) + 1
+    }));
+    await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results }),
+    });
+  }
 
   await page.goto(`${baseUrl}/`);
   await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
@@ -251,13 +252,13 @@ test('09-standings', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Final Standings' });
 
-  // Complete 5 heats
+  // Complete 12 heats for a robust leaderboard
   const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
   const heats = await heatsRes.json();
-  
-  for (let h = 0; h < 5 && h < heats.length; h++) {
+
+  for (let h = 0; h < 12 && h < heats.length; h++) {
     const heatId = heats[h].id;
-    // Vary the winners slightly for interesting standings
+    // Vary the winners significantly
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
       racer_id: lane.racer_id,
@@ -305,6 +306,23 @@ test('10-external-display', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const event = await seedEvent({ name: 'External Projector Display' });
 
+  // Complete 8 heats so top-standings on display is populated
+  const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
+  const heats = await heatsRes.json();
+  for (let h = 0; h < 8 && h < heats.length; h++) {
+    const heatId = heats[h].id;
+    const results = heats[h].lanes.map((lane: any, idx: number) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+      place: ((idx + h) % 4) + 1
+    }));
+    await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results }),
+    });
+  }
+
   // Set event to 'racing' so the display page reliably picks it up
   await fetch(`${baseUrl}/api/events/${event.id}`, {
     method: 'PATCH',
@@ -331,11 +349,11 @@ test('11-racer-profile-with-photo', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Final Standings' });
 
-  // Complete 5 heats (same setup as 09-standings)
+  // Complete 12 heats (same setup as 09-standings)
   const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
   const heats = await heatsRes.json();
 
-  for (let h = 0; h < 5 && h < heats.length; h++) {
+  for (let h = 0; h < 12 && h < heats.length; h++) {
     const heatId = heats[h].id;
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
@@ -365,11 +383,11 @@ test('12-racer-profile-no-photo', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Final Standings' });
 
-  // Complete 5 heats (same setup as 09-standings)
+  // Complete 12 heats (same setup as 09-standings)
   const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
   const heats = await heatsRes.json();
 
-  for (let h = 0; h < 5 && h < heats.length; h++) {
+  for (let h = 0; h < 12 && h < heats.length; h++) {
     const heatId = heats[h].id;
     const results = heats[h].lanes.map((lane: any, idx: number) => ({
       lane_number: lane.lane_number,
