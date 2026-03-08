@@ -166,20 +166,14 @@ test.describe('Heat Schedule', () => {
     // Because event is persisted in localStorage, we should land back on /heats
     await page.reload();
     
-    // Verify specific heat status changed to complete
-    const targetHeatCard = page.locator('[data-testid="heat-card"]', { hasText: `Heat ${heats[0].heat_number}` });
+    // 3b. Switch to Completed tab and verify the heat appears as a compact row.
+    await page.click('[data-testid="tab-completed"]');
+    const targetHeatCard = page.locator('[data-testid="heat-card"]', { hasText: `R${heats[0].round}·H${heats[0].heat_number}` });
     await expect(targetHeatCard).toBeVisible();
-    await expect(targetHeatCard).toContainText('complete');
+    await expect(targetHeatCard).toContainText('✓');
 
-    // 4. Toggle filter to "Pending"
-    await page.locator('[data-testid="status-toggle"] button[role="switch"]').click();
-
-    // 5. Verify completed heat is now hidden
+    // 4. Switch to Pending tab — completed heat should not be visible there.
+    await page.click('[data-testid="tab-pending"]');
     await expect(targetHeatCard).not.toBeVisible();
-    await expect(page.locator('text=No heats matching the filters')).not.toBeVisible();
-
-    // 6. Toggle back to "All"
-    await page.locator('[data-testid="status-toggle"] button[role="switch"]').click();
-    await expect(targetHeatCard).toBeVisible();
   });
 });
