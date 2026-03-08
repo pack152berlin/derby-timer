@@ -212,7 +212,7 @@ test.describe('Racer Profile', () => {
 
     // Back from racer2 should go to standings, not loop back to racer1
     await page.click('[data-testid="btn-back"]');
-    await expect(page.locator('[data-testid^="standing-card-"]')).toBeVisible();
+    await expect(page.locator(`[data-testid="standing-card-${racer1.car_number}"]`)).toBeVisible();
     await expect(page.url()).not.toContain('/racer/');
   });
 });
