@@ -279,6 +279,28 @@ test('09-standings', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/09-standings.png', fullPage: true });
 });
 
+test('00-loader', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Loader Screenshot Event' });
+
+  // Intercept the data fetch calls and hold them so the loader stays visible
+  await page.route('**/api/events/*/racers', async route => {
+    await new Promise(r => setTimeout(r, 3000));
+    await route.continue();
+  });
+
+  await page.goto(`${baseUrl}/`);
+
+  // Click the event — this triggers selectEvent → loading=true → loader appears
+  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+
+  // Wait for loader to fully fade in (the text is just 'Loading' in the component)
+  await expect(page.locator('text=Loading')).toBeVisible();
+  await page.waitForTimeout(1000); // let cars get mid-track
+
+  await page.screenshot({ path: 'screenshots/00-loader.png' });
+});
+
 test('10-external-display', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const event = await seedEvent({ name: 'External Projector Display' });

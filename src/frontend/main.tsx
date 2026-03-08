@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, Activity, BookOpen } from 'lucide-react';
+import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import './styles/styles.css';
@@ -17,6 +17,7 @@ import { RaceConsoleView } from './views/RaceConsoleView';
 import { StandingsView } from './views/StandingsView';
 import { RaceFormatView } from './views/RaceFormatView';
 import { RacerProfileView } from './views/RacerProfileView';
+import { PinewoodFullLoader } from './components/PinewoodLoader';
 
 // ===== MAIN APP ROUTES =====
 
@@ -24,7 +25,6 @@ function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [currentRacerId, setCurrentRacerId] = useState<string | null>(null);
   const [returnPath, setReturnPath] = useState<string>('/standings');
   const [racers, setRacers] = useState<Racer[]>([]);
   const [heats, setHeats] = useState<Heat[]>([]);
@@ -134,9 +134,7 @@ function AppRoutes() {
     racers,
     heats,
     standings,
-    currentRacerId,
     setCurrentRacerId: (id: string | null) => {
-      setCurrentRacerId(id);
       if (id) {
         setReturnPath(location.pathname);
         navigate(`/racer/${id}`);
@@ -150,15 +148,15 @@ function AppRoutes() {
       await fetchData(currentEvent.id);
       setLoading(false);
     },
+    refreshDataSilent: async () => {
+      if (!currentEvent) return;
+      await fetchData(currentEvent.id);
+    },
     selectEvent
   };
 
   if (!isHydrated) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Activity className="animate-spin text-[#003F87]" size={48} />
-      </div>
-    );
+    return <PinewoodFullLoader visible />;
   }
 
   return (
@@ -166,16 +164,7 @@ function AppRoutes() {
       <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
         <Navigation onGoHome={() => selectEvent(null)} />
         <main className="max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
-          {loading && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white p-8 rounded-xl shadow-2xl border-l-4 border-[#003F87]">
-                <div className="animate-spin text-[#003F87] mb-4">
-                  <Activity size={48} />
-                </div>
-                <p className="text-slate-600 font-semibold">Loading...</p>
-              </div>
-            </div>
-          )}
+          <PinewoodFullLoader visible={loading} />
           
           <Routes>
             <Route path="/" element={<EventsView onSelectEvent={selectEvent} />} />
