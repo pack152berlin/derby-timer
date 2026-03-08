@@ -167,12 +167,11 @@ test.describe('Racer Profile', () => {
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-heats"]');
 
-    // Heat 1 was completed in seedTwoRacers. 
-    // It should show a Winner badge in the header and a result badge in the lane.
-    const heatCard = page.locator('[data-testid="heat-card"]').first();
-    await expect(heatCard.locator('text="Winner:"')).toBeVisible();
-    await expect(heatCard.locator('text="Winner"').first()).toBeVisible();
-    await expect(heatCard.locator('text="2nd"')).toBeVisible();
+    // Heat 1 was completed in seedTwoRacers. Switch to the Completed tab to see it.
+    await page.click('[data-testid="tab-completed"]');
+    const completedHeatCard = page.locator('[data-testid="heat-card"]').filter({ hasText: '✓' }).first();
+    await expect(completedHeatCard.locator('text="🥇"').first()).toBeVisible();
+    await expect(completedHeatCard.locator('text="🥈"').first()).toBeVisible();
   });
 
   test('clicking another racer in heat history navigates to their profile', async ({ page }) => {

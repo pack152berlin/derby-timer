@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { splitName } from '@/lib/name-utils';
 import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat, Racer, RacerHistoryEntry } from '../types';
@@ -19,9 +20,6 @@ function ordinal(n: number) {
   return `${n}th`;
 }
 
-function firstName(name: string) {
-  return name.split(' ')[0] ?? name;
-}
 
 type LaneCol = {
   lane_number: number;
@@ -55,7 +53,7 @@ function buildLaneCols(
         lane_number: lane.lane_number,
         racer_id: lane.racer_id,
         car_number: lane.car_number ?? racer?.car_number ?? '?',
-        name: firstName(lane.racer_name ?? racer?.name ?? ''),
+        name: splitName(lane.racer_name ?? racer?.name ?? '').first,
         place: result?.place ?? null,
         dnf: !!result?.dnf,
         isCurrent: lane.racer_id === currentRacerId,
@@ -68,7 +66,7 @@ function buildLaneCols(
     lane_number: entry.lane_number,
     racer_id: currentRacerId,
     car_number: racer?.car_number ?? '?',
-    name: firstName(racer?.name ?? ''),
+    name: splitName(racer?.name ?? '').first,
     place: entry.place ?? null,
     dnf: !!entry.dnf,
     isCurrent: true,
