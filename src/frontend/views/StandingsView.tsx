@@ -80,7 +80,6 @@ export function StandingsView() {
       {standings.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
           <SearchInput
-            variant="compact"
             value={searchTerm}
             onChange={setSearchTerm}
             placeholder="Name or car #"
@@ -88,7 +87,7 @@ export function StandingsView() {
           />
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-            <span className="text-sm font-black uppercase tracking-widest text-slate-400">Den:</span>
+            <span className="text-xs font-black uppercase tracking-widest text-slate-400">Den:</span>
             <Select value={denFilter} onValueChange={setDenFilter}>
               <SelectTrigger className="h-8 bg-white border-slate-300 w-[120px] text-sm font-bold">
                 <SelectValue placeholder="All Dens" />
