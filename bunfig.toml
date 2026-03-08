@@ -2,9 +2,6 @@
 plugins = ["bun-plugin-tailwind"]
 
 [test]
-exclude = ["e2e/**/*", "**/*.spec.ts"]
-
-[test]
 # Keep bun test focused on unit/integration files.
 # Playwright tests are handled separately via bun run test:ui.
-exclude = ["e2e/*", "**/*.spec.ts"]
+exclude = ["e2e/**/*", "**/*.spec.ts"]

@@ -296,4 +296,92 @@ describe("DerbyTimer API Integration Tests", () => {
       expect(afterDelete.car_photo_bytes).toBeNull();
     });
   });
+
+  describe("Heat Generation", () => {
+    it("should generate heats for an event with inspected racers", async () => {
+      // Use the existing event + racers from previous tests (all inspected)
+      const response = await fetch(`${baseUrl}/api/events/${eventId}/generate-heats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rounds: 1, lane_count: 4 }),
+      });
+      expect(response.status).toBe(200);
+      const heats = await response.json();
+      expect(Array.isArray(heats)).toBe(true);
+      expect(heats.length).toBeGreaterThan(0);
+      heatId = heats[0].id;
+
+      for (const heat of heats) {
+        expect(heat.round).toBe(1);
+        expect(heat.status).toBe("pending");
+        expect(Array.isArray(heat.lanes)).toBe(true);
+        expect(heat.lanes.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("should re-generate heats, discarding any completed ones", async () => {
+      // Complete the first heat
+      await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: "POST" });
+      const heatRes = await fetch(`${baseUrl}/api/heats/${heatId}`);
+      const heat = await heatRes.json();
+      const results = heat.lanes.map((l: { lane_number: number; racer_id: string }, i: number) => ({
+        lane_number: l.lane_number,
+        racer_id: l.racer_id,
+        place: i + 1,
+      }));
+      await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ results }),
+      });
+
+      // Verify the heat is now complete
+      const completedRes = await fetch(`${baseUrl}/api/heats/${heatId}`);
+      const completed = await completedRes.json();
+      expect(completed.status).toBe("complete");
+
+      // Re-generate — should wipe all existing heats and start fresh
+      const regenResponse = await fetch(`${baseUrl}/api/events/${eventId}/generate-heats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rounds: 1, lane_count: 4 }),
+      });
+      expect(regenResponse.status).toBe(200);
+      const newHeats = await regenResponse.json();
+      expect(Array.isArray(newHeats)).toBe(true);
+
+      // The previously completed heat should no longer exist
+      const oldHeatRes = await fetch(`${baseUrl}/api/heats/${heatId}`);
+      expect(oldHeatRes.status).toBe(404);
+
+      // All new heats should be pending
+      for (const h of newHeats) {
+        expect(h.status).toBe("pending");
+      }
+    });
+
+    it("should fail to generate heats when no racers have been inspected", async () => {
+      // Create a fresh event with un-inspected racers
+      const newEventRes = await fetch(`${baseUrl}/api/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "No Inspection Event", date: "2026-03-01", lane_count: 4 }),
+      });
+      const newEvent = await newEventRes.json();
+      await fetch(`${baseUrl}/api/events/${newEvent.id}/racers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Uninspected Scout" }),
+      });
+
+      const response = await fetch(`${baseUrl}/api/events/${newEvent.id}/generate-heats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      expect(error.error).toContain("inspection");
+    });
+  });
 });

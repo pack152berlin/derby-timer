@@ -173,4 +173,24 @@ test.describe('Racer Profile', () => {
     await expect(heatCard.locator('text="Winner"').first()).toBeVisible();
     await expect(heatCard.locator('text="2nd"')).toBeVisible();
   });
+
+  test('clicking another racer in heat history navigates to their profile', async ({ page }) => {
+    const { event, racer1, racer2 } = await seedTwoRacers();
+
+    await page.goto(`${baseUrl}/`);
+    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click('[data-testid="nav-standings"]');
+
+    // Open racer1's profile
+    await page.click(`[data-testid="standing-card-${racer1.car_number}"]`);
+    await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer1.car_number}`);
+
+    // Click the other racer's car number in the heat history table
+    // Lane cells show #car_number; clicking a non-current one navigates to that racer
+    await page.click(`text=#${racer2.car_number}`);
+
+    // Should now show racer2's profile
+    await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer2.car_number}`);
+    await expect(page.url()).toContain(`/racer/`);
+  });
 });
