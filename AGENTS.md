@@ -105,6 +105,9 @@ Always use Tailwind utility classes over custom CSS:
 - **Bold weights** - font-bold, font-black for emphasis
 - **Orange accent color** (#f97316) for CTAs and highlights
 
+### Accessibility
+- **Minimum font size** - `text-sm` (14px) is the smallest allowed text size anywhere in the UI. Never use `text-xs`, `text-[10px]`, `text-[9px]`, or any smaller size — even for labels, badges, or secondary info.
+
 ### "Derp" UX - Foolproof Simplicity
 - **One action per screen** - don't overwhelm users
 - **Big buttons** - h-12 (48px) minimum for all actions

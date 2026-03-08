@@ -68,11 +68,15 @@ async function runHeat(baseUrl: string, heat: HeatRecord, withTimes: boolean): P
 /** Run all heats until none remain pending/running. */
 async function runAllHeats(baseUrl: string, eventId: string, withTimes: boolean): Promise<number> {
   let completed = 0;
-  process.stdout.write('Running heats: ');
+  let currentRound = 0;
   for (let guard = 0; guard < 10000; guard++) {
     const heats = await fetchJson<HeatRecord[]>(baseUrl, `/api/events/${eventId}/heats`);
     const next = heats.find(h => h.status === 'running' || h.status === 'pending');
     if (!next) break;
+    if (next.round !== currentRound) {
+      currentRound = next.round;
+      process.stdout.write(`\nROUND-${currentRound}: `);
+    }
     await runHeat(baseUrl, next, withTimes);
     completed++;
     if (completed % 10 === 0) process.stdout.write(`${completed}`);

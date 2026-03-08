@@ -6,7 +6,6 @@ export interface AppContextType {
   racers: Racer[];
   heats: Heat[];
   standings: Standing[];
-  currentRacerId: string | null;
   setCurrentRacerId: (id: string | null) => void;
   refreshData: () => Promise<void>;
   selectEvent: (event: Event | null) => Promise<void>;
