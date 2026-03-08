@@ -1,120 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 import { useApp } from '../context';
 import { SearchInput } from '../components/SearchInput';
 import { CUB_SCOUT_DENS } from '../constants';
 import { calculatePlaceCounts } from '../lib/standings-utils';
-
-import lionImg    from '../assets/dens/lion-rank-normalized.png';
-import tigersImg  from '../assets/dens/tigers-rank-normalized.png';
-import wolvesImg  from '../assets/dens/wolves-rank-normalized.png';
-import bearsImg   from '../assets/dens/bears-rank-normalized.png';
-import webelosImg from '../assets/dens/webelos-rank-normalized.png';
-import aolImg     from '../assets/dens/aol-rank-normalized.png';
-
-const DEN_IMAGES: Record<string, string> = {
-  'Lions':   lionImg,
-  'Tigers':  tigersImg,
-  'Wolves':  wolvesImg,
-  'Bears':   bearsImg,
-  'Webelos': webelosImg,
-  'AOLs':    aolImg,
-};
-
-function DenBadge({ den }: { den: string }) {
-  const img = DEN_IMAGES[den];
-  if (img) {
-    return <img src={img} alt={den} title={den} className="h-9 w-9 object-contain" />;
-  }
-  return (
-    <span className="inline-block text-sm font-black tracking-widest leading-none text-slate-700">
-      {den}
-    </span>
-  );
-}
-
-function ordinal(n: number) {
-  if (n === 1) return '1st';
-  if (n === 2) return '2nd';
-  if (n === 3) return '3rd';
-  return `${n}th`;
-}
-
-const RANK_ACCENT: Record<number, string> = {
-  1: 'border-l-amber-400 bg-amber-50/40',
-  2: 'border-l-slate-300 bg-slate-50/30',
-  3: 'border-l-orange-400 bg-orange-50/20',
-};
-
-const RANK_TEXT: Record<number, string> = {
-  1: 'text-amber-500',
-  2: 'text-slate-500',
-  3: 'text-orange-600',
-};
-
-type SortCol = 'rank' | 'car' | 'name' | 'den' | 'wins' | 'seconds' | 'thirds';
-type SortDir = 'asc' | 'desc';
-
-function SortTriangle({ dir, visible }: { dir: SortDir; visible: boolean }) {
-  return (
-    <svg
-      width="8" height="6" viewBox="0 0 8 6"
-      fill="currentColor"
-      className={cn("shrink-0 transition-opacity", !visible && "opacity-0")}
-    >
-      {dir === 'asc'
-        ? <path d="M4 0L8 6H0L4 0Z" />
-        : <path d="M4 6L0 0H8L4 6Z" />}
-    </svg>
-  );
-}
-
-// Column widths — shared between header and data rows so they always align
-const COL = {
-  rank: 'w-24 shrink-0',   // wide enough for left edge padding + "RANK" + chevron
-  car:  'w-14 shrink-0',
-  name: 'flex-1 min-w-0',
-  den:  'w-28 shrink-0',
-  wins: 'w-14 shrink-0',
-  sec:  'w-12 shrink-0',
-  thi:  'w-12 shrink-0',
-};
-
-function SortHeader({
-  col, label,
-  activeTextClass = 'text-slate-800',
-  inactiveClass = 'text-slate-400 hover:text-slate-600',
-  center = false,
-  sortCol, sortDir, onSort,
-}: {
-  col: SortCol;
-  label: string;
-  activeTextClass?: string;
-  inactiveClass?: string;
-  center?: boolean;
-  sortCol: SortCol;
-  sortDir: SortDir;
-  onSort: (col: SortCol) => void;
-}) {
-  const active = sortCol === col;
-  return (
-    <button
-      onClick={() => onSort(col)}
-      className={cn(
-        'w-full flex items-center gap-1.5 text-sm font-black uppercase tracking-normal',
-        'transition-colors select-none cursor-pointer outline-none focus:outline-none',
-        center && 'justify-center',
-        active ? activeTextClass : inactiveClass,
-      )}
-    >
-      {label}
-      <SortTriangle dir={sortDir} visible={active} />
-    </button>
-  );
-}
+import { StandingHeader, type SortCol, type SortDir } from './standings/StandingHeader';
+import { StandingRow } from './standings/StandingRow';
 
 export function StandingsView() {
   const { standings, racers, heats, setCurrentRacerId } = useApp();
@@ -172,9 +65,6 @@ export function StandingsView() {
 
     return result;
   }, [standings, racers, heats, denFilter, searchTerm, sortCol, sortDir, placeCountsByRacer]);
-
-  const sortProps = { sortCol, sortDir, onSort: handleSort };
-  const colBg = (col: SortCol, active: string) => sortCol === col ? active : 'bg-slate-50';
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-6">
@@ -235,123 +125,19 @@ export function StandingsView() {
           className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-y-auto min-h-[24rem]"
           style={{ maxHeight: 'calc(100vh - 20rem)' }}
         >
-          {/* ── Sticky header ────────────────────────────────────────────────────
-              Each cell owns its bg so the highlight is perfectly flush
-              top-to-bottom and edge-to-edge with the column below.
-              Rank absorbs the left edge; 3rd absorbs the right edge.
-          ──────────────────────────────────────────────────────────────────── */}
-          <div className="sticky top-0 z-10 flex items-stretch border-b border-slate-200">
-            {/* Rank — pl-4 absorbs the left edge so bg is fully flush */}
-            <div className={cn(COL.rank, 'flex items-center pl-4 pr-2 py-2', colBg('rank', 'bg-slate-200'))}>
-              <SortHeader col="rank" label="Rank" {...sortProps} />
-            </div>
-            <div className={cn(COL.car, 'flex items-center justify-center px-5 py-2', colBg('car', 'bg-slate-200'))}>
-              <SortHeader col="car" label="Car" center {...sortProps} />
-            </div>
-            <div className={cn(COL.name, 'flex items-center px-2 py-2', colBg('name', 'bg-slate-200'))}>
-              <SortHeader col="name" label="Racer" {...sortProps} />
-            </div>
-            <div className={cn(COL.den, 'flex items-center justify-center px-2 py-2', colBg('den', 'bg-slate-200'))}>
-              <SortHeader col="den" label="Den" center {...sortProps} />
-            </div>
-            <div className={cn(COL.wins, 'flex items-center justify-center px-5 py-2', colBg('wins', 'bg-amber-100'))}>
-              <SortHeader
-                col="wins" label="Wins"
-                activeTextClass="text-amber-800"
-                inactiveClass="text-amber-500 hover:text-amber-700"
-                center {...sortProps}
-              />
-            </div>
-            <div className={cn(COL.sec, 'flex items-center justify-center px-5 py-2', colBg('seconds', 'bg-slate-200'))}>
-              <SortHeader
-                col="seconds" label="2nd"
-                activeTextClass="text-slate-700"
-                inactiveClass="text-slate-400 hover:text-slate-600"
-                center {...sortProps}
-              />
-            </div>
-            {/* 3rd — pr-4 absorbs the right edge so bg is fully flush */}
-            <div className={cn(COL.thi, 'flex items-center justify-center px-1 py-2', colBg('thirds', 'bg-orange-100'))}>
-              <SortHeader
-                col="thirds" label="3rd"
-                activeTextClass="text-orange-700"
-                inactiveClass="text-orange-400 hover:text-orange-600"
-                center {...sortProps}
-              />
-            </div>
-          </div>
+          <StandingHeader sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
 
-          {/* ── Data rows ─────────────────────────────────────────────────────── */}
           {displayedStandings.map((standing, idx) => {
-            const { rank } = standing;
-            const accent = RANK_ACCENT[rank] ?? 'border-l-transparent bg-white';
-            const rankTextClass = RANK_TEXT[rank] ?? 'text-slate-400';
             const { seconds = 0, thirds = 0 } = placeCountsByRacer[standing.racer_id] ?? {};
-
             return (
-              <div
+              <StandingRow
                 key={standing.racer_id}
-                data-testid={`standing-card-${standing.car_number}`}
-                className={cn(
-                  "flex items-center py-3 cursor-pointer transition-colors border-l-4",
-                  "hover:brightness-[0.97] active:brightness-95",
-                  idx > 0 && "border-t border-slate-100",
-                  accent,
-                )}
+                standing={standing}
+                idx={idx}
+                seconds={seconds}
+                thirds={thirds}
                 onClick={() => setCurrentRacerId(standing.racer_id)}
-              >
-                {/* Rank — pl-4 matches header */}
-                <div className={cn(COL.rank, "flex items-center gap-1 pl-4 pr-2")}>
-                  {rank === 1 && <Trophy size={12} className="text-amber-400 shrink-0" />}
-                  <span className={cn("text-sm font-black leading-none tabular-nums", rankTextClass)}>
-                    {ordinal(rank)}
-                  </span>
-                </div>
-
-                <div className={cn(COL.car, "px-2 flex justify-center")}>
-                  <span className="text-base font-black text-[#003F87] leading-none">
-                    #{standing.car_number}
-                  </span>
-                </div>
-
-                <div className={cn(COL.name, "px-2")}>
-                  <p className="font-bold text-base text-slate-900 leading-tight truncate">
-                    {standing.racer_name}
-                  </p>
-                </div>
-
-                <div className={cn(COL.den, "px-2 flex justify-center")}>
-                  {standing.den && <DenBadge den={standing.den} />}
-                </div>
-
-                <div className={cn(COL.wins, "text-center")}>
-                  <p className={cn(
-                    "text-xl font-black leading-none tabular-nums",
-                    standing.wins > 0 ? "text-amber-600" : "text-slate-300"
-                  )}>
-                    {standing.wins}
-                  </p>
-                </div>
-
-                <div className={cn(COL.sec, "text-center")}>
-                  <p className={cn(
-                    "text-xl font-black leading-none tabular-nums",
-                    seconds > 0 ? "text-slate-600" : "text-slate-300"
-                  )}>
-                    {seconds}
-                  </p>
-                </div>
-
-                {/* 3rd — pr-4 matches header */}
-                <div className={cn(COL.thi, "text-center")}>
-                  <p className={cn(
-                    "text-xl font-black leading-none tabular-nums",
-                    thirds > 0 ? "text-orange-600" : "text-slate-300"
-                  )}>
-                    {thirds}
-                  </p>
-                </div>
-              </div>
+              />
             );
           })}
         </div>
