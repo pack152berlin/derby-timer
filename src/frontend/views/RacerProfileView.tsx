@@ -225,6 +225,7 @@ export function RacerProfileView() {
               value={standing?.wins ?? 0}
               icon={<Trophy size={16} className="text-amber-500" />}
               valueClass="text-amber-600"
+              highlight
             />
             <StatsCard
               label="2nd Place"
@@ -274,22 +275,27 @@ function MedalDot({ place }: { place: 2 | 3 }) {
 
 // ===== STATS CARD =====
 
-function StatsCard({ label, value, icon, valueClass }: {
+function StatsCard({ label, value, icon, valueClass, highlight }: {
   label: string;
   value: string | number;
   icon: React.ReactNode;
   valueClass: string;
+  highlight?: boolean;
 }) {
   const isZero = value === 0 || value === '—';
   return (
-    <Card className="flex-1 border-2 border-slate-200 shadow-sm py-0">
+    <Card className={cn(
+      "flex-1 border-2 shadow-sm py-0",
+      highlight ? "border-amber-300 bg-amber-50/40" : "border-slate-200"
+    )}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-black uppercase tracking-widest text-slate-400 leading-none">{label}</span>
           {icon}
         </div>
         <div className={cn(
-          "text-3xl font-black italic",
+          "font-black italic",
+          highlight ? "text-5xl" : "text-3xl",
           isZero ? "text-slate-200" : valueClass
         )}>
           {value}
