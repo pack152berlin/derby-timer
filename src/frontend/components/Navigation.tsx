@@ -23,7 +23,8 @@ export function Navigation({
   ];
 
   return (
-    <nav className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
+    <div className="sticky top-0 z-40">
+    <nav className="bg-white border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           <div 
@@ -63,7 +64,7 @@ export function Navigation({
                       className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
                         isActive
-                          ? "bg-slate-900 text-white shadow-md"
+                          ? "bg-[#003F87] text-white shadow-md"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       )}
                     >
@@ -90,5 +91,7 @@ export function Navigation({
         </div>
       </div>
     </nav>
+    <div className="h-[3px] bg-[#CE1126]" />
+    </div>
   );
 }
