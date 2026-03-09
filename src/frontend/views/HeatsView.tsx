@@ -328,9 +328,9 @@ export function HeatsView() {
               })()}
 
               {pendingHeats.length === 0 ? (
-                <p className="text-center py-10 text-slate-400 font-semibold">
+                <h2 className="text-center text-xl my-3 h-10 text-slate-400 font-semibold">
                   All heats complete!
-                </p>
+                </h2>
               ) : (
                 pendingHeats.map(heat => (
                   <Card
@@ -379,26 +379,23 @@ export function HeatsView() {
             <div>
               {/* Filter bar */}
               {allCompleted.length > 0 && (
-                <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50/60">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Round:</span>
-                    <Select value={roundFilter} onValueChange={setRoundFilter}>
-                      <SelectTrigger className="h-8 bg-white border-slate-300 w-[120px] text-xs font-bold">
-                        <SelectValue placeholder="All Rounds" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Rounds</SelectItem>
-                        {completedRounds.map(r => (
-                          <SelectItem key={r} value={r.toString()}>Round {r}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200">
+                  <Select value={roundFilter} onValueChange={setRoundFilter}>
+                    <SelectTrigger className="h-9 bg-white border-slate-300 w-[140px] text-sm font-bold">
+                      <SelectValue placeholder="All Rounds" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Rounds</SelectItem>
+                      {completedRounds.map(r => (
+                        <SelectItem key={r} value={r.toString()}>Round {r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Sort:</span>
+                  <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-slate-100 border border-slate-300">
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-500">Sort:</span>
                     <div className="flex items-center gap-2">
-                      <span className={cn("text-xs font-bold uppercase transition-colors", sortOrder === 'oldest' ? "text-slate-900" : "text-slate-400")}>
+                      <span className={cn("text-xs font-bold uppercase transition-colors", sortOrder === 'oldest' ? "text-slate-900" : "text-slate-500")}>
                         Oldest
                       </span>
                       <Switch
@@ -406,7 +403,7 @@ export function HeatsView() {
                         onCheckedChange={(v) => setSortOrder(v ? 'recent' : 'oldest')}
                         className="data-[size=default]:h-5 data-[size=default]:w-9"
                       />
-                      <span className={cn("text-xs font-bold uppercase transition-colors", sortOrder === 'recent' ? "text-[#003F87]" : "text-slate-400")}>
+                      <span className={cn("text-xs font-bold uppercase transition-colors", sortOrder === 'recent' ? "text-slate-900" : "text-slate-500")}>
                         Recent
                       </span>
                     </div>
