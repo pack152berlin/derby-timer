@@ -838,24 +838,21 @@ function RacersTab({
                 <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shrink-0">
                   <div
                     data-testid={`car-number-${racer.car_number}`}
-                    onClick={() => {
-                      if (!racer.weight_ok && activeTab === 'registerTab') setActiveTab('inspectionTab');
-                      else setCurrentRacerId(racer.id);
-                    }}
+                    onClick={() => setCurrentRacerId(racer.id)}
                     className={cn(
-                      "w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex flex-col items-center justify-center border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90",
+                      "relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90",
                       !racer.weight_ok && activeTab === 'registerTab'
-                        ? "bg-amber-50 text-amber-600 border-amber-300"
+                        ? "bg-amber-50 text-amber-600 border-amber-300 font-black text-sm"
                         : "bg-slate-100 text-slate-500 border-slate-200 font-black text-xl"
                     )}
                   >
-                    {!racer.weight_ok && activeTab === 'registerTab' ? (
-                      <>
-                        <AlertTriangle className="w-5 h-5 text-amber-500" />
-                        <span className="text-xs font-bold leading-none mt-0.5">#{racer.car_number}</span>
-                      </>
-                    ) : (
-                      `#${racer.car_number}`
+                    #{racer.car_number}
+                    {!racer.weight_ok && activeTab === 'registerTab' && (
+                      <AlertTriangle
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 text-amber-500 bg-white rounded-full p-0.5 cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); setActiveTab('inspectionTab'); }}
+                        title="Needs inspection — click to go to Inspect tab"
+                      />
                     )}
                   </div>
 

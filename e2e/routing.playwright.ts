@@ -63,6 +63,18 @@ test.describe('Routing Redirects', () => {
     });
     const racer2 = await r2Res.json();
 
+    // Pre-inspect both racers so car-number clicks navigate to profile (not inspection tab)
+    await fetch(`${baseUrl}/api/racers/${racer1.id}/inspect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weight_ok: true }),
+    });
+    await fetch(`${baseUrl}/api/racers/${racer2.id}/inspect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weight_ok: true }),
+    });
+
     // 2. Select event
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
