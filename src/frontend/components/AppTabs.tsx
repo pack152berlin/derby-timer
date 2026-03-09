@@ -5,6 +5,8 @@ export interface AppTab {
   id: string;
   label: string;
   count?: number;
+  /** Optional status icon rendered after the count badge (e.g. warning or check). */
+  statusIcon?: React.ReactNode;
 }
 
 interface AppTabsProps {
@@ -41,7 +43,7 @@ export function AppTabs({ tabs, activeTab, onChange, children, contentClassName,
               data-testid={`tab-${tab.id}`}
               onClick={() => onChange(tab.id)}
               className={cn(
-                'flex items-center gap-2 px-5 py-2.5 rounded-t-xl border text-sm transition-colors select-none',
+                'flex items-center gap-2 px-5 py-2.5 rounded-t-xl border text-lg transition-colors select-none',
                 isActive
                   // White bg + white bottom border + -mb-px merges this tab into the panel below
                   ? 'bg-white border-slate-200 border-b-white font-black text-slate-900 -mb-px z-10'
@@ -52,12 +54,13 @@ export function AppTabs({ tabs, activeTab, onChange, children, contentClassName,
               <span>{tab.label}</span>
               {tab.count !== undefined && (
                 <span className={cn(
-                  'text-xs font-black px-1.5 py-0.5 rounded-full leading-none tabular-nums',
+                  'text-sm font-black px-1.5 py-0.5 rounded-full leading-none tabular-nums',
                   isActive ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-500',
                 )}>
                   {tab.count}
                 </span>
               )}
+              {tab.statusIcon}
             </button>
           );
         })}
@@ -65,7 +68,7 @@ export function AppTabs({ tabs, activeTab, onChange, children, contentClassName,
 
       {/* Content panel — the border here is what the active tab "opens into" */}
       <div className={cn(
-        'border border-slate-300 rounded-b-xl bg-white overflow-hidden',
+        'border border-slate-300 rounded-b-xl rounded-tr-xl bg-white overflow-hidden',
         contentClassName,
       )}>
         {children}

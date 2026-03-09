@@ -17,9 +17,9 @@ export function SearchInput({
 }: SearchInputProps) {
   return (
     <div className={cn(
-      'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100',
+      'flex items-center gap-2 px-3 rounded-lg bg-white border border-slate-300 h-9',
       'transition-[border-color,box-shadow]',
-      'focus-within:border-slate-300 focus-within:ring-1 focus-within:ring-slate-200',
+      'focus-within:border-slate-400 focus-within:ring-1 focus-within:ring-slate-200',
       className,
     )}>
       <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
