@@ -110,15 +110,13 @@ Always use Tailwind utility classes over custom CSS:
 
 **Target: Elementary school volunteers under mild chaos**
 
-### Visual Design for Projection
+### Visual Design for Accessibility
 - **Light mode only** - projects better, easier to read in lit rooms
 - **High contrast** - slate-900 text on white backgrounds minimum
-- **Large typography** - text-xl minimum for headers, text-lg for content
+- **Large typography on Display Pages** - text-xl minimum for headers, text-lg for content
+- **Minimum font size** - `text-xs` (12px) is the smallest allowed text size anywhere in the UI. Never use `text-[10px]`, `text-[9px]`, or any smaller size — even for labels, badges, or secondary info.
 - **Bold weights** - font-bold, font-black for emphasis
 - **Orange accent color** (#f97316) for CTAs and highlights
-
-### Accessibility
-- **Minimum font size** - `text-xs` (12px) is the smallest allowed text size anywhere in the UI. Never use `text-[10px]`, `text-[9px]`, or any smaller size — even for labels, badges, or secondary info.
 
 ### "Derp" UX - Foolproof Simplicity
 - **One action per screen** - don't overwhelm users
@@ -157,6 +155,12 @@ Bun.serve({
   }
 })
 ```
+
+## Domain & Race Context
+
+- **Manual Setup** - Race day logistics (staging cars, moving them to the track) are manual processes managed by volunteers. The software must accommodate the slow, physical nature of these steps.
+- **Local Netowrk Setup** - Voluneers will be using their photos for registration and for lane setup. smaller fonts and mobile accessbility are important. Parents and other can access public pages. Dedicated display pages will be created for projector use. 
+- **Car-to-Lane Integrity** - Maintaining the exact relationship between a car and its assigned lane for each heat is critical. Results are tied directly to the lane number where the car finished. During lane setup, car photos are essential for error detection. They allow volunteers to visually confirm that the physical car in a lane matches the digital record, helping them identify and correct staging errors before the race begins.
 
 ## Data Model Simplicity
 

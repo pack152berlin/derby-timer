@@ -30,7 +30,7 @@ test.describe('Inspection pass/fail', () => {
 
     // Switch to inspection tab
     await page.click('[data-testid="nav-register"]');
-    await page.locator('[data-testid="switch-inspection"]').click();
+    await page.locator('[data-testid="tab-inspection"]').click();
 
     // The full-page loader should never become visible during inspection
     const fullPageLoader = page.locator('text=Loading Race Data');
@@ -59,7 +59,7 @@ test.describe('Inspection pass/fail', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-register"]');
-    await page.locator('[data-testid="switch-inspection"]').click();
+    await page.locator('[data-testid="tab-inspection"]').click();
 
     const fullPageLoader = page.locator('text=Loading Race Data');
     await expect(fullPageLoader).not.toBeVisible();

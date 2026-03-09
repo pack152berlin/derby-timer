@@ -163,7 +163,7 @@ test('04-registration-inspection-list', async ({ page }) => {
   await page.click('[data-testid="nav-register"]');
   await page.waitForTimeout(600);
 
-  await page.locator('[data-testid="switch-inspection"]').click();
+  await page.locator('[data-testid="tab-inspection"]').click();
   await page.waitForTimeout(600);
 
   saveIfChanged('screenshots/04-registration-inspection-list.png', await page.screenshot({ fullPage: true }));
