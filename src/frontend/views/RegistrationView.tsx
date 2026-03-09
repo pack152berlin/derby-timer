@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
+  AlertTriangle,
   Camera,
   Car,
   CheckCircle,
@@ -44,6 +45,7 @@ import type { Racer } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
 import { SearchInput } from '../components/SearchInput';
+import { AppTabs } from '../components/AppTabs';
 
 const CLIENT_MAX_PHOTO_BYTES = 1_200_000;
 const CLIENT_MAX_PHOTO_DIMENSION = 1600;
@@ -151,7 +153,7 @@ async function optimizePhotoForUpload(file: File): Promise<File> {
 
 export function RegistrationView() {
   const { currentEvent, racers, refreshData } = useApp();
-  const [activeTab, setActiveTab] = useState('racers');
+  const [activeTab, setActiveTab] = useState('registerTab');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'car'>('newest');
   const [showHelp, setShowHelp] = useState(false);
@@ -185,7 +187,7 @@ export function RegistrationView() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
+      <div className="mb-3 sm:mb-6">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
             Registration
@@ -201,7 +203,7 @@ export function RegistrationView() {
             <span>Help</span>
           </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
+        <div className="hidden sm:flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
           <div className="flex items-center gap-2 text-slate-600">
             <Users size={18} className="text-[#003F87]" />
             <span className="font-semibold">{racers.length} Racers</span>
@@ -288,6 +290,33 @@ function RacersTab({
   setActiveTab: (s: string) => void
 }) {
   const { currentEvent, racers: allRacers, refreshData, refreshDataSilent, setCurrentRacerId } = useApp();
+  const inspectedCount = allRacers.filter(r => r.weight_ok).length;
+  const allInspected = allRacers.length > 0 && inspectedCount === allRacers.length;
+
+  const inspectRacers = useMemo(() =>
+    [...allRacers].sort((a, b) => {
+      if (!!a.weight_ok !== !!b.weight_ok) return a.weight_ok ? 1 : -1; // uninspected first
+      return Number(a.car_number) - Number(b.car_number);
+    }),
+    [allRacers],
+  );
+
+  const [inspectSearch, setInspectSearch] = useState('');
+
+  const filteredInspectRacers = useMemo(() => {
+    if (!inspectSearch.trim()) return inspectRacers;
+    const q = inspectSearch.toLowerCase();
+    return inspectRacers.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      String(r.car_number ?? '').includes(q)
+    );
+  }, [inspectRacers, inspectSearch]);
+
+  const displayRacers = activeTab === 'inspectionTab' ? filteredInspectRacers : racers;
+
+  const inspectStatusIcon = allRacers.length === 0 ? null : allInspected
+    ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+    : <AlertTriangle className="w-5 h-5 text-amber-500" />;
   const [inspectingIds, setInspectingIds] = useState<Set<string>>(new Set());
   const addInspecting = (id: string) => setInspectingIds(prev => new Set(prev).add(id));
   const removeInspecting = (id: string) => setInspectingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
@@ -558,29 +587,32 @@ function RacersTab({
         </Card>
       )}
 
-      {showAddForm ? (
-        <Card className="mb-6 border-2 border-blue-200">
-          <CardHeader>
+      {showAddForm && (
+        <Card className="mb-4 border-2 border-blue-200">
+          <CardHeader className="lg:py-2 px-4">
             <CardTitle className="text-lg">Add New Racer</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3 items-start">
-              <div className="md:col-span-3">
-                <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
+          <CardContent className="pt-0 px-4 pb-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-slate-600 uppercase tracking-wider">
                   Full Name *
                 </label>
-                <Input 
+                <Input
                   value={newRacerName}
                   onChange={(e) => setNewRacerName(e.target.value)}
-                  required 
+                  required
                   data-testid="input-racer-name"
                   placeholder="Johnny Smith"
                   className="h-12"
+                  autoFocus
                 />
               </div>
 
-              <div className="md:col-span-1">
-                <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
+              {/* Den */}
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-slate-600 uppercase tracking-wider">
                   Den
                 </label>
                 <Select value={newRacerDen} onValueChange={setNewRacerDen}>
@@ -595,82 +627,80 @@ function RacersTab({
                 </Select>
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold mb-2 text-slate-600 uppercase tracking-wider">
+              {/* Car Photo */}
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-slate-600 uppercase tracking-wider">
                   Car Photo (optional)
                 </label>
-                <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handlePhotoSelected}
-                      className="h-12 bg-white file:h-9 file:px-3 file:text-sm"
-                    />
-                    {newRacerPhoto && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={clearPhotoSelection}
-                        className="h-12 w-full sm:w-auto"
-                      >
-                        Remove Photo
-                      </Button>
-                    )}
-                  </div>
-
-                  {isProcessingPhoto && (
-                    <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 font-semibold">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Preparing photo...
-                    </p>
-                  )}
-
-                  {photoError && (
-                    <p className="mt-2 text-sm font-semibold text-red-600">{photoError}</p>
-                  )}
-
-                  {photoStatus && !photoError && (
-                    <p className="mt-2 text-sm font-semibold text-emerald-700">{photoStatus}</p>
-                  )}
-
-                  {photoPreviewUrl && (
-                    <div className="mt-3">
-                      <img
-                        src={photoPreviewUrl}
-                        alt="Selected car preview"
-                        className="h-36 w-full max-w-xs rounded-lg border-2 border-slate-300 object-cover"
-                      />
-                    </div>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoSelected}
+                    className="h-12 bg-white file:h-9 file:px-3 file:text-sm flex-1 min-w-0"
+                  />
+                  {newRacerPhoto && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearPhotoSelection}
+                      className="h-12 px-3 shrink-0"
+                      title="Remove photo"
+                    >
+                      ✕
+                    </Button>
                   )}
                 </div>
+                {isProcessingPhoto && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Preparing photo...
+                  </p>
+                )}
+                {photoError && (
+                  <p className="mt-1.5 text-xs font-semibold text-red-600">{photoError}</p>
+                )}
+                {photoStatus && !photoError && (
+                  <p className="mt-1.5 text-xs font-semibold text-emerald-700">{photoStatus}</p>
+                )}
+                {photoPreviewUrl && (
+                  <img
+                    src={photoPreviewUrl}
+                    alt="Selected car preview"
+                    className="mt-2 h-28 w-full rounded-lg border-2 border-slate-300 object-cover"
+                  />
+                )}
               </div>
 
-              <div className="md:col-span-3 flex items-center gap-3 py-2">
-                <Checkbox 
-                  id="inspected" 
+              {/* Inspected */}
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="inspected"
                   checked={newRacerInspected}
                   onCheckedChange={(checked) => setNewRacerInspected(checked === true)}
                   className="size-5 border-slate-400"
                 />
                 <Label htmlFor="inspected" className="font-semibold cursor-pointer text-slate-700">
-                  Inspected (ready to race)
+                  Inspected
                 </Label>
               </div>
-              <div className="md:col-span-3 flex flex-col sm:flex-row gap-2">
+
+              {/* Buttons */}
+              <div className="flex flex-row-reverse sm:flex-row gap-2 pt-1">
                 <Button
                   type="submit"
                   data-testid="btn-submit-racer"
                   disabled={isSubmitting || isProcessingPhoto}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-11 px-5"
                 >
                   {isSubmitting ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <Plus className="w-5 h-5 mr-2" />
+                    <Plus className="w-4 h-4 mr-2" />
                   )}
-                  {isSubmitting ? 'Saving...' : 'Add Racer'}
+                  {isSubmitting ? 'Saving...' : 'Submit Racer'}
                 </Button>
                 <Button
                   type="button"
@@ -679,7 +709,7 @@ function RacersTab({
                     resetForm();
                     setShowAddForm(false);
                   }}
-                  className="h-12 px-6"
+                  className="h-11 px-5"
                 >
                   Cancel
                 </Button>
@@ -687,144 +717,177 @@ function RacersTab({
             </form>
           </CardContent>
         </Card>
-      ) : (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+      )}
+
+      <AppTabs
+        tabs={[
+          { id: 'registerTab',   label: 'Register', count: allRacers.length },
+          { id: 'inspectionTab', label: 'Inspect',  count: inspectedCount, statusIcon: inspectStatusIcon },
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        contentClassName="p-0"
+      >
+        {/* Register tab: filter bar + Add Racer CTA */}
+        {activeTab === 'registerTab' && !showAddForm && (
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 px-4 py-3 border-b border-slate-200">
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}
               placeholder="Search racers or car numbers..."
-              className="flex-1 min-w-[180px]"
+              className="sm:flex-1 sm:min-w-[180px]"
             />
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Filter:</span>
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-xs font-bold uppercase transition-colors",
-                  activeTab === 'racers' ? "text-slate-900" : "text-slate-400"
-                )}>
-                  Register
-                </span>
-                <Switch 
-                  data-testid="switch-inspection"
-                  checked={activeTab === 'inspection'} 
-                  onCheckedChange={(checked) => setActiveTab(checked ? 'inspection' : 'racers')}
-                  className="data-[size=default]:h-5 data-[size=default]:w-9"
-                />
-                <span className={cn(
-                  "text-xs font-bold uppercase transition-colors",
-                  activeTab === 'inspection' ? "text-emerald-600" : "text-slate-400"
-                )}>
-                  Inspect
-                </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-slate-100 border border-slate-300 shrink-0" data-testid="sort-toggle">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">Sort:</span>
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-xs font-bold uppercase transition-colors", sortBy === 'newest' ? "text-slate-900" : "text-slate-500")}>New</span>
+                  <Switch
+                    checked={sortBy === 'car'}
+                    onCheckedChange={(checked) => setSortBy(checked ? 'car' : 'newest')}
+                    className="data-[size=default]:h-5 data-[size=default]:w-9"
+                  />
+                  <span className={cn("text-xs font-bold uppercase transition-colors", sortBy === 'car' ? "text-slate-900" : "text-slate-500")}>#</span>
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100" data-testid="sort-toggle">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Sort:</span>
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-xs font-bold uppercase transition-colors",
-                  sortBy === 'newest' ? "text-slate-900" : "text-slate-400"
-                )}>
-                  New
-                </span>
-                <Switch 
-                  checked={sortBy === 'car'} 
-                  onCheckedChange={(checked) => setSortBy(checked ? 'car' : 'newest')}
-                  className="data-[size=default]:h-5 data-[size=default]:w-9"
-                />
-                <span className={cn(
-                  "text-xs font-bold uppercase transition-colors",
-                  sortBy === 'car' ? "text-slate-900" : "text-slate-400"
-                )}>
-                  #
-                </span>
-              </div>
+              <Button
+                onClick={() => setShowAddForm(true)}
+                data-testid="btn-add-racer"
+                className="bg-[#003F87] hover:bg-[#002f66] text-white font-black uppercase tracking-widest h-9 flex-1 sm:flex-none"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Racer
+              </Button>
             </div>
           </div>
+        )}
 
-          <Button
-            onClick={() => setShowAddForm(true)}
-            data-testid="btn-add-racer"
-            className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-12 w-full sm:w-auto"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Racer
-          </Button>
-        </div>
-      )}
+        {/* Inspect tab: search bar */}
+        {activeTab === 'inspectionTab' && (
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
+            <SearchInput
+              value={inspectSearch}
+              onChange={setInspectSearch}
+              placeholder="Search by name or car number..."
+              className="flex-1"
+            />
+          </div>
+        )}
 
-      <div className={cn(
-        "grid gap-3 p-1 rounded-2xl transition-colors",
-        activeTab === 'inspection' && "bg-slate-100/50"
-      )} data-testid="racer-list">
-        {racers.map((racer) => {
+        <div className="grid gap-3 p-4" data-testid="racer-list">
+        {displayRacers.map((racer, idx) => {
           const isEditing = editingRacerId === racer.id;
 
+          // Section headers for inspection tab
+          const prevRacer = displayRacers[idx - 1];
+          const sectionHeader = activeTab === 'inspectionTab' && (
+            idx === 0 && !racer.weight_ok ? (
+              <div className="col-span-full pt-1 pb-2">
+                <p className="text-lg text-amber-600 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Pending Inspection - Please Review
+                </p>
+              </div>
+            ) : idx === 0 && racer.weight_ok ? (
+              <div className="col-span-full pt-1 pb-2">
+                <p className="text-lg text-emerald-600 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Already Passing Inspection
+                </p>
+              </div>
+            ) : prevRacer && !prevRacer.weight_ok && racer.weight_ok ? (
+              <div className="col-span-full pt-3 pb-2">
+                <p className="text-lg text-emerald-600 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Already Passing Inspection
+                </p>
+              </div>
+            ) : null
+          );
+
           return (
-          <Card 
-            key={racer.id}
+          <React.Fragment key={racer.id}>
+          {sectionHeader}
+          <Card
             data-testid="racer-card"
             className={cn(
-              "group relative transition-all duration-200 border-2",
-              activeTab === 'inspection' 
-                ? (racer.weight_ok ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200 shadow-sm")
-                : "hover:border-blue-300"
+              "relative group transition-all duration-200 py-1 border-2",
+              activeTab === 'inspectionTab' && !racer.weight_ok
+                ? "bg-amber-50 border-amber-200 [box-shadow:inset_0_1px_4px_rgba(255,255,255,0.95),0_1px_3px_rgba(120,60,0,0.09)]"
+                : "border-slate-200 hover:border-blue-300 [box-shadow:inset_0_1px_3px_rgba(255,255,255,0.8),0_1px_3px_rgba(0,0,0,0.07)]"
             )}
           >
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRacerToDelete(racer)}
-              className="absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 transition-all z-10 flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
-              title="Delete Racer"
-            >
-              <X className="h-3 w-3" />
-              <span className="text-[10px] font-bold uppercase">Delete</span>
-            </Button>
-            <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <div 
-                  data-testid={`car-number-${racer.car_number}`}
-                  onClick={() => setCurrentRacerId(racer.id)}
-                  className={cn(
-                    "w-14 h-14 rounded-lg flex items-center justify-center font-black text-xl border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90",
-                    racer.weight_ok 
-                      ? "bg-emerald-100 text-emerald-700 border-emerald-300"
-                      : "bg-slate-100 text-slate-500 border-slate-300"
+            {/* Desktop delete — floating pill, hover-reveal */}
+            {!isEditing && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRacerToDelete(racer)}
+                className="hidden sm:flex absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 transition-all z-10 items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
+                title="Delete Racer"
+              >
+                <X className="h-3 w-3" />
+                <span className="text-xs font-bold uppercase">Delete</span>
+              </Button>
+            )}
+            <CardContent className="p-3 sm:p-4">
+              {/* flex-row always: [car#+photo stacked] [name top-aligned] [actions] */}
+              <div className="flex items-start gap-3 sm:gap-4">
+
+                {/* LEFT: car# on top, photo below (mobile); side-by-side (desktop) */}
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shrink-0">
+                  <div
+                    data-testid={`car-number-${racer.car_number}`}
+                    onClick={() => {
+                      if (!racer.weight_ok && activeTab === 'registerTab') setActiveTab('inspectionTab');
+                      else setCurrentRacerId(racer.id);
+                    }}
+                    className={cn(
+                      "w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex flex-col items-center justify-center border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90",
+                      !racer.weight_ok && activeTab === 'registerTab'
+                        ? "bg-amber-50 text-amber-600 border-amber-300"
+                        : "bg-slate-100 text-slate-500 border-slate-200 font-black text-xl"
+                    )}
+                  >
+                    {!racer.weight_ok && activeTab === 'registerTab' ? (
+                      <>
+                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                        <span className="text-xs font-bold leading-none mt-0.5">#{racer.car_number}</span>
+                      </>
+                    ) : (
+                      `#${racer.car_number}`
+                    )}
+                  </div>
+
+                  {racer.car_photo_filename ? (
+                    <div className="relative group/photo">
+                      <img
+                        src={api.getRacerPhotoUrl(racer.id, racer.updated_at)}
+                        alt={`${racer.name} car photo`}
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 border-slate-300 object-cover"
+                        loading="lazy"
+                      />
+                      <button
+                        onClick={() => setPhotoToRemoveRacer(racer)}
+                        className="hidden sm:flex absolute inset-0 rounded-lg items-center justify-center bg-black/50 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity"
+                        title="Remove Photo"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => beginCardPhotoUpload(racer.id)}
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-colors cursor-pointer"
+                      title="Add Photo"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span className="text-xs font-bold uppercase">No Pic</span>
+                    </button>
                   )}
-                >
-                  #{racer.car_number}
                 </div>
 
-                {racer.car_photo_filename ? (
-                  <div className="relative group/photo shrink-0">
-                    <img
-                      src={api.getRacerPhotoUrl(racer.id, racer.updated_at)}
-                      alt={`${racer.name} car photo`}
-                      className="w-14 h-14 rounded-lg border-2 border-slate-300 object-cover"
-                      loading="lazy"
-                    />
-                    <button
-                      onClick={() => setPhotoToRemoveRacer(racer)}
-                      className="hidden sm:flex absolute inset-0 rounded-lg items-center justify-center bg-black/50 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity"
-                      title="Remove Photo"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => beginCardPhotoUpload(racer.id)}
-                    className="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-colors cursor-pointer shrink-0"
-                    title="Add Photo"
-                  >
-                    <Camera className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase">No Pic</span>
-                  </button>
-                )}
-
+                {/* MIDDLE: name top-aligned, fills remaining width */}
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
                     <div className="flex flex-wrap items-center gap-2 sm:min-w-[400px]">
@@ -832,10 +895,10 @@ function RacersTab({
                         value={editRacerName}
                         onChange={(event) => setEditRacerName(event.target.value)}
                         placeholder="Racer name"
-                        className="h-10 bg-white flex-1 min-w-[150px]"
+                        className="h-10 bg-white flex-1 min-w-[130px]"
                         autoFocus
                       />
-                      <div className="w-[140px]">
+                      <div className="w-[130px]">
                         <Select value={editRacerDen} onValueChange={setEditRacerDen}>
                           <SelectTrigger className="h-10 bg-white border-slate-300 w-full">
                             <SelectValue placeholder="Select Den" />
@@ -848,7 +911,7 @@ function RacersTab({
                         </Select>
                       </div>
                       <div className="flex items-center gap-2 px-2 h-10 rounded-md border border-slate-200 bg-slate-50">
-                        <Checkbox 
+                        <Checkbox
                           id={`edit-inspect-${racer.id}`}
                           checked={editRacerInspected}
                           onCheckedChange={(checked) => setEditRacerInspected(checked === true)}
@@ -861,18 +924,19 @@ function RacersTab({
                     </div>
                   ) : (
                     <>
-                      <p className="font-bold text-lg text-slate-900 truncate">{racer.name}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <p className="font-bold text-base sm:text-lg text-slate-900 truncate">{racer.name}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         {racer.den && (
-                          <Badge variant="secondary" className="font-medium">{racer.den}</Badge>
+                          <Badge variant="secondary" className="font-medium text-xs">{racer.den}</Badge>
                         )}
-                        {racer.weight_ok ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                        {activeTab === 'inspectionTab' && !!racer.weight_ok && (
+                          <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-xs">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Inspected
                           </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 font-bold uppercase tracking-tighter">
+                        )}
+                        {!racer.weight_ok && (
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 font-bold uppercase tracking-tighter text-xs">
                             Pending
                           </Badge>
                         )}
@@ -880,140 +944,150 @@ function RacersTab({
                     </>
                   )}
                 </div>
-              </div>
 
-              <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                {activeTab === 'inspection' ? (
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    {racer.weight_ok ? (
-                      <>
-                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 mr-auto sm:mr-4">
-                          <CheckSquare className="w-3 h-3 mr-1" />
-                          PASSED
-                        </Badge>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={inspectingIds.has(racer.id)}
-                          onClick={async () => {
-                            addInspecting(racer.id);
-                            await api.inspectRacer(racer.id, false);
-                            await refreshDataSilent();
-                            removeInspecting(racer.id);
-                          }}
-                          className="h-11 px-4 min-w-[4.5rem]"
-                        >
-                          {inspectingIds.has(racer.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        disabled={inspectingIds.has(racer.id)}
-                        onClick={async () => {
-                          addInspecting(racer.id);
-                          await api.inspectRacer(racer.id, true);
-                          await refreshDataSilent();
-                          removeInspecting(racer.id);
-                        }}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11 flex-1 sm:flex-none min-w-[5rem]"
-                      >
-                        {inspectingIds.has(racer.id)
-                          ? <><Loader2 className="w-4 h-4 animate-spin mr-1" />PASS</>
-                          : <><CheckCircle className="w-4 h-4 mr-1" />PASS</>}
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    {isEditing ? (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => handleSaveEdit(racer)}
-                          disabled={isSavingEdit || !editRacerName.trim()}
-                          className="h-10 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
-                        >
-                          {isSavingEdit ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : null}
-                          Save
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={resetEditForm}
-                          disabled={isSavingEdit}
-                          className="h-10 px-3"
-                        >
-                          Cancel
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                          onClick={() => beginEdit(racer)}
-                          className="h-10 px-3"
-                        >
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                          onClick={() => beginCardPhotoUpload(racer.id)}
-                          className="h-10 px-3"
-                        >
-                          {activePhotoRacerId === racer.id ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <ImagePlus className="w-4 h-4 mr-2" />
-                          )}
-                          {racer.car_photo_filename ? 'New Photo' : 'Add Photo'}
-                        </Button>
-
-                        {racer.car_photo_filename && (
+                {/* RIGHT: actions stacked (mobile), row (desktop), vertically centered */}
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2 shrink-0 self-center">
+                  {activeTab === 'inspectionTab' ? (
+                    <>
+                      {racer.weight_ok ? (
+                        <>
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 whitespace-nowrap">
+                            <CheckSquare className="w-3 h-3 mr-1" />
+                            PASSED
+                          </Badge>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            disabled={activePhotoRacerId === racer.id || isSavingEdit}
-                            onClick={() => setPhotoToRemoveRacer(racer)}
-                            className="h-10 px-3 border-slate-300 text-red-600 hover:bg-red-50"
+                            disabled={inspectingIds.has(racer.id)}
+                            onClick={async () => {
+                              addInspecting(racer.id);
+                              await api.inspectRacer(racer.id, false);
+                              await refreshDataSilent();
+                              removeInspecting(racer.id);
+                            }}
+                            className="h-9 px-3 min-w-[4.5rem]"
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Photo
+                            {inspectingIds.has(racer.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
                           </Button>
+                        </>
+                      ) : (
+                        <Button
+                          disabled={inspectingIds.has(racer.id)}
+                          onClick={async () => {
+                            addInspecting(racer.id);
+                            await api.inspectRacer(racer.id, true);
+                            await refreshDataSilent();
+                            removeInspecting(racer.id);
+                          }}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-12 min-w-[5rem]"
+                        >
+                          {inspectingIds.has(racer.id)
+                            ? <><Loader2 className="w-4 h-4 animate-spin mr-1" />PASS</>
+                            : <><CheckCircle className="w-4 h-4 mr-1" />PASS</>}
+                        </Button>
+                      )}
+                    </>
+                  ) : isEditing ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleSaveEdit(racer)}
+                        disabled={isSavingEdit || !editRacerName.trim()}
+                        className="h-9 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
+                      >
+                        {isSavingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        Save
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={resetEditForm}
+                        disabled={isSavingEdit}
+                        className="h-9 px-3"
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={activePhotoRacerId === racer.id}
+                        onClick={() => beginEdit(racer)}
+                        className="h-9 px-2 sm:px-3"
+                      >
+                        <Pencil className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Edit</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={activePhotoRacerId === racer.id}
+                        onClick={() => beginCardPhotoUpload(racer.id)}
+                        className="h-9 px-2 sm:px-3"
+                      >
+                        {activePhotoRacerId === racer.id ? (
+                          <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+                        ) : (
+                          <ImagePlus className="w-4 h-4 sm:mr-2" />
                         )}
-                      </>
-                    )}
-                  </>
-                )}
+                        <span className="hidden sm:inline">{racer.car_photo_filename ? 'New Photo' : 'Add Photo'}</span>
+                      </Button>
+                      {racer.car_photo_filename && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={activePhotoRacerId === racer.id}
+                          onClick={() => setPhotoToRemoveRacer(racer)}
+                          className="hidden sm:flex h-9 px-3 border-slate-300 text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Photo
+                        </Button>
+                      )}
+                    </>
+                  )}
+
+                  {/* Delete racer — inline on mobile only */}
+                  {!isEditing && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRacerToDelete(racer)}
+                      className="sm:hidden h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                      title="Delete Racer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+
               </div>
             </CardContent>
           </Card>
+          </React.Fragment>
           );
         })}
       </div>
 
-      {racers.length === 0 && !showAddForm && (
-        <Card className="border-2 border-dashed border-slate-300">
-          <CardContent className="text-center py-12">
-            <Users className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg text-slate-500 font-medium">No racers registered yet</p>
-            <p className="text-slate-400 mt-1">Tap "Add Racer" to get started</p>
-          </CardContent>
-        </Card>
-      )}
+        {racers.length === 0 && !showAddForm && (
+          <Card className="border-2 border-dashed border-slate-300 m-4">
+            <CardContent className="text-center py-12">
+              <Users className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p className="text-lg text-slate-500 font-medium">No racers registered yet</p>
+              <p className="text-slate-400 mt-1">Tap "Add Racer" to get started</p>
+            </CardContent>
+          </Card>
+        )}
+      </AppTabs>
 
       <Dialog open={!!racerToDelete} onOpenChange={(open) => !open && setRacerToDelete(null)}>
         <DialogContent>
