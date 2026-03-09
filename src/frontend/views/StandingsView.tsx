@@ -78,7 +78,7 @@ export function StandingsView() {
       </div>
 
       {standings.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
           <SearchInput
             value={searchTerm}
             onChange={setSearchTerm}
@@ -86,20 +86,17 @@ export function StandingsView() {
             className="flex-1 min-w-[180px]"
           />
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-            <span className="text-xs font-black uppercase tracking-widest text-slate-400">Den:</span>
-            <Select value={denFilter} onValueChange={setDenFilter}>
-              <SelectTrigger className="h-8 bg-white border-slate-300 w-[120px] text-sm font-bold">
-                <SelectValue placeholder="All Dens" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dens</SelectItem>
-                {CUB_SCOUT_DENS.map(den => (
-                  <SelectItem key={den} value={den}>{den}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={denFilter} onValueChange={setDenFilter}>
+            <SelectTrigger className="h-9 bg-white border-slate-300 w-[140px] text-sm font-bold">
+              <SelectValue placeholder="All Dens" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Dens</SelectItem>
+              {CUB_SCOUT_DENS.map(den => (
+                <SelectItem key={den} value={den}>{den}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
