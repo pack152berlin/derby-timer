@@ -7,11 +7,12 @@
  * Options:
  *   --lanes N       Number of lanes (default: 4)
  *   --rounds N      Total rounds to generate (default: 3)
+ *   --cars N        Number of racers (default: 40)
  *   --times         Include race times in completed heats
  *   --db PATH       Database path (default: derby.db)
  *   --port N        Temp server port (default: 3101)
  *
- * Creates one event with 40 racers (most with car photos, a few without).
+ * Creates one event with specified racers (most with car photos, a few without).
  * Completes the first 2 rounds and leaves the rest pending.
  * Event name and date are randomised so the script can be run multiple times.
  */
@@ -28,7 +29,6 @@ interface RacerRecord { id: string; car_number: string }
 interface HeatLane    { lane_number: number; racer_id: string }
 interface HeatRecord  { id: string; status: string; round: number; heat_number: number; lanes: HeatLane[] }
 
-const RACER_COUNT = 40;
 const PHOTO_RATE  = 0.8;
 const ROUNDS_TO_COMPLETE = 2;
 
@@ -96,14 +96,15 @@ async function runRounds(
 
 async function main() {
   const { values, flags } = parseArgs(Bun.argv.slice(2));
-  const lanes     = getInt(values.get('lanes'),  4,    'lanes');
-  const rounds    = getInt(values.get('rounds'), 3,    'rounds');
-  const port      = getInt(values.get('port'),   3101, 'port');
-  const dbPath    = values.get('db') ?? 'derby.db';
-  const withTimes = flags.has('times');
+  const lanes      = getInt(values.get('lanes'),  4,    'lanes');
+  const rounds     = getInt(values.get('rounds'), 3,    'rounds');
+  const racerCount = getInt(values.get('cars') || values.get('racers'), 40, 'cars');
+  const port       = getInt(values.get('port'),   3101, 'port');
+  const dbPath     = values.get('db') ?? 'derby.db';
+  const withTimes  = flags.has('times');
 
   const baseUrl = `http://localhost:${port}`;
-  console.log(`seed-mid-race  db=${dbPath}  lanes=${lanes}  rounds=${rounds}  times=${withTimes}`);
+  console.log(`seed-mid-race  db=${dbPath}  lanes=${lanes}  rounds=${rounds}  cars=${racerCount}  times=${withTimes}`);
 
   const server = startServer(dbPath, port);
   try {
@@ -121,14 +122,14 @@ async function main() {
     // ── Racers ────────────────────────────────────────────────────────────────
     const usedNames = new Set<string>();
     const racers: RacerRecord[] = [];
-    for (let i = 0; i < RACER_COUNT; i++) {
+    for (let i = 0; i < racerCount; i++) {
       const r = await fetchJson<RacerRecord>(baseUrl, `/api/events/${event.id}/racers`, {
         method: 'POST',
         body: JSON.stringify({ name: randomRacerName(usedNames), den: randomDen() }),
       });
       racers.push(r);
     }
-    console.log(`Created ${RACER_COUNT} racers`);
+    console.log(`Created ${racerCount} racers`);
 
     // ── Inspection ────────────────────────────────────────────────────────────
     for (const r of racers) {
@@ -149,7 +150,7 @@ async function main() {
       await fetch(`${baseUrl}/api/racers/${racers[i]!.id}/photo`, { method: 'POST', body: form });
       photoCount++;
     }
-    console.log(`Uploaded photos for ${photoCount}/${RACER_COUNT} racers`);
+    console.log(`Uploaded photos for ${photoCount}/${racerCount} racers`);
 
     // ── Generate heats (sets up the incremental queue) ────────────────────────
     await fetchJson<HeatRecord[]>(baseUrl, `/api/events/${event.id}/generate-heats`, {

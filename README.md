@@ -30,7 +30,7 @@ bun start          # Runs migrations automatically, starts server with hot reloa
 
 ### Seed the Database
 
-Populate the database with realistic test data. Both scripts create 40 racers with random Cub Scout names, dens, and car photos (roughly 80% get photos). Event names and dates are randomised so the scripts can be run multiple times.
+Populate the database with realistic test data. Both scripts create a specifyable number of racers with random Cub Scout names, dens, and car photos (roughly 80% get photos). Event names and dates are randomised so the scripts can be run multiple times.
 
 ```bash
 # Mid-race: 2 rounds completed, remaining rounds pending
@@ -46,6 +46,7 @@ bun run seed:complete
 |------|---------|-------------|
 | `--lanes N` | `4` | Number of track lanes |
 | `--rounds N` | `3` | Total rounds to generate |
+| `--cars N` | `40` | Number of racers to create |
 | `--times` | off | Include realistic race times in results |
 | `--db PATH` | `derby.db` | Database file to seed into |
 | `--port N` | `3101`/`3102` | Temp server port (avoids conflicts) |
