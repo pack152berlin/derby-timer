@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Car, Flag, CheckCircle, ChevronRight, Trophy, BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +18,7 @@ function ordinal(n: number) {
 }
 
 export function RaceConsoleView() {
+  const navigate = useNavigate();
   const { currentEvent, racers, heats, refreshData } = useApp();
   const [heatResults, setHeatResults] = useState<Record<string, HeatResult[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export function RaceConsoleView() {
         <Trophy className="w-20 h-20 mx-auto mb-6 text-yellow-500" />
         <h2 className="text-4xl font-black mb-4 text-slate-900">Race Complete!</h2>
         <p className="text-xl text-slate-500 mb-8">All heats have been completed</p>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-lg px-8 py-6">
+        <Button onClick={() => navigate('/standings')} className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-lg px-8 py-6 cursor-pointer">
           <BarChart3 className="w-6 h-6 mr-2" />
           View Final Standings
         </Button>

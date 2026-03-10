@@ -12,6 +12,30 @@ interface HeatLaneGridProps {
   renderLaneFooter?: (lane: HeatLane) => React.ReactNode;
 }
 
+function EmptyLane({ laneNum, status }: { laneNum: number; status: string }) {
+  return (
+    <div className="flex flex-col bg-white overflow-hidden">
+      <div className={cn(
+        'flex items-center justify-center gap-2 px-3 py-2',
+        status === 'pending' && 'bg-[#003F87]',
+        status === 'running' && 'bg-[#CE1126]',
+        status === 'complete' && 'bg-emerald-600',
+      )}>
+        <span className="text-[9px] font-black uppercase tracking-widest text-white/60">Lane</span>
+        <span className="text-3xl font-black text-white leading-none">{laneNum}</span>
+      </div>
+      <div className="flex-1 flex items-center justify-center py-6">
+        <div className="relative text-slate-300">
+          <Car className="w-10 h-10" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-px bg-slate-300 rotate-45" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: HeatLaneGridProps) {
   const racerById = useMemo(() => {
     const map = new Map<string, Racer>();
@@ -19,7 +43,7 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
     return map;
   }, [racers]);
 
-  const cols = heat.lanes?.length ?? laneCount;
+  const laneNums = Array.from({ length: laneCount }, (_, i) => i + 1);
   const anyPhotos = heat.lanes?.some(lane => racerById.get(lane.racer_id)?.car_photo_filename) ?? false;
 
   return (
@@ -30,14 +54,20 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
         heat.status === 'running' && 'bg-red-200',
         heat.status === 'complete' && 'bg-emerald-200',
       )}
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
     >
-      {heat.lanes?.map(lane => {
+      {laneNums.map(laneNum => {
+        const lane = heat.lanes?.find(l => l.lane_number === laneNum);
+
+        if (!lane) {
+          return <EmptyLane key={laneNum} laneNum={laneNum} status={heat.status} />;
+        }
+
         const racer = racerById.get(lane.racer_id);
         const photoUrl = racer?.car_photo_filename
           ? api.getRacerPhotoUrl(lane.racer_id, racer.updated_at)
           : null;
-        
+
         const result = heat.results?.find(r => r.racer_id === lane.racer_id);
 
         return (
