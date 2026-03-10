@@ -23,50 +23,19 @@ import {
   realCarPhoto,
   fetchJson, waitForServer, startServer, stopServer,
   parseArgs, getInt,
+  generateRaceContext, runHeat,
 } from './_seed-lib';
+import type { HeatRecord, RaceContext } from './_seed-lib';
 
 interface RacerRecord { id: string; car_number: string }
-interface HeatLane    { lane_number: number; racer_id: string }
-interface HeatRecord  { id: string; status: string; round: number; heat_number: number; lanes: HeatLane[] }
 interface EventRecord { id: string; status: string }
 
 const PHOTO_RATE  = 0.8;
 
-// ── Time generation ───────────────────────────────────────────────────────────
-
-function buildTimes(count: number): number[] {
-  const base = randInt(2800, 4200);
-  const times: number[] = [base];
-  for (let i = 1; i < count; i++) times.push(times[i - 1]! + randInt(30, 180));
-  return shuffle(times);
-}
-
-// ── Heat runner ───────────────────────────────────────────────────────────────
-
-function buildResults(heat: HeatRecord, withTimes: boolean) {
-  const lanes    = [...heat.lanes].sort((a, b) => a.lane_number - b.lane_number);
-  const shuffled = shuffle(lanes);
-  const times    = withTimes ? buildTimes(lanes.length) : [];
-  return shuffled.map((lane, idx) => ({
-    lane_number: lane.lane_number,
-    racer_id:    lane.racer_id,
-    place:       idx + 1,
-    ...(withTimes ? { time_ms: times[idx] } : {}),
-  }));
-}
-
-async function runHeat(baseUrl: string, heat: HeatRecord, withTimes: boolean): Promise<void> {
-  if (heat.status === 'pending') {
-    await fetchJson(baseUrl, `/api/heats/${heat.id}/start`, { method: 'POST' });
-  }
-  await fetchJson(baseUrl, `/api/heats/${heat.id}/results`, {
-    method: 'POST',
-    body: JSON.stringify({ results: buildResults(heat, withTimes) }),
-  });
-}
+// ── Heat runner loop ──────────────────────────────────────────────────────────
 
 /** Run all heats until none remain pending/running. */
-async function runAllHeats(baseUrl: string, eventId: string, withTimes: boolean): Promise<number> {
+async function runAllHeats(baseUrl: string, eventId: string, context: RaceContext): Promise<number> {
   let completed = 0;
   let currentRound = 0;
   for (let guard = 0; guard < 10000; guard++) {
@@ -77,7 +46,7 @@ async function runAllHeats(baseUrl: string, eventId: string, withTimes: boolean)
       currentRound = next.round;
       process.stdout.write(`\nROUND-${currentRound}: `);
     }
-    await runHeat(baseUrl, next, withTimes);
+    await runHeat(baseUrl, next, context);
     completed++;
     if (completed % 10 === 0) process.stdout.write(`${completed}`);
     else process.stdout.write('.');
@@ -95,10 +64,9 @@ async function main() {
   const racerCount = getInt(values.get('cars') || values.get('racers'), 40, 'cars');
   const port       = getInt(values.get('port'),   3102, 'port');
   const dbPath     = values.get('db') ?? 'derby.db';
-  const withTimes  = flags.has('times');
+  const withTimes  = true; // Realistic timings always include times now
 
-  const baseUrl = `http://localhost:${port}`;
-  console.log(`seed-complete  db=${dbPath}  lanes=${lanes}  rounds=${rounds}  cars=${racerCount}  times=${withTimes}`);
+  console.log(`seed-complete  db=${dbPath}  lanes=${lanes}  rounds=${rounds}  cars=${racerCount} (realistic timing)`);
 
   const server = startServer(dbPath, port);
   try {
@@ -124,6 +92,8 @@ async function main() {
       racers.push(r);
     }
     console.log(`Created ${racerCount} racers`);
+
+    const context = generateRaceContext(racers.map(r => r.id), lanes);
 
     // ── Inspection ────────────────────────────────────────────────────────────
     for (const r of racers) {
@@ -154,7 +124,7 @@ async function main() {
     console.log(`Generating ${rounds} rounds of heats (incremental queue)`);
 
     // ── Run all heats ─────────────────────────────────────────────────────────
-    const completedCount = await runAllHeats(baseUrl, event.id, withTimes);
+    const completedCount = await runAllHeats(baseUrl, event.id, context);
 
     const finalEvent = await fetchJson<EventRecord>(baseUrl, `/api/events/${event.id}`);
     console.log(`Completed ${completedCount} heats — event status: ${finalEvent.status}`);

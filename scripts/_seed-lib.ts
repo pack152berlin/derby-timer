@@ -298,3 +298,58 @@ export function getInt(raw: string | undefined, fallback: number, label: string)
   if (!Number.isFinite(n) || n <= 0) throw new Error(`Invalid ${label}: ${raw}`);
   return n;
 }
+
+// ── Shared Race Logic ─────────────────────────────────────────────────────────
+
+export interface HeatLane    { lane_number: number; racer_id: string }
+export interface HeatRecord  { id: string; status: string; round: number; heat_number: number; lanes: HeatLane[] }
+
+export interface RaceContext {
+  racerBaseTimes: Map<string, number>; // racer_id -> base_time_ms
+  laneHandicaps: number[];             // index = lane_number - 1
+}
+
+/** Creates a consistent physical context for the whole race. */
+export function generateRaceContext(racerIds: string[], laneCount: number): RaceContext {
+  const racerBaseTimes = new Map<string, number>();
+  for (const id of racerIds) {
+    // 4s +/- 1.5s -> [2500, 5500]
+    racerBaseTimes.set(id, randInt(2500, 5500));
+  }
+
+  const laneHandicaps = Array.from({ length: laneCount }, () => randInt(0, 100));
+  return { racerBaseTimes, laneHandicaps };
+}
+
+/** Determines finish times and places based on racer skill and lane handicap. */
+export function buildResults(heat: HeatRecord, context: RaceContext) {
+  const results = heat.lanes.map(lane => {
+    const base = context.racerBaseTimes.get(lane.racer_id) || 4000;
+    const handicap = context.laneHandicaps[lane.lane_number - 1] || 0;
+    const jitter = randInt(0, 300);
+    const time_ms = base + handicap + jitter;
+    return {
+      lane_number: lane.lane_number,
+      racer_id:    lane.racer_id,
+      time_ms,
+    };
+  });
+
+  // Sort by time to determine place
+  const sorted = [...results].sort((a, b) => a.time_ms - b.time_ms);
+  return results.map(r => ({
+    ...r,
+    place: sorted.findIndex(s => s.racer_id === r.racer_id) + 1,
+  }));
+}
+
+/** Starts a heat and records results. */
+export async function runHeat(baseUrl: string, heat: HeatRecord, context: RaceContext): Promise<void> {
+  if (heat.status === 'pending') {
+    await fetchJson(baseUrl, `/api/heats/${heat.id}/start`, { method: 'POST' });
+  }
+  await fetchJson(baseUrl, `/api/heats/${heat.id}/results`, {
+    method: 'POST',
+    body: JSON.stringify({ results: buildResults(heat, context) }),
+  });
+}
