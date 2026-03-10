@@ -23,6 +23,7 @@ import { HeatLaneGrid } from '@/components/HeatLaneGrid';
 import { AppTabs } from '@/components/AppTabs';
 import { cn } from '@/lib/utils';
 import { splitName } from '@/lib/name-utils';
+import { PLACE_STYLES } from '@/lib/place-styles';
 import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat } from '../types';
@@ -30,12 +31,6 @@ import type { Heat } from '../types';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PLACE_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
-const PLACE_STYLES: Record<number, { pill: string; label: string }> = {
-  1: { pill: 'bg-amber-400 text-amber-950', label: '1st' },
-  2: { pill: 'bg-slate-200 text-slate-700', label: '2nd' },
-  3: { pill: 'bg-orange-300 text-orange-900', label: '3rd' },
-};
 
 const FIRST_NAME_COLOR: Record<number, string> = {
   1: 'text-amber-600',
