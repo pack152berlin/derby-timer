@@ -841,24 +841,13 @@ function RacersTab({
                     data-testid={`car-number-${racer.car_number}`}
                     onClick={() => setCurrentRacerId(racer.id)}
                     className={cn(
-                      "relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90",
+                      "w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90 font-black text-xl",
                       !racer.weight_ok && activeTab === 'registerTab'
-                        ? "bg-amber-50 text-amber-600 border-amber-300 font-black text-sm"
-                        : "bg-slate-100 text-slate-500 border-slate-200 font-black text-xl"
+                        ? "bg-amber-50 text-amber-600 border-amber-300"
+                        : "bg-slate-100 text-slate-500 border-slate-200"
                     )}
                   >
                     #{racer.car_number}
-                    {!racer.weight_ok && activeTab === 'registerTab' && (
-                      <button
-                        type="button"
-                        aria-label="Needs inspection — go to Inspect tab"
-                        title="Needs inspection — click to go to Inspect tab"
-                        onClick={(e) => { e.stopPropagation(); setActiveTab('inspectionTab'); }}
-                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full p-0.5 cursor-pointer"
-                      >
-                        <AlertTriangle className="w-full h-full text-amber-500" />
-                      </button>
-                    )}
                   </div>
 
                   {racer.car_photo_filename ? (
@@ -938,7 +927,8 @@ function RacersTab({
                           </Badge>
                         )}
                         {!racer.weight_ok && (
-                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 font-bold uppercase tracking-tighter text-xs">
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-700 font-bold uppercase tracking-wide text-xs gap-1">
+                            <AlertTriangle className="w-3 h-3" />
                             Pending
                           </Badge>
                         )}
