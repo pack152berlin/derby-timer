@@ -20,6 +20,7 @@ const DEN_IMAGES: Record<string, string> = {
 
 export const COL = {
   rank: 'w-24 shrink-0',
+  time: 'w-20 shrink-0',
   car:  'w-14 shrink-0',
   name: 'flex-1 min-w-0',
   den:  'w-28 shrink-0',
@@ -71,10 +72,12 @@ interface StandingRowProps {
   idx: number;
   seconds: number;
   thirds: number;
+  bestTimeMs?: number | null;
+  showTime?: boolean;
   onClick: () => void;
 }
 
-export function StandingRow({ standing, idx, seconds, thirds, onClick }: StandingRowProps) {
+export function StandingRow({ standing, idx, seconds, thirds, bestTimeMs, showTime, onClick }: StandingRowProps) {
   const { rank } = standing;
   const accent = RANK_ACCENT[rank] ?? 'border-l-transparent bg-white';
   const rankTextClass = RANK_TEXT[rank] ?? 'text-slate-400';
@@ -97,6 +100,17 @@ export function StandingRow({ standing, idx, seconds, thirds, onClick }: Standin
         </span>
       </div>
 
+      {showTime && (
+        <div className={cn(COL.time, "px-2 flex justify-center items-center")}>
+          {bestTimeMs != null ? (
+            <span className="text-sm font-mono font-bold text-slate-600 tabular-nums">
+              {(bestTimeMs / 1000).toFixed(3)}s
+            </span>
+          ) : (
+            <span className="text-sm text-slate-300">—</span>
+          )}
+        </div>
+      )}
       <div className={cn(COL.car, "px-2 flex justify-center")}>
         <span className="text-base font-black text-[#003F87] leading-none">
           #{standing.car_number}

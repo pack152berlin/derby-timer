@@ -20,6 +20,22 @@ export function StandingsView() {
     return calculatePlaceCounts(heats);
   }, [heats]);
 
+  const bestTimesByRacer = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const heat of heats) {
+      for (const result of heat.results ?? []) {
+        if (result.time_ms != null && !result.dnf) {
+          if (!(result.racer_id in map) || result.time_ms < map[result.racer_id]!) {
+            map[result.racer_id] = result.time_ms;
+          }
+        }
+      }
+    }
+    return map;
+  }, [heats]);
+
+  const showTime = Object.keys(bestTimesByRacer).length > 0;
+
   const handleSort = (col: SortCol) => {
     if (sortCol === col) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -53,6 +69,11 @@ export function StandingsView() {
       let cmp = 0;
       switch (sortCol) {
         case 'rank':    cmp = a.rank - b.rank; break;
+        case 'time': {
+          const at = bestTimesByRacer[a.racer_id] ?? Infinity;
+          const bt = bestTimesByRacer[b.racer_id] ?? Infinity;
+          cmp = at - bt; break;
+        }
         case 'car':     cmp = parseInt(a.car_number) - parseInt(b.car_number); break;
         case 'name':    cmp = a.racer_name.localeCompare(b.racer_name); break;
         case 'den':     cmp = (a.den ?? '').localeCompare(b.den ?? ''); break;
@@ -117,25 +138,28 @@ export function StandingsView() {
           </CardContent>
         </Card>
       ) : (
-        <div
-          className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-y-auto min-h-[24rem]"
-          style={{ maxHeight: 'calc(100vh - 20rem)' }}
-        >
-          <StandingHeader sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
-
-          {displayedStandings.map((standing, idx) => {
-            const { seconds = 0, thirds = 0 } = placeCountsByRacer[standing.racer_id] ?? {};
-            return (
-              <StandingRow
-                key={standing.racer_id}
-                standing={standing}
-                idx={idx}
-                seconds={seconds}
-                thirds={thirds}
-                onClick={() => setCurrentRacerId(standing.racer_id)}
-              />
-            );
-          })}
+        <div className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden">
+          <StandingHeader sortCol={sortCol} sortDir={sortDir} onSort={handleSort} showTime={showTime} />
+          <div
+            className="overflow-y-auto min-h-[24rem]"
+            style={{ maxHeight: 'calc(100vh - 22rem)' }}
+          >
+            {displayedStandings.map((standing, idx) => {
+              const { seconds = 0, thirds = 0 } = placeCountsByRacer[standing.racer_id] ?? {};
+              return (
+                <StandingRow
+                  key={standing.racer_id}
+                  standing={standing}
+                  idx={idx}
+                  seconds={seconds}
+                  thirds={thirds}
+                  bestTimeMs={bestTimesByRacer[standing.racer_id] ?? null}
+                  showTime={showTime}
+                  onClick={() => setCurrentRacerId(standing.racer_id)}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { COL } from './StandingRow';
 
-export type SortCol = 'rank' | 'car' | 'name' | 'den' | 'wins' | 'seconds' | 'thirds';
+export type SortCol = 'rank' | 'time' | 'car' | 'name' | 'den' | 'wins' | 'seconds' | 'thirds';
 export type SortDir = 'asc' | 'desc';
 
 function SortTriangle({ dir, visible }: { dir: SortDir; visible: boolean }) {
@@ -58,17 +58,23 @@ interface StandingHeaderProps {
   sortCol: SortCol;
   sortDir: SortDir;
   onSort: (col: SortCol) => void;
+  showTime?: boolean;
 }
 
-export function StandingHeader({ sortCol, sortDir, onSort }: StandingHeaderProps) {
+export function StandingHeader({ sortCol, sortDir, onSort, showTime }: StandingHeaderProps) {
   const sortProps = { sortCol, sortDir, onSort };
   const colBg = (col: SortCol, active: string) => sortCol === col ? active : 'bg-slate-50';
 
   return (
-    <div className="sticky top-0 z-10 flex items-stretch border-b border-slate-200">
+    <div className="flex items-stretch border-b border-slate-200">
       <div className={cn(COL.rank, 'flex items-center pl-4 pr-2 py-2', colBg('rank', 'bg-slate-200'))}>
         <SortHeader col="rank" label="Rank" {...sortProps} />
       </div>
+      {showTime && (
+        <div className={cn(COL.time, 'flex items-center justify-center px-2 py-2', colBg('time', 'bg-slate-200'))}>
+          <SortHeader col="time" label="Best" center {...sortProps} />
+        </div>
+      )}
       <div className={cn(COL.car, 'flex items-center justify-center px-5 py-2', colBg('car', 'bg-slate-200'))}>
         <SortHeader col="car" label="Car" center {...sortProps} />
       </div>
