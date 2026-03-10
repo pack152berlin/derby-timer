@@ -183,7 +183,7 @@ export function RacerProfileView() {
 
         {/* Left: Profile Card + Stats */}
         <div className="md:w-1/3 shrink-0 space-y-4">
-          <Card className="overflow-hidden border-2 border-slate-200 shadow-lg py-0 gap-0">
+          <Card className="overflow-hidden border-2 border-slate-200 shadow-lg py-0 gap-0 md:gap-0">
 
             <ProfileBanner
               carNumber={racer.car_number}
