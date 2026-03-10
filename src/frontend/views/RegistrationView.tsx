@@ -723,7 +723,7 @@ function RacersTab({
       <AppTabs
         tabs={[
           { id: 'registerTab',   label: 'Register', count: allRacers.length },
-          { id: 'inspectionTab', label: 'Inspect',  count: inspectedCount, statusIcon: inspectStatusIcon },
+          { id: 'inspectionTab', label: 'Inspect',  count: allInspected ? undefined : inspectedCount, statusIcon: inspectStatusIcon },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -818,13 +818,13 @@ function RacersTab({
                 : "border-slate-200 hover:border-blue-300 [box-shadow:inset_0_1px_3px_rgba(255,255,255,0.8),0_1px_3px_rgba(0,0,0,0.07)]"
             )}
           >
-            {/* Desktop delete — floating pill, hover-reveal */}
-            {!isEditing && (
+            {/* Desktop delete — floating pill, hover-reveal, register tab only */}
+            {!isEditing && activeTab === 'registerTab' && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setRacerToDelete(racer)}
-                className="hidden sm:flex absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 transition-all z-10 items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
+                className="hidden sm:flex absolute -top-4 -right-2 h-8 px-2 rounded-full bg-white border border-red-300 shadow-sm text-red-500 hover:text-white hover:bg-red-600 transition-all z-10 items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
                 title="Delete Racer"
               >
                 <X className="h-3 w-3" />
