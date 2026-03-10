@@ -70,6 +70,7 @@ test.describe('Racer Profile', () => {
         })),
       }),
     });
+    await fetch(`${baseUrl}/api/heats/${heat.id}/complete`, { method: 'POST' });
 
     return { event, racer1, racer2 };
   }
@@ -84,7 +85,7 @@ test.describe('Racer Profile', () => {
     await page.click('[data-testid="standing-card-1"]');
     
     await expect(page.locator('h1')).toContainText('Dean Kim');
-    await expect(page.locator('text=Wolves')).toBeVisible();
+    await expect(page.getByAltText('Wolves')).toBeVisible();
     await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText('#1');
   });
 
@@ -169,9 +170,9 @@ test.describe('Racer Profile', () => {
 
     // Heat 1 was completed in seedTwoRacers. Switch to the Completed tab to see it.
     await page.click('[data-testid="tab-completed"]');
-    const completedHeatCard = page.locator('[data-testid="heat-card"]').filter({ hasText: '✓' }).first();
-    await expect(completedHeatCard.locator('text="🥇"').first()).toBeVisible();
-    await expect(completedHeatCard.locator('text="🥈"').first()).toBeVisible();
+    const completedHeatCard = page.locator('[data-testid="heat-card"]').first();
+    await expect(completedHeatCard.locator('text="1st"').first()).toBeVisible();
+    await expect(completedHeatCard.locator('text="2nd"').first()).toBeVisible();
   });
 
   test('clicking another racer in heat history navigates to their profile', async ({ page }) => {
@@ -292,7 +293,12 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-heats"]');
+    await expect(page.locator('[data-testid="tab-completed"]')).toContainText('1');
     await page.click('[data-testid="tab-completed"]');
+    
+    // Explicitly expand the heat row
+    await page.click('[aria-label="Expand heat"]');
+    await page.waitForTimeout(500);
 
     await page.click(`[data-testid="completed-racer-${racer2.id}"]`);
 
@@ -306,7 +312,12 @@ test.describe('Racer Profile', () => {
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
     await page.click('[data-testid="nav-heats"]');
+    await expect(page.locator('[data-testid="tab-completed"]')).toContainText('1');
     await page.click('[data-testid="tab-completed"]');
+    
+    // Explicitly expand the heat row
+    await page.click('[aria-label="Expand heat"]');
+    await page.waitForTimeout(500);
 
     await page.click(`[data-testid="completed-racer-${racer1.id}"]`);
     await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer1.car_number}`);

@@ -168,9 +168,9 @@ test.describe('Heat Schedule', () => {
     
     // 3b. Switch to Completed tab and verify the heat appears as a compact row.
     await page.click('[data-testid="tab-completed"]');
-    const targetHeatCard = page.locator('[data-testid="heat-card"]', { hasText: `R${heats[0].round}·H${heats[0].heat_number}` });
+    const targetHeatCard = page.locator('[data-testid="heat-card"]', { hasText: `H${heats[0].heat_number}` });
     await expect(targetHeatCard).toBeVisible();
-    await expect(targetHeatCard).toContainText('✓');
+    await expect(targetHeatCard).toContainText(`R${heats[0].round}`);
 
     // 4. Switch to Pending tab — completed heat should not be visible there.
     await page.click('[data-testid="tab-pending"]');
