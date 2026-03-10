@@ -851,7 +851,8 @@ const server = Bun.serve({
               lane_number: r.lane_number,
               racer_id: r.racer_id,
               place: r.place,
-              dnf: r.dnf === 1
+              dnf: r.dnf === 1,
+              time_ms: r.time_ms,
             }))
           };
         });
