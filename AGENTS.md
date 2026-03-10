@@ -120,8 +120,8 @@ Always use Tailwind utility classes over custom CSS:
 
 ### "Derp" UX - Foolproof Simplicity
 - **One action per screen** - don't overwhelm users
-- **Big buttons** - h-12 (48px) minimum for all actions
-- **Clear labels** - no icons without text labels
+- **Big buttons** - h-12 (48px) minimum for primary standalone CTAs; compact inline card actions (e.g. Save/Cancel/Edit in a list row) may use h-9
+- **Clear labels** - no icons without text labels for primary actions; compact inline icon-only actions must have `aria-label` and `title`
 - **Confirmation dialogs** for destructive actions (delete, clear)
 - **Visual feedback** - loading states, success badges, clear status indicators
 - **No nested navigation** - flat structure, tabs for sub-sections
@@ -129,9 +129,10 @@ Always use Tailwind utility classes over custom CSS:
 
 ### Layout
 - **Max-width containers** - max-w-7xl for main content
-- **Generous spacing** - gap-4 minimum between elements
+- **Generous spacing** - gap-4 minimum between elements on desktop; tighter gap-3/py-3 acceptable on mobile for dense list views
 - **Card-based organization** - use Card components to group related info
 - **Sticky navigation** - keep nav visible at top
+- **Mobile-first registration** - Registration is the most mobile-critical view; volunteers add racers on phones. Compact card layout (h-9 actions, stacked columns) is intentional
 
 ## Server
 
@@ -159,7 +160,7 @@ Bun.serve({
 ## Domain & Race Context
 
 - **Manual Setup** - Race day logistics (staging cars, moving them to the track) are manual processes managed by volunteers. The software must accommodate the slow, physical nature of these steps.
-- **Local Netowrk Setup** - Voluneers will be using their photos for registration and for lane setup. smaller fonts and mobile accessbility are important. Parents and other can access public pages. Dedicated display pages will be created for projector use. 
+- **Local Network Setup** - Volunteers will be using their phones for registration and for lane setup. Smaller fonts and mobile accessibility are important. Parents and other can access public pages. Dedicated display pages will be created for projector use. 
 - **Car-to-Lane Integrity** - Maintaining the exact relationship between a car and its assigned lane for each heat is critical. Results are tied directly to the lane number where the car finished. During lane setup, car photos are essential for error detection. They allow volunteers to visually confirm that the physical car in a lane matches the digital record, helping them identify and correct staging errors before the race begins.
 
 ## Data Model Simplicity

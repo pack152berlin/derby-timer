@@ -648,6 +648,7 @@ function RacersTab({
                       onClick={clearPhotoSelection}
                       className="h-12 px-3 shrink-0"
                       title="Remove photo"
+                      aria-label="Remove photo"
                     >
                       ✕
                     </Button>
@@ -848,11 +849,15 @@ function RacersTab({
                   >
                     #{racer.car_number}
                     {!racer.weight_ok && activeTab === 'registerTab' && (
-                      <AlertTriangle
-                        className="absolute -top-1.5 -right-1.5 w-4 h-4 text-amber-500 bg-white rounded-full p-0.5 cursor-pointer"
-                        onClick={(e) => { e.stopPropagation(); setActiveTab('inspectionTab'); }}
+                      <button
+                        type="button"
+                        aria-label="Needs inspection — go to Inspect tab"
                         title="Needs inspection — click to go to Inspect tab"
-                      />
+                        onClick={(e) => { e.stopPropagation(); setActiveTab('inspectionTab'); }}
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full p-0.5 cursor-pointer"
+                      >
+                        <AlertTriangle className="w-full h-full text-amber-500" />
+                      </button>
                     )}
                   </div>
 
@@ -1061,6 +1066,7 @@ function RacersTab({
                       onClick={() => setRacerToDelete(racer)}
                       className="sm:hidden h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
                       title="Delete Racer"
+                      aria-label="Delete Racer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
