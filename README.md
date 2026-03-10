@@ -1,6 +1,8 @@
-# Derby Race Manager
+# DerbyTimer
 
-A Pinewood Derby race management system built with Bun, SQLite, and React. Designed for fast race-day operation with projection display support.
+> A turnkey Pinewood Derby race management system that any pack volunteer can set up, run, and tear down in under an hour — no internet required.
+
+Built with Bun, SQLite, and React. One laptop, one network, zero cloud dependencies.
 
 ## Features
 
@@ -242,6 +244,10 @@ derby-timer/
 - **Frontend**: React 19 + Tailwind CSS v4 + shadcn/ui
 - **Server**: `Bun.serve()` with hot reload and WebSocket broadcast
 - **Testing**: Bun test runner + Playwright
+
+## Roadmap
+
+See [Project Vision](docs/vision.md) for the full roadmap — real-time WebSocket display, hardware timer integration, Raspberry Pi deployment, setup wizard, cloud sync, and more.
 
 ---
 
