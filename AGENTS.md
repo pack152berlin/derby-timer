@@ -116,7 +116,7 @@ Always use Tailwind utility classes over custom CSS:
 - **Large typography on Display Pages** - text-xl minimum for headers, text-lg for content
 - **Minimum font size** - `text-xs` (12px) is the smallest allowed text size anywhere in the UI. Never use `text-[10px]`, `text-[9px]`, or any smaller size — even for labels, badges, or secondary info.
 - **Bold weights** - font-bold, font-black for emphasis
-- **Orange accent color** (#f97316) for CTAs and highlights
+- **Brand palette** — navy `#003F87` for active states and primary CTAs; crimson `#CE1126` for accent stripes and warning badges. Do not introduce orange or other brand colors.
 
 ### "Derp" UX - Foolproof Simplicity
 - **One action per screen** - don't overwhelm users
@@ -181,6 +181,52 @@ interface Racer {
   weight_ok: number;
 }
 ```
+
+## Frontend Patterns
+
+### Scrollable Lists with Sticky Headers
+
+When a list needs vertical scrolling, place the header **outside** the `overflow-y-auto` container. Never put a sticky header inside a scroll container — it causes the scrollbar to overlap the header.
+
+```tsx
+// Good
+<div className="overflow-hidden rounded-xl border border-slate-200">
+  <HeaderRow />                          {/* outside scroll */}
+  <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 22rem)' }}>
+    {rows.map(r => <Row key={r.id} {...r} />)}
+  </div>
+</div>
+
+// Bad
+<div className="overflow-y-auto rounded-xl border border-slate-200">
+  <HeaderRow className="sticky top-0" /> {/* scrollbar overlaps header */}
+  {rows.map(r => <Row key={r.id} {...r} />)}
+</div>
+```
+
+### Performance for Sorted / Filtered Lists
+
+When a list supports sorting or filtering and contains many rows, wrap the row component in `React.memo` and stabilize callbacks with `useCallback`. This lets React reorder DOM nodes without re-rendering unchanged rows.
+
+```tsx
+const Row = React.memo(function Row({ item, onAction }: RowProps) { ... });
+
+function List({ items }: { items: Item[] }) {
+  const handleAction = useCallback((id: string) => { ... }, []);
+  return items.map(item => <Row key={item.id} item={item} onAction={handleAction} />);
+}
+```
+
+Do **not** reach for `useDeferredValue` as a first fix — it defers scheduling but doesn't skip expensive renders. Memoization is the right tool for list rows.
+
+### Shared Frontend Utilities
+
+Place shared constants, formatters, and small helpers in `src/frontend/lib/`. Import from there rather than duplicating across views.
+
+Examples of things that belong in `src/frontend/lib/`:
+- `PLACE_STYLES` — place-number → Tailwind class map
+- `DEN_IMAGES` — den name → imported image asset map
+- `ordinal(n)` — number to "1st / 2nd / 3rd" string
 
 ## Type Management & Domain Boundaries
 
