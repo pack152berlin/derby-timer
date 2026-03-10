@@ -209,7 +209,7 @@ export function RaceConsoleView() {
       )}
 
       {currentHeat.status !== 'pending' && (
-        <Card className="mb-6 border-2 border-slate-200 py-0 gap-0 overflow-hidden">
+        <Card className="mb-6 border-2 border-slate-200 py-0 gap-0 md:gap-0 overflow-hidden">
           {currentHeat.lanes?.map((lane, idx) => {
             const result = currentResults.find(r => r.lane_number === lane.lane_number);
             const racer = racerById.get(lane.racer_id);
@@ -274,7 +274,7 @@ export function RaceConsoleView() {
                           disabled={!!takenByLane}
                           onClick={() => recordPlace(currentHeat.id, lane.lane_number, lane.racer_id!, place)}
                           className={cn(
-                            'h-10 min-w-[52px] px-3 rounded-lg border-2 text-sm font-black transition-colors',
+                            'h-10 min-w-[52px] px-3 rounded-lg border-2 text-lg font-black transition-colors',
                             isSelected
                               ? 'bg-amber-400 border-amber-400 text-slate-900'
                               : takenByLane
