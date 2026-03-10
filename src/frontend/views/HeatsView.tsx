@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useDeferredValue, useCallback } from 'react';
-import { AlertCircle, Car, ChevronDown, Clock, Play } from 'lucide-react';
+import { AlertCircle, Car, Clock, Play } from 'lucide-react';
+import { LilyChevronDown } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -77,7 +78,7 @@ const HeatRow = React.memo(function HeatRow({
             className="text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors p-1 rounded cursor-pointer"
             aria-label={isExpanded ? 'Collapse heat' : 'Expand heat'}
           >
-            <ChevronDown
+            <LilyChevronDown
               size={14}
               className={cn('transition-transform duration-150', !isExpanded && '-rotate-90')}
             />

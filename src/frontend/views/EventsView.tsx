@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Flag, Clock, ChevronRight, Plus, X } from 'lucide-react';
+import { Trophy, Flag, Clock, Plus, X } from 'lucide-react';
+import { LilyChevronRight } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -182,7 +183,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
                 </div>
                 <div className="mt-4 pt-4 flex items-center justify-end text-[#003F87] font-semibold text-sm">
                   Select Event
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <LilyChevronRight className="w-4 h-4 ml-1" />
                 </div>
               </CardContent>
             </Card>
