@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useDeferredValue, useCallback } from 'react';
-import { AlertCircle, Car, Clock, Play } from 'lucide-react';
+import { AlertCircle, BarChart3, Car, Clock, Play } from 'lucide-react';
 import { LilyChevronDown } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -33,11 +33,139 @@ import type { Heat } from '../types';
 
 const PLACE_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
+const ordinal = (n: number) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
 const FIRST_NAME_COLOR: Record<number, string> = {
   1: 'text-amber-600',
   2: 'text-slate-700',
   3: 'text-orange-600',
 };
+
+// ─── Lane Stats ──────────────────────────────────────────────────────────────
+
+interface LaneStat {
+  lane: number;
+  avg: number | null;
+  best: number | null;
+  worst: number | null;
+  placeCounts: number[];  // index 0 = 1st place, index 1 = 2nd, etc.
+  avgFinish: number | null;
+  hasTimes: boolean;
+}
+
+export function computeLaneStats(heats: Heat[], laneCount: number): LaneStat[] {
+  const lanes: LaneStat[] = Array.from({ length: laneCount }, (_, i) => ({
+    lane: i + 1, avg: null, best: null, worst: null,
+    placeCounts: new Array(laneCount).fill(0), avgFinish: null, hasTimes: false,
+  }));
+
+  for (const heat of heats) {
+    if (!heat.results) continue;
+    for (const r of heat.results) {
+      const s = lanes[r.lane_number - 1];
+      if (!s) continue;
+      if (!r.dnf && r.place != null && r.place >= 1 && r.place <= laneCount) {
+        s.placeCounts[r.place - 1]++;
+      }
+      if (r.time_ms != null && !r.dnf) {
+        s.hasTimes = true;
+        if (s.best === null || r.time_ms < s.best) s.best = r.time_ms;
+        if (s.worst === null || r.time_ms > s.worst) s.worst = r.time_ms;
+      }
+    }
+  }
+
+  // Second pass for proper averages
+  for (const s of lanes) {
+    let timeSum = 0, timeCount = 0;
+    let placeSum = 0, placeCount = 0;
+    for (const heat of heats) {
+      if (!heat.results) continue;
+      for (const r of heat.results) {
+        if (r.lane_number !== s.lane) continue;
+        if (r.time_ms != null && !r.dnf) {
+          timeSum += r.time_ms;
+          timeCount++;
+        }
+        if (r.place != null && !r.dnf) {
+          placeSum += r.place;
+          placeCount++;
+        }
+      }
+    }
+    if (timeCount > 0) s.avg = timeSum / timeCount;
+    s.avgFinish = placeCount > 0 ? placeSum / placeCount : null;
+  }
+
+  return lanes;
+}
+
+const fmtTime = (ms: number | null) => ms != null ? `${(ms / 1000).toFixed(3)}s` : '—';
+
+function LaneStatsBar({ stats, laneCount }: { stats: LaneStat[]; laneCount: number }) {
+  const gridCols = `4.5rem repeat(${laneCount}, minmax(0, 1fr))`;
+  const anyTimes = stats.some(s => s.hasTimes);
+
+  return (
+    <div
+      className="grid border-b-2 border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100"
+      style={{ gridTemplateColumns: gridCols }}
+    >
+      <div className="flex items-center justify-center px-2 py-3 border-r border-slate-300">
+        <BarChart3 className="w-4 h-4 text-slate-400" />
+      </div>
+      {stats.map((s, i) => (
+        <div
+          key={s.lane}
+          className={cn('flex flex-col items-center gap-1 px-2 py-3', i > 0 && 'border-l border-slate-300')}
+        >
+          {anyTimes ? (
+            <>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs font-bold text-slate-400 uppercase">Avg</span>
+                <span className="text-sm font-mono font-black text-slate-700 tabular-nums">{fmtTime(s.avg)}</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs font-bold text-emerald-500 uppercase">Best</span>
+                <span className="text-xs font-mono font-bold text-emerald-600 tabular-nums">{fmtTime(s.best)}</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs font-bold text-red-400 uppercase">Worst</span>
+                <span className="text-xs font-mono font-bold text-red-500 tabular-nums">{fmtTime(s.worst)}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              {s.placeCounts.map((count, idx) => {
+                const place = idx + 1;
+                const style = PLACE_STYLES[place];
+                return (
+                  <div key={place} className="flex items-baseline gap-1">
+                    <span className={cn(
+                      'text-xs font-black px-1.5 py-0.5 rounded-full leading-none',
+                      style?.pill ?? 'bg-slate-100 text-slate-500',
+                    )}>{ordinal(place)}</span>
+                    <span className="text-sm font-black tabular-nums text-slate-700">{count}</span>
+                  </div>
+                );
+              })}
+            </>
+          )}
+          {!anyTimes && s.avgFinish != null && (
+            <div className="flex items-baseline gap-1 mt-0.5 pt-1 border-t border-slate-200">
+              <span className="text-xs font-bold text-slate-400 uppercase">Avg</span>
+              <span className="text-sm font-mono font-black text-slate-700 tabular-nums">{s.avgFinish.toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─── HeatRow ─────────────────────────────────────────────────────────────────
 // Memoized so that re-ordering rows (sort toggle) skips re-rendering each row.
@@ -292,6 +420,7 @@ export function HeatsView() {
   const deferredSortOrder = useDeferredValue(sortOrder);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [expandAll, setExpandAll] = useState(false);
+  const [showLaneStats, setShowLaneStats] = useState(false);
   const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -328,6 +457,13 @@ export function HeatsView() {
     });
     return result;
   }, [allCompleted, deferredRoundFilter, deferredSortOrder]);
+
+  const laneStats = useMemo(() =>
+    completedHeats.length > 0 && currentEvent
+      ? computeLaneStats(completedHeats, currentEvent.lane_count)
+      : null,
+    [completedHeats, currentEvent],
+  );
 
   const lastCompletedHeat = useMemo(() => {
     if (allCompleted.length === 0) return null;
@@ -593,10 +729,25 @@ export function HeatsView() {
                       className="data-[size=default]:h-5 data-[size=default]:w-9"
                     />
                   </div>
+
+                  <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-slate-100 border border-slate-300">
+                    <BarChart3 className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-500">Lane Stats</span>
+                    <Switch
+                      checked={showLaneStats}
+                      onCheckedChange={setShowLaneStats}
+                      className="data-[size=default]:h-5 data-[size=default]:w-9"
+                    />
+                  </div>
                 </div>
               )}
 
-                        {/* Table or empty state */}
+              {/* Lane Stats Bar */}
+              {showLaneStats && laneStats && (
+                <LaneStatsBar stats={laneStats} laneCount={currentEvent.lane_count} />
+              )}
+
+              {/* Table or empty state */}
               {completedHeats.length === 0 ? (
                 <p className="text-center py-10 text-slate-400 font-semibold">
                   No completed heats yet
