@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import {
   Car,
   Trophy,
-  Clock, Flag, CheckCircle } from 'lucide-react';
+  Clock, Flag, CheckCircle, Award } from 'lucide-react';
 import { LilyChevronDown, LilyChevronLeft, LilyChevronUp } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -195,15 +195,29 @@ export function RacerProfileView() {
 
   return (
     <div className="max-w-5xl mx-auto pb-12">
-      <Button
-        variant="ghost"
-        data-testid="btn-back"
-        onClick={() => setCurrentRacerId(null)}
-        className="mb-6 -ml-2 text-slate-500 hover:text-slate-900 font-bold uppercase text-xs tracking-widest gap-2"
-      >
-        <LilyChevronLeft size={16} />
-        Back
-      </Button>
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          variant="ghost"
+          data-testid="btn-back"
+          onClick={() => setCurrentRacerId(null)}
+          className="-ml-2 text-slate-500 hover:text-slate-900 font-bold uppercase text-xs tracking-widest gap-2"
+        >
+          <LilyChevronLeft size={16} />
+          Back
+        </Button>
+        {standing && (
+          <a
+            href={`/certificate/${racer.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="btn-certificate"
+            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#003F87] hover:text-[#002f66] transition-colors"
+          >
+            <Award size={16} />
+            Certificate
+          </a>
+        )}
+      </div>
 
       <div className="flex flex-col md:flex-row gap-6">
 
