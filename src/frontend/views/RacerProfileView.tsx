@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Trophy, 
- Clock, Flag, CheckCircle, ChevronDown } from 'lucide-react';
+import {
+  Car,
+  Trophy,
+  Clock, Flag, CheckCircle,
+  ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,22 @@ import { splitName } from '@/lib/name-utils';
 import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat, Racer, RacerHistoryEntry } from '../types';
+
+import lionImg    from '../assets/dens/lion-rank-normalized.png';
+import tigersImg  from '../assets/dens/tigers-rank-normalized.png';
+import wolvesImg  from '../assets/dens/wolves-rank-normalized.png';
+import bearsImg   from '../assets/dens/bears-rank-normalized.png';
+import webelosImg from '../assets/dens/webelos-rank-normalized.png';
+import aolImg     from '../assets/dens/aol-rank-normalized.png';
+
+const DEN_IMAGES: Record<string, string> = {
+  'Lions':   lionImg,
+  'Tigers':  tigersImg,
+  'Wolves':  wolvesImg,
+  'Bears':   bearsImg,
+  'Webelos': webelosImg,
+  'AOLs':    aolImg,
+};
 
 function ordinal(n: number) {
   if (n === 1) return '1st';
@@ -29,6 +46,8 @@ type LaneCol = {
   place: number | null;
   dnf: boolean;
   isCurrent: boolean;
+  time_ms: number | null;
+  isEmpty?: boolean;
 };
 
 const PLACE_STYLES = [
@@ -37,16 +56,32 @@ const PLACE_STYLES = [
   { pill: 'bg-orange-300 text-orange-900', label: '3rd' },
 ] as const;
 
+const EMPTY_COL = (laneNum: number): LaneCol => ({
+  lane_number: laneNum,
+  racer_id: '',
+  car_number: '',
+  name: '',
+  place: null,
+  dnf: false,
+  isCurrent: false,
+  time_ms: null,
+  isEmpty: true,
+});
+
 function buildLaneCols(
   entry: RacerHistoryEntry,
   heat: Heat | undefined,
   currentRacerId: string,
-  racers: Racer[]
+  racers: Racer[],
+  laneCount: number,
 ): LaneCol[] {
+  const laneNums = Array.from({ length: laneCount }, (_, i) => i + 1);
+
   if (heat?.lanes?.length) {
-    const sorted = [...heat.lanes].sort((a, b) => a.lane_number - b.lane_number);
-    const rawResults = (heat.results ?? []) as { racer_id: string; place: number | null; dnf?: boolean }[];
-    return sorted.map(lane => {
+    const rawResults = (heat.results ?? []) as { racer_id: string; place: number | null; dnf?: boolean; time_ms?: number | null }[];
+    return laneNums.map(laneNum => {
+      const lane = heat.lanes!.find(l => l.lane_number === laneNum);
+      if (!lane) return EMPTY_COL(laneNum);
       const result = rawResults.find(r => r.racer_id === lane.racer_id);
       const racer = racers.find(r => r.id === lane.racer_id);
       return {
@@ -57,20 +92,27 @@ function buildLaneCols(
         place: result?.place ?? null,
         dnf: !!result?.dnf,
         isCurrent: lane.racer_id === currentRacerId,
+        time_ms: result?.time_ms ?? null,
       };
     });
   }
 
+  // Fallback: no heat data, only know about current racer's lane
   const racer = racers.find(r => r.id === currentRacerId);
-  return [{
-    lane_number: entry.lane_number,
-    racer_id: currentRacerId,
-    car_number: racer?.car_number ?? '?',
-    name: splitName(racer?.name ?? '').first,
-    place: entry.place ?? null,
-    dnf: !!entry.dnf,
-    isCurrent: true,
-  }];
+  return laneNums.map(laneNum =>
+    laneNum === entry.lane_number
+      ? {
+          lane_number: laneNum,
+          racer_id: currentRacerId,
+          car_number: racer?.car_number ?? '?',
+          name: splitName(racer?.name ?? '').first,
+          place: entry.place ?? null,
+          dnf: !!entry.dnf,
+          isCurrent: true,
+          time_ms: entry.time_ms,
+        }
+      : EMPTY_COL(laneNum)
+  );
 }
 
 // ===== TOP BANNER =====
@@ -131,7 +173,7 @@ function ProfileBanner({ carNumber, rank, totalRacers }: {
 
 export function RacerProfileView() {
   const { id } = useParams<{ id: string }>();
-  const { setCurrentRacerId, racers, standings, heats } = useApp();
+  const { setCurrentRacerId, currentEvent, racers, standings, heats } = useApp();
   const [history, setHistory] = useState<RacerHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -166,6 +208,8 @@ export function RacerProfileView() {
 
   const seconds = history.filter(r => r.place === 2 && !r.dnf).length;
   const thirds  = history.filter(r => r.place === 3 && !r.dnf).length;
+  const timedRuns = history.filter(r => r.time_ms != null && !r.dnf);
+  const bestMs = timedRuns.length > 0 ? Math.min(...timedRuns.map(r => r.time_ms!)) : null;
 
   return (
     <div className="max-w-5xl mx-auto pb-12">
@@ -175,7 +219,7 @@ export function RacerProfileView() {
         onClick={() => setCurrentRacerId(null)}
         className="mb-6 -ml-2 text-slate-500 hover:text-slate-900 font-bold uppercase text-xs tracking-widest gap-2"
       >
-        <ArrowLeft size={16} />
+        <ChevronLeft size={16} />
         Back
       </Button>
 
@@ -198,19 +242,33 @@ export function RacerProfileView() {
             )}
 
             <CardContent className="px-5 pt-4 pb-5">
-              <div className="flex items-start gap-2">
-                <h1 className="text-xl font-black text-slate-900 leading-tight flex-1">
-                  {racer.name}
-                </h1>
-                {racer.weight_ok && (
-                  <CheckCircle size={20} className="text-emerald-500 shrink-0 mt-0.5" aria-label="Inspection passed" />
+              <div className="flex items-start justify-between gap-3">
+                {/* Left: name + inspection status */}
+                <div className="min-w-0">
+                  <h1 className="text-xl font-black text-slate-900 leading-tight">
+                    {racer.name}
+                  </h1>
+                  {racer.weight_ok && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <CheckCircle size={13} className="text-emerald-500 shrink-0" />
+                      <span className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Inspected</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: den image or badge */}
+                {racer.den && (
+                  <div className="shrink-0">
+                    {DEN_IMAGES[racer.den] ? (
+                      <img src={DEN_IMAGES[racer.den]} alt={racer.den} title={racer.den} className="h-12 w-12 object-contain" />
+                    ) : (
+                      <Badge className="bg-[#CE1126] text-white font-black uppercase tracking-widest px-3 py-1">
+                        {racer.den}
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
-              {racer.den && (
-                <Badge className="mt-2 bg-[#CE1126] text-white font-black uppercase tracking-widest px-3 py-1">
-                  {racer.den}
-                </Badge>
-              )}
             </CardContent>
           </Card>
 
@@ -240,8 +298,8 @@ export function RacerProfileView() {
               valueClass="text-orange-600"
             />
             <StatsCard
-              label="Avg Time"
-              value={standing?.avg_time_ms ? (standing.avg_time_ms / 1000).toFixed(3) + 's' : '—'}
+              label="Best Time"
+              value={bestMs ? (bestMs / 1000).toFixed(3) + 's' : '—'}
               icon={<Clock size={16} className="text-slate-400" />}
               valueClass="text-slate-900"
             />
@@ -253,6 +311,7 @@ export function RacerProfileView() {
             heats={heats}
             currentRacerId={id!}
             racers={racers}
+            laneCount={currentEvent?.lane_count ?? 4}
           />
         </div>
       </div>
@@ -393,13 +452,22 @@ function SideStatRow({ label, value, sub, labelClass }: {
 
 // ===== HEAT HISTORY =====
 
-function HeatHistory({ history, loading, heats, currentRacerId, racers }: {
+function HeatHistory({ history, loading, heats, currentRacerId, racers, laneCount }: {
   history: RacerHistoryEntry[];
   loading: boolean;
   heats: Heat[];
   currentRacerId: string;
   racers: Racer[];
+  laneCount: number;
 }) {
+  const [sortNewest, setSortNewest] = useState(true);
+
+  const sorted = [...history].sort((a, b) => {
+    const aKey = a.round * 1000 + a.heat_number;
+    const bKey = b.round * 1000 + b.heat_number;
+    return sortNewest ? bKey - aKey : aKey - bKey;
+  });
+
   return (
     <div className="border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
       <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
@@ -421,12 +489,12 @@ function HeatHistory({ history, loading, heats, currentRacerId, racers }: {
         </div>
       ) : (
         <div>
-          {/* Persistent lane header — sits above all heat rows */}
-          <LaneHeader heats={heats} history={history} racers={racers} currentRacerId={currentRacerId} />
+          {/* Lane header — includes sort toggle in first column */}
+          <LaneHeader laneCount={laneCount} sortNewest={sortNewest} onToggleSort={() => setSortNewest(n => !n)} />
 
-          {history.map((entry, idx) => {
+          {sorted.map((entry, idx) => {
             const heat = heats.find(h => h.id === entry.heat_id);
-            const cols = buildLaneCols(entry, heat, currentRacerId, racers);
+            const cols = buildLaneCols(entry, heat, currentRacerId, racers, laneCount);
             return (
               <HeatSection
                 key={entry.id}
@@ -444,32 +512,29 @@ function HeatHistory({ history, loading, heats, currentRacerId, racers }: {
 
 // ===== LANE HEADER =====
 
-function LaneHeader({ heats, history, racers, currentRacerId }: {
-  heats: Heat[];
-  history: RacerHistoryEntry[];
-  racers: Racer[];
-  currentRacerId: string;
+function LaneHeader({ laneCount, sortNewest, onToggleSort }: {
+  laneCount: number;
+  sortNewest: boolean;
+  onToggleSort: () => void;
 }) {
-  // Derive lane count from the first heat that has lane data
-  const firstCols = (() => {
-    for (const entry of history) {
-      const heat = heats.find(h => h.id === entry.heat_id);
-      const cols = buildLaneCols(entry, heat, currentRacerId, racers);
-      if (cols.length > 1) return cols;
-    }
-    return buildLaneCols(history[0]!, undefined, currentRacerId, racers);
-  })();
-
+  const laneNums = Array.from({ length: laneCount }, (_, i) => i + 1);
   return (
     <div className="flex border-b border-slate-200 bg-slate-100">
-      {/* Spacer matching the narrow sidebar */}
-      <div className="w-10 shrink-0 border-r border-slate-200" />
+      {/* Sort toggle in the narrow first column */}
+      <button
+        data-testid="sort-history"
+        onClick={onToggleSort}
+        title={sortNewest ? 'Newest first — click for oldest' : 'Oldest first — click for newest'}
+        className="w-10 shrink-0 border-r border-slate-200 flex items-center justify-center py-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+      >
+        {sortNewest ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+      </button>
       <div className="flex-1 overflow-x-auto">
-        <div className="flex divide-x divide-slate-200">
-          {firstCols.map(col => (
-            <div key={col.lane_number} className="flex-1 flex justify-center py-2 px-3 min-w-16">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-                Lane {col.lane_number}
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}>
+          {laneNums.map((n, i) => (
+            <div key={n} className={cn("flex justify-center py-2 px-3 min-w-14", i > 0 && "border-l border-slate-200")}>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-600">
+                Lane {n}
               </span>
             </div>
           ))}
@@ -485,7 +550,7 @@ function PlaceBadge({ col }: { col: LaneCol }) {
   const style = !col.dnf && col.place !== null && col.place >= 1 && col.place <= 3
     ? PLACE_STYLES[col.place - 1] : null;
   if (col.dnf) return (
-    <span className="text-xs font-black bg-red-100 text-red-500 px-1.5 py-0.5 rounded uppercase leading-none">
+    <span className="text-xs font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase leading-none">
       DNF
     </span>
   );
@@ -495,9 +560,9 @@ function PlaceBadge({ col }: { col: LaneCol }) {
     </span>
   );
   if (col.place !== null) return (
-    <span className="text-xs font-bold text-slate-400">{ordinal(col.place)}</span>
+    <span className="text-xs font-bold text-slate-600">{ordinal(col.place)}</span>
   );
-  return <span className="text-xs text-slate-300">—</span>;
+  return <span className="text-xs text-slate-400">—</span>;
 }
 
 function HeatSection({ entry, cols, hasBorder }: {
@@ -514,13 +579,13 @@ function HeatSection({ entry, cols, hasBorder }: {
       {/* Narrow sidebar: round, heat label (rotated), expand chevron */}
       <button
         onClick={() => setExpanded(e => !e)}
-        className="w-10 shrink-0 flex flex-col items-center py-2 gap-1 border-r border-slate-100 bg-slate-50/40 hover:bg-slate-100 transition-colors"
+        className="w-10 shrink-0 flex flex-col items-center py-2 gap-1 border-r border-slate-200 bg-slate-50/40 hover:bg-slate-100 transition-colors"
         aria-label={expanded ? "Collapse heat" : "Expand heat"}
       >
-        <span className="text-xs font-black text-slate-400 leading-none">
+        <span className="text-xs font-black text-slate-500 leading-none">
           R{entry.round}
         </span>
-        <span className="flex-1 flex items-center justify-center text-xs font-black text-slate-600">
+        <span className="flex-1 flex items-center justify-center text-xs font-black text-slate-700">
           H{entry.heat_number}
         </span>
         <ChevronDown
@@ -542,13 +607,27 @@ function HeatSection({ entry, cols, hasBorder }: {
             </span>
           </div>
         )}
-        <div className="flex divide-x divide-slate-100">
-          {cols.map(col => (
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}>
+          {cols.map((col, colIdx) => {
+            if (col.isEmpty) {
+              return (
+                <div key={col.lane_number} className={cn("flex items-center justify-center min-w-14", expanded ? "py-4" : "py-3", colIdx > 0 && "border-l border-slate-200")}>
+                  <div className="relative text-slate-300">
+                    <Car className="w-5 h-5" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-6 h-px bg-slate-300 rotate-45" />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return (
             <div
               key={col.lane_number}
               className={cn(
-                "flex-1 flex flex-col items-center gap-1.5 px-3 min-w-16",
+                "flex flex-col items-center gap-1.5 px-3 min-w-14",
                 expanded ? "py-4" : "py-3",
+                colIdx > 0 && "border-l border-slate-200",
                 col.isCurrent
                   ? "bg-blue-50"
                   : "cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition-colors"
@@ -566,7 +645,7 @@ function HeatSection({ entry, cols, hasBorder }: {
               <span className={cn(
                 "font-black leading-tight",
                 expanded ? "text-base" : "text-sm",
-                col.isCurrent ? "text-[#003F87]" : "text-slate-800"
+                col.isCurrent ? "text-[#003F87]" : "text-slate-500"
               )}>
                 #{col.car_number}
               </span>
@@ -583,14 +662,15 @@ function HeatSection({ entry, cols, hasBorder }: {
 
               <PlaceBadge col={col} />
 
-              {/* Time — show when available, nothing otherwise */}
-              {col.isCurrent && entry.time_ms != null && (
-                <span className="text-xs font-mono text-slate-400">
-                  {(entry.time_ms / 1000).toFixed(3)}s
+              {/* Time — show for all racers when available */}
+              {col.time_ms != null && (
+                <span className="text-xs font-mono text-slate-600">
+                  {(col.time_ms / 1000).toFixed(3)}s
                 </span>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
