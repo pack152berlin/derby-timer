@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Car, Flag, CheckCircle, ChevronRight, Trophy, BarChart3, Loader2 } from 'lucide-react';
+import { AlertCircle, Car, Flag, CheckCircle, Trophy, BarChart3, Loader2 } from 'lucide-react';
+import { LilyChevronRight } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -343,7 +344,7 @@ export function RaceConsoleView() {
             onClick={() => refreshData()}
             className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xl px-12 py-6 shadow-lg"
           >
-            <ChevronRight className="w-6 h-6 mr-3" />
+            <LilyChevronRight className="w-6 h-6 mr-3" />
             NEXT HEAT
           </Button>
         )}

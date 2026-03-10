@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import {
   Car,
   Trophy,
-  Clock, Flag, CheckCircle,
-  ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
+  Clock, Flag, CheckCircle } from 'lucide-react';
+import { LilyChevronDown, LilyChevronLeft, LilyChevronUp } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -201,7 +201,7 @@ export function RacerProfileView() {
         onClick={() => setCurrentRacerId(null)}
         className="mb-6 -ml-2 text-slate-500 hover:text-slate-900 font-bold uppercase text-xs tracking-widest gap-2"
       >
-        <ChevronLeft size={16} />
+        <LilyChevronLeft size={16} />
         Back
       </Button>
 
@@ -509,7 +509,7 @@ function LaneHeader({ laneCount, sortNewest, onToggleSort }: {
         title={sortNewest ? 'Newest first — click for oldest' : 'Oldest first — click for newest'}
         className="w-10 shrink-0 border-r border-slate-200 flex items-center justify-center py-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"
       >
-        {sortNewest ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+        {sortNewest ? <LilyChevronDown size={13} /> : <LilyChevronUp size={13} />}
       </button>
       <div className="flex-1 overflow-x-auto">
         <div className="grid" style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}>
@@ -570,7 +570,7 @@ function HeatSection({ entry, cols, hasBorder }: {
         <span className="flex-1 flex items-center justify-center text-xs font-black text-slate-700">
           H{entry.heat_number}
         </span>
-        <ChevronDown
+        <LilyChevronDown
           size={13}
           className={cn(
             "text-slate-400 transition-transform duration-200",
