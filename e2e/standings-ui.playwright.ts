@@ -77,7 +77,7 @@ test.describe('Standings UI', () => {
     const { event } = await seedCompletedEvent();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
     await page.waitForSelector('[data-testid^="standing-card-"]');
 
@@ -96,7 +96,7 @@ test.describe('Standings UI', () => {
     const { event } = await seedCompletedEvent();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
     await page.waitForSelector('[data-testid^="standing-card-"]');
 
@@ -117,7 +117,7 @@ test.describe('Standings UI', () => {
     const { event, racers } = await seedCompletedEvent();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
     await page.waitForSelector('[data-testid^="standing-card-"]');
 

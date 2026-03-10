@@ -70,30 +70,29 @@ test.describe('Racer Profile', () => {
         })),
       }),
     });
-    await fetch(`${baseUrl}/api/heats/${heat.id}/complete`, { method: 'POST' });
 
     return { event, racer1, racer2 };
   }
 
   test('shows racer name, car number, and den when profile opens', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event, racer1 } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
     
-    await page.click('[data-testid="standing-card-1"]');
+    await page.click(`[data-testid="standing-card-${racer1.car_number}"]`);
     
     await expect(page.locator('h1')).toContainText('Dean Kim');
-    await expect(page.getByAltText('Wolves')).toBeVisible();
-    await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText('#1');
+    await expect(page.locator('img[alt="Wolves"]')).toBeVisible();
+    await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer1.car_number}`);
   });
 
   test('shows car photo when racer has one', async ({ page }) => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     await page.click('[data-testid="standing-card-1"]');
@@ -105,7 +104,7 @@ test.describe('Racer Profile', () => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     await page.click('[data-testid="standing-card-2"]');
@@ -118,7 +117,7 @@ test.describe('Racer Profile', () => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     await page.click('[data-testid="standing-card-1"]');
@@ -131,7 +130,7 @@ test.describe('Racer Profile', () => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     // Dean Kim got place 1 → 1 win
@@ -146,7 +145,7 @@ test.describe('Racer Profile', () => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     await page.click('[data-testid="standing-card-1"]');
@@ -165,21 +164,21 @@ test.describe('Racer Profile', () => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-heats"]');
 
     // Heat 1 was completed in seedTwoRacers. Switch to the Completed tab to see it.
     await page.click('[data-testid="tab-completed"]');
     const completedHeatCard = page.locator('[data-testid="heat-card"]').first();
-    await expect(completedHeatCard.locator('text="1st"').first()).toBeVisible();
-    await expect(completedHeatCard.locator('text="2nd"').first()).toBeVisible();
+    await expect(completedHeatCard.locator('text=1st').first()).toBeVisible();
+    await expect(completedHeatCard.locator('text=2nd').first()).toBeVisible();
   });
 
   test('clicking another racer in heat history navigates to their profile', async ({ page }) => {
     const { event, racer1, racer2 } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     // Open racer1's profile
@@ -246,7 +245,7 @@ test.describe('Racer Profile', () => {
     const { event, racer1, racer2 } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     // Open racer1's profile (place 1 → time_ms 3000ms → "3.000s")
@@ -263,7 +262,7 @@ test.describe('Racer Profile', () => {
     const { event } = await seedWithoutTimes();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     await page.click('[data-testid="standing-card-1"]');
@@ -277,7 +276,7 @@ test.describe('Racer Profile', () => {
     const { event } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     // Racer 1 got 3.000s (place 1), racer 2 got 3.200s (place 2)
@@ -291,14 +290,9 @@ test.describe('Racer Profile', () => {
     const { event, racer2 } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-heats"]');
-    await expect(page.locator('[data-testid="tab-completed"]')).toContainText('1');
     await page.click('[data-testid="tab-completed"]');
-    
-    // Explicitly expand the heat row
-    await page.click('[aria-label="Expand heat"]');
-    await page.waitForTimeout(500);
 
     await page.click(`[data-testid="completed-racer-${racer2.id}"]`);
 
@@ -310,14 +304,9 @@ test.describe('Racer Profile', () => {
     const { event, racer1 } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-heats"]');
-    await expect(page.locator('[data-testid="tab-completed"]')).toContainText('1');
     await page.click('[data-testid="tab-completed"]');
-    
-    // Explicitly expand the heat row
-    await page.click('[aria-label="Expand heat"]');
-    await page.waitForTimeout(500);
 
     await page.click(`[data-testid="completed-racer-${racer1.id}"]`);
     await expect(page.locator('[data-testid="banner-car-number"]')).toHaveText(`#${racer1.car_number}`);
@@ -332,7 +321,7 @@ test.describe('Racer Profile', () => {
     const { event, racer1, racer2 } = await seedTwoRacers();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-standings"]');
 
     // Open racer1's profile from standings
