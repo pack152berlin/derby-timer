@@ -21,7 +21,7 @@ function EmptyLane({ laneNum, status }: { laneNum: number; status: string }) {
         status === 'running' && 'bg-[#CE1126]',
         status === 'complete' && 'bg-emerald-600',
       )}>
-        <span className="text-[9px] font-black uppercase tracking-widest text-white/60">Lane</span>
+        <span className="text-xs font-black uppercase tracking-widest text-white/60">Lane</span>
         <span className="text-3xl font-black text-white leading-none">{laneNum}</span>
       </div>
       <div className="flex-1 flex items-center justify-center py-6">
@@ -89,7 +89,7 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
               heat.status === 'running' && 'bg-[#CE1126]',
               heat.status === 'complete' && 'bg-emerald-600',
             )}>
-              <span className="text-[9px] font-black uppercase tracking-widest text-white/60">Lane</span>
+              <span className="text-xs font-black uppercase tracking-widest text-white/60">Lane</span>
               <span className="text-3xl font-black text-white leading-none">{lane.lane_number}</span>
             </div>
 

@@ -14,21 +14,8 @@ import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat, Racer, RacerHistoryEntry } from '../types';
 
-import lionImg    from '../assets/dens/lion-rank-normalized.png';
-import tigersImg  from '../assets/dens/tigers-rank-normalized.png';
-import wolvesImg  from '../assets/dens/wolves-rank-normalized.png';
-import bearsImg   from '../assets/dens/bears-rank-normalized.png';
-import webelosImg from '../assets/dens/webelos-rank-normalized.png';
-import aolImg     from '../assets/dens/aol-rank-normalized.png';
-
-const DEN_IMAGES: Record<string, string> = {
-  'Lions':   lionImg,
-  'Tigers':  tigersImg,
-  'Wolves':  wolvesImg,
-  'Bears':   bearsImg,
-  'Webelos': webelosImg,
-  'AOLs':    aolImg,
-};
+import { DEN_IMAGES } from '../lib/den-utils';
+import { PLACE_STYLES } from '../lib/place-styles';
 
 function ordinal(n: number) {
   if (n === 1) return '1st';
@@ -50,11 +37,6 @@ type LaneCol = {
   isEmpty?: boolean;
 };
 
-const PLACE_STYLES = [
-  { pill: 'bg-amber-400 text-amber-950', label: '1st' },
-  { pill: 'bg-slate-200 text-slate-700', label: '2nd' },
-  { pill: 'bg-orange-300 text-orange-900', label: '3rd' },
-] as const;
 
 const EMPTY_COL = (laneNum: number): LaneCol => ({
   lane_number: laneNum,
@@ -548,7 +530,7 @@ function LaneHeader({ laneCount, sortNewest, onToggleSort }: {
 
 function PlaceBadge({ col }: { col: LaneCol }) {
   const style = !col.dnf && col.place !== null && col.place >= 1 && col.place <= 3
-    ? PLACE_STYLES[col.place - 1] : null;
+    ? PLACE_STYLES[col.place] : null;
   if (col.dnf) return (
     <span className="text-xs font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase leading-none">
       DNF
