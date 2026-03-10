@@ -26,7 +26,7 @@ test.describe('Inspection pass/fail', () => {
     const { event } = await seedEvent();
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
 
     // Switch to inspection tab
     await page.click('[data-testid="nav-register"]');
@@ -57,7 +57,7 @@ test.describe('Inspection pass/fail', () => {
     });
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-register"]');
     await page.locator('[data-testid="tab-inspectionTab"]').click();
 

@@ -28,16 +28,16 @@ test.describe('Heat Schedule', () => {
     return event;
   }
 
-  async function navigateToHeats(page: Page, eventName: string) {
+  async function navigateToHeats(page: Page, eventId: string) {
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${eventName}")`);
+    await page.click(`[data-testid="event-card-${eventId}"]`);
     await page.click('[data-testid="nav-heats"]');
-    await page.waitForTimeout(500);
+    await page.locator('[data-testid="btn-generate-heats"]').or(page.locator('[data-testid="btn-clear-heats"]')).first().waitFor();
   }
 
   test('Generate Heats dialog: cancel does not generate heats', async ({ page }) => {
     const event = await createEventWithEligibleRacer('Generate Cancel Test');
-    await navigateToHeats(page, event.name);
+    await navigateToHeats(page, event.id);
 
     // Confirm no heats yet — generate button should be visible
     await expect(page.locator('[data-testid="btn-generate-heats"]')).toBeVisible();
@@ -56,7 +56,7 @@ test.describe('Heat Schedule', () => {
 
   test('Generate Heats dialog: confirm generates heats', async ({ page }) => {
     const event = await createEventWithEligibleRacer('Generate Confirm Test');
-    await navigateToHeats(page, event.name);
+    await navigateToHeats(page, event.id);
 
     await page.click('[data-testid="btn-generate-heats"]');
     await expect(page.locator('[role="dialog"]')).toBeVisible();
@@ -77,7 +77,7 @@ test.describe('Heat Schedule', () => {
       body: JSON.stringify({}),
     });
 
-    await navigateToHeats(page, event.name);
+    await navigateToHeats(page, event.id);
     await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
 
     // Click Clear All — dialog should appear
@@ -102,7 +102,7 @@ test.describe('Heat Schedule', () => {
       body: JSON.stringify({}),
     });
 
-    await navigateToHeats(page, event.name);
+    await navigateToHeats(page, event.id);
     await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
 
     // Click Clear All and confirm
@@ -149,13 +149,12 @@ test.describe('Heat Schedule', () => {
 
     // 2. Navigate to root and select the event
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     
     // Move to Heats view
     await page.click('[data-testid="nav-heats"]');
     
     // Initial state: Heat is visible. Wait for it to load.
-    await page.waitForTimeout(2000);
     const heatCard = page.locator('[data-testid="heat-card"]');
     await expect(heatCard.first()).toBeVisible();
 

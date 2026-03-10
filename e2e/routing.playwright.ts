@@ -29,7 +29,7 @@ test.describe('Routing Redirects', () => {
 
     // 2. Go home and select the event
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await expect(page).toHaveURL(`${baseUrl}/register`);
 
     // 3. Refresh the page
@@ -77,7 +77,7 @@ test.describe('Routing Redirects', () => {
 
     // 2. Select event
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
 
     // 3. Navigate to Racer 1
     await page.click(`[data-testid="car-number-1"]`);
@@ -135,7 +135,7 @@ test.describe('Routing Redirects', () => {
     });
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     
     // Go to standings
     await page.click('[data-testid="nav-standings"]');

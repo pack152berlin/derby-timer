@@ -19,7 +19,7 @@ test.describe('Registration Sorting UI', () => {
     // Select the event if needed (assuming the UI shows event selection first)
     // Based on RegistrationView.tsx, if no event is selected it shows a message.
     // We'll click the event card in the EventsView
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
 
     // 3. Add two racers
     // Racer 1 (will be older)

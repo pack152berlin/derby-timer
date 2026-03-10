@@ -15,5 +15,5 @@ describe("Frontend Routing & Persistence", () => {
       const html = await response.text();
       expect(html).toContain('<div id="app">'); // Ensure we get the SPA shell
     }
-  }, 10000);
+  });
 });

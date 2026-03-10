@@ -140,7 +140,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           return (
             <Card 
               key={event.id}
-              data-testid="event-card"
+              data-testid={`event-card-${event.id}`}
               className="group relative cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2 gap-2"
               onClick={() => onSelectEvent(event)}
             >

@@ -38,9 +38,8 @@ test.describe('Race Console', () => {
     const { event, racer } = await setupEventWithHeats('Race Console Lane Grid Test');
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-race"]');
-    await page.waitForTimeout(500);
 
     // Start Heat button should be visible
     await expect(page.locator('[data-testid="btn-start-heat"]')).toBeVisible();
@@ -55,9 +54,8 @@ test.describe('Race Console', () => {
     const { event } = await setupEventWithHeats('Race Console Start Heat Test');
 
     await page.goto(`${baseUrl}/`);
-    await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
     await page.click('[data-testid="nav-race"]');
-    await page.waitForTimeout(500);
 
     // Lane grid is visible before starting
     await expect(page.locator('[data-testid="btn-start-heat"]')).toBeVisible();
@@ -65,7 +63,6 @@ test.describe('Race Console', () => {
 
     // Click Start Heat
     await page.click('[data-testid="btn-start-heat"]');
-    await page.waitForTimeout(500);
 
     // Start Heat button should be gone, result entry (DNF button) should appear
     await expect(page.locator('[data-testid="btn-start-heat"]')).not.toBeVisible();

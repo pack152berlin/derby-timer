@@ -116,7 +116,7 @@ test('01-registration-list', async ({ page }) => {
   const event = await seedEvent({ inspectCount: 7 });
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-register"]');
   await page.waitForTimeout(600);
 
@@ -128,7 +128,7 @@ test('02-registration-form', async ({ page }) => {
   const event = await seedEvent({ inspectCount: 7 });
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-register"]');
   await page.waitForTimeout(600);
 
@@ -143,7 +143,7 @@ test('03-registration-list-help', async ({ page }) => {
   const event = await seedEvent({ inspectCount: 7 });
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-register"]');
   await page.waitForTimeout(600);
 
@@ -159,7 +159,7 @@ test('04-registration-inspection-list', async ({ page }) => {
   const event = await seedEvent({ inspectCount: 6 });
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-register"]');
   await page.waitForTimeout(600);
 
@@ -193,7 +193,7 @@ test('05-heat-schedule', async ({ page }) => {
   }
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-heats"]');
   await page.waitForTimeout(600);
 
@@ -224,7 +224,7 @@ test('06-heat-schedule-completed', async ({ page }) => {
   }
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-heats"]');
   await page.click('[data-testid="tab-completed"]');
   await page.waitForTimeout(600);
@@ -245,7 +245,7 @@ test('07-race-control-pending', async ({ page }) => {
   });
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
@@ -266,7 +266,7 @@ test('08-race-control-no-photos', async ({ page }) => {
   });
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
@@ -278,7 +278,7 @@ test('09-race-control-running', async ({ page }) => {
   const event = await seedEvent();
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
 
@@ -317,7 +317,7 @@ test('10-standings', async ({ page }) => {
   }
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-standings"]');
   await page.waitForTimeout(600);
 
@@ -337,7 +337,7 @@ test('00-loader', async ({ page }) => {
   await page.goto(`${baseUrl}/`);
 
   // Click the event — this triggers selectEvent → loading=true → loader appears
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
 
   // Wait for loader to fully fade in
   await page.locator('text=Loading').waitFor();
@@ -377,7 +377,7 @@ test('11-external-display', async ({ page }) => {
 
   // Start a heat to have something interesting on the display
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-race"]');
   await page.waitForTimeout(600);
   await page.click('[data-testid="btn-start-heat"]');
@@ -414,7 +414,7 @@ test('12-racer-profile-with-photo', async ({ page }) => {
   }
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-standings"]');
   await page.waitForTimeout(600);
 
@@ -449,7 +449,7 @@ test('13-racer-profile-no-photo', async ({ page }) => {
   }
 
   await page.goto(`${baseUrl}/`);
-  await page.click(`[data-testid="event-card"]:has-text("${event.name}")`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
   await page.click('[data-testid="nav-standings"]');
   await page.waitForTimeout(600);
 
@@ -458,4 +458,34 @@ test('13-racer-profile-no-photo', async ({ page }) => {
   await page.waitForTimeout(1000);
 
   saveIfChanged('screenshots/13-racer-profile-no-photo.png', await page.screenshot());
+});
+
+test('14-certificate', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Final Standings' });
+
+  // Complete 12 heats
+  const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
+  const heats = await heatsRes.json();
+
+  for (let h = 0; h < 12 && h < heats.length; h++) {
+    const heatId = heats[h].id;
+    await fetch(`${baseUrl}/api/heats/${heatId}/start`, { method: 'POST' });
+    const results = heats[h].lanes.map((lane: any, idx: number) => ({
+      lane_number: lane.lane_number,
+      racer_id: lane.racer_id,
+      place: ((idx + h) % 4) + 1
+    }));
+    await fetch(`${baseUrl}/api/heats/${heatId}/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results }),
+    });
+    await fetch(`${baseUrl}/api/heats/${heatId}/complete`, { method: 'POST' });
+  }
+
+  await page.goto(`${baseUrl}/certificates`);
+  await page.waitForTimeout(1500);
+
+  saveIfChanged('screenshots/14-certificate.png', await page.screenshot());
 });
