@@ -6,18 +6,21 @@ This document outlines the strategy for implementing administrative access contr
 *   **Admins**: Full access to registration, inspection, race control, and settings.
 *   **Guests (Parents/Public)**: Read-only access to standings, schedules, displays, and certificates on the local network.
 *   **Local-First Priority**: Easy to set up without an internet connection or complex user management.
-*   **Web Scalability**: Can be extended to multi-user or web-hosted environments.
+*   **Web Scalability**: Can be extended to multi-user or web-hosted environment, especially for printing certificates.
 
 ## 2. Technical Strategy: "Admin Key" (Shared Secret)
 
 We will use a **Shared Secret** approach. It is significantly easier for volunteers to manage than individual accounts.
 
 ### A. The Admin Key
-*   The server checks for a `DERBY_ADMIN_KEY` environment variable (follows the `DERBY_*` convention used by `DERBY_DB_PATH`, `DERBY_UPLOAD_DIR`, etc.).
-*   **Zero-Config Auto-Generation**: If no key is defined, the server automatically generates a high-entropy random string at startup.
-*   **Terminal QR Code**: At startup, the server prints the generated (or configured) key to the terminal along with an ASCII QR code (using a library like `qrcode-terminal`).
-*   **Key Rotation**: Simply restarting the server (without a persistent environment variable) rotates the key, immediately revoking all existing admin sessions. This provides a physical security model (access to the laptop = control over the race).
-*   **Public Mode**: To disable auth entirely (useful for simple dev setups), the server can be started with `DERBY_ADMIN_KEY=none`.
+*   The server checks for a `DERBY_ADMIN_KEY` environment variable.
+*   **Default (Public Mode)**: If `DERBY_ADMIN_KEY` is not set (or set to `none`), the app defaults to "Public Mode" where all users are treated as admins.
+*   **Explicit Key**: Set `DERBY_ADMIN_KEY` to a specific string for a persistent, known password.
+*   **Secure Zero-Config (Auto)**: If `DERBY_ADMIN_KEY=auto`, the server manages a unique key for the lifetime of the event:
+    *   **Generation**: If no key exists, it generates a high-entropy random string.
+    *   **Persistence**: The key is saved to a local file (e.g., `.derby_admin_key`) in the project root or next to the database. This ensures that **server restarts do not log everyone out**.
+    *   **Manual Rotation**: To revoke all current sessions and generate a new key, the operator simply deletes the `.derby_admin_key` file and restarts the server.
+*   **Terminal QR Code**: When a key is set (explicitly or via `auto`), the server prints the onboarding URL and an ASCII QR code to the terminal at startup.
 
 ### B. Admin Distribution (The QR Code)
 *   The primary server operator (on the laptop connected to the track) can access a special "Auth" view or see a QR code in the terminal.
