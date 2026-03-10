@@ -1,22 +1,14 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { LilyChevronDown, LilyChevronUp } from '@/components/LilyChevron';
 import { COL } from './StandingRow';
 
 export type SortCol = 'rank' | 'time' | 'car' | 'name' | 'den' | 'wins' | 'seconds' | 'thirds';
 export type SortDir = 'asc' | 'desc';
 
-function SortTriangle({ dir, visible }: { dir: SortDir; visible: boolean }) {
-  return (
-    <svg
-      width="8" height="6" viewBox="0 0 8 6"
-      fill="currentColor"
-      className={cn("shrink-0 transition-opacity", !visible && "opacity-0")}
-    >
-      {dir === 'asc'
-        ? <path d="M4 0L8 6H0L4 0Z" />
-        : <path d="M4 6L0 0H8L4 6Z" />}
-    </svg>
-  );
+function SortIndicator({ dir, visible }: { dir: SortDir; visible: boolean }) {
+  const Icon = dir === 'asc' ? LilyChevronUp : LilyChevronDown;
+  return <Icon size={12} className={cn("shrink-0 transition-opacity", !visible && "opacity-0")} />;
 }
 
 interface SortHeaderProps {
@@ -49,7 +41,7 @@ function SortHeader({
       )}
     >
       {label}
-      <SortTriangle dir={sortDir} visible={active} />
+      <SortIndicator dir={sortDir} visible={active} />
     </button>
   );
 }
