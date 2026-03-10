@@ -73,8 +73,11 @@ async function seedCompletedEvent() {
 }
 
 test.describe('Standings UI', () => {
+  let sharedSeed: Awaited<ReturnType<typeof seedCompletedEvent>>;
+  test.beforeAll(async () => { sharedSeed = await seedCompletedEvent(); });
+
   test('search by name filters the list', async ({ page }) => {
-    const { event } = await seedCompletedEvent();
+    const { event } = sharedSeed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -93,7 +96,7 @@ test.describe('Standings UI', () => {
   });
 
   test('den filter shows only racers from that den', async ({ page }) => {
-    const { event } = await seedCompletedEvent();
+    const { event } = sharedSeed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -114,7 +117,7 @@ test.describe('Standings UI', () => {
   });
 
   test('clicking Wins column header sorts by wins descending then ascending', async ({ page }) => {
-    const { event, racers } = await seedCompletedEvent();
+    const { event, racers } = sharedSeed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
