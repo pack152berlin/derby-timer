@@ -74,8 +74,15 @@ test.describe('Racer Profile', () => {
     return { event, racer1, racer2 };
   }
 
+  let seed: Awaited<ReturnType<typeof seedTwoRacers>>;
+  let noTimesSeed: Awaited<ReturnType<typeof seedWithoutTimes>>;
+
+  test.beforeAll(async () => {
+    [seed, noTimesSeed] = await Promise.all([seedTwoRacers(), seedWithoutTimes()]);
+  });
+
   test('shows racer name, car number, and den when profile opens', async ({ page }) => {
-    const { event, racer1 } = await seedTwoRacers();
+    const { event, racer1 } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -89,7 +96,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('shows car photo when racer has one', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -101,7 +108,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('does not show car photo when racer has none', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -114,7 +121,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('shows race history after heats are completed', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -127,7 +134,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('shows correct win count after completed heats', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -142,7 +149,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('back button returns to standings', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -161,7 +168,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('shows winners in the heat schedule', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -175,7 +182,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('clicking another racer in heat history navigates to their profile', async ({ page }) => {
-    const { event, racer1, racer2 } = await seedTwoRacers();
+    const { event, racer1, racer2 } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -242,7 +249,7 @@ test.describe('Racer Profile', () => {
   }
 
   test('shows time for every racer in heat history, not just current racer', async ({ page }) => {
-    const { event, racer1, racer2 } = await seedTwoRacers();
+    const { event, racer1, racer2 } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -259,7 +266,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('shows no time values when heat completed without timing data', async ({ page }) => {
-    const { event } = await seedWithoutTimes();
+    const { event } = noTimesSeed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -273,7 +280,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('Best Time stat shows fastest run from history', async ({ page }) => {
-    const { event } = await seedTwoRacers();
+    const { event } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -287,7 +294,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('clicking racer in completed heats schedule navigates to their profile', async ({ page }) => {
-    const { event, racer2 } = await seedTwoRacers();
+    const { event, racer2 } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -301,7 +308,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('back button from profile opened via completed heats returns to heats page', async ({ page }) => {
-    const { event, racer1 } = await seedTwoRacers();
+    const { event, racer1 } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
@@ -318,7 +325,7 @@ test.describe('Racer Profile', () => {
   });
 
   test('back button returns to standings after navigating between profiles', async ({ page }) => {
-    const { event, racer1, racer2 } = await seedTwoRacers();
+    const { event, racer1, racer2 } = seed;
 
     await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
