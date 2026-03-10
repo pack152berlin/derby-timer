@@ -60,6 +60,7 @@ export interface HeatResult {
   racer_id: string;
   place: number;
   dnf?: boolean;
+  time_ms?: number | null;
 }
 
 export interface RacerHistoryEntry {
