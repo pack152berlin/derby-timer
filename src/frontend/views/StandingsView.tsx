@@ -103,7 +103,7 @@ export function StandingsView() {
             href="/certificates"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#003F87] hover:bg-[#002f66] text-white transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 h-12 rounded-lg font-bold text-sm bg-[#003F87] hover:bg-[#002f66] text-white transition-colors shadow-sm"
           >
             <Award size={18} />
             <span className="hidden sm:inline">Print Certificates</span>
