@@ -485,15 +485,17 @@ export function HeatsView() {
 
         {heats.length > 0 && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              data-testid="btn-end-race"
-              onClick={() => setShowEndRaceStep1(true)}
-              className="border-slate-200 text-slate-500 hover:bg-slate-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
-            >
-              End Race
-            </Button>
+            {currentEvent.status === 'racing' && (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="btn-end-race"
+                onClick={() => setShowEndRaceStep1(true)}
+                className="border-slate-200 text-slate-500 hover:bg-slate-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
+              >
+                End Race
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
