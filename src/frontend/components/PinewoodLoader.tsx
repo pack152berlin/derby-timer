@@ -108,7 +108,7 @@ function HotRod() {
 const CAR_COMPONENTS = [RioCar, UnicornCar, CruiseShipCar, HotRod];
 
 function CarSVG({ index }: { index: number }) {
-  const Car = CAR_COMPONENTS[index];
+  const Car = CAR_COMPONENTS[index]!;
   return <Car />;
 }
 
@@ -219,7 +219,7 @@ export function PinewoodFullLoader({ visible = true }: { visible?: boolean }) {
           maskImage: 'linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%)',
         }}>
           {CAR_CONFIG.map(({ lane }, i) => {
-            const offset = carOffsets[i];
+            const offset = carOffsets[i] ?? 0;
             const xPos = startX + offset * (endX - startX);
             const yPos = lane * 56 + 22;
             return (

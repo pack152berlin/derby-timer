@@ -19,7 +19,7 @@ export function computeRacerStats(results: RacerHistoryEntry[]): RacerStats {
       else if (r.place === 2) second_place_count++;
       else if (r.place === 3) third_place_count++;
     }
-    if (r.time_ms) {
+    if (r.time_ms != null && r.time_ms > 0) {
       total_time_ms += r.time_ms;
       time_count++;
       if (best_time_ms === null || r.time_ms < best_time_ms) best_time_ms = r.time_ms;

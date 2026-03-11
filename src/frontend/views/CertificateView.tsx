@@ -58,6 +58,11 @@ function ordinal(n: number): React.ReactNode {
   return <>{n}<OrdSuffix>{suffix}</OrdSuffix></>;
 }
 
+const DEN_SINGULAR: Record<string, string> = {
+  Lions: 'Lion', Tigers: 'Tiger', Wolves: 'Wolf',
+  Bears: 'Bear', Webelos: 'Webelos', AOLs: 'AOL',
+};
+
 function tierHeadline(tier: CertTier): React.ReactNode {
   switch (tier.type) {
     case 'podium':
@@ -67,7 +72,7 @@ function tierHeadline(tier: CertTier): React.ReactNode {
     case 'top10':
       return <>Top 10</>;
     case 'den_champion':
-      return <>Fastest {tier.den.replace(/s$/, '')}!</>;
+      return <>Fastest {DEN_SINGULAR[tier.den] ?? tier.den}!</>;
     case 'den_top3':
       return <>{ordinal(tier.rank)} in {tier.den}!</>;
     case 'achievement':
@@ -95,9 +100,11 @@ function formatOrdinalText(text: string): React.ReactNode {
   return <>{m[1]}<OrdSuffix>{m[2]}</OrdSuffix>{m[3]}</>;
 }
 
-function formatTime(ms: number | null): string {
-  if (ms == null) return '\u2014';
-  return (ms / 1000).toFixed(3) + 's';
+/** Wrap the trailing "s" unit in time values like "3.245s" in a smaller span */
+function formatStatValue(value: string): React.ReactNode {
+  const m = value.match(/^(\d+\.\d+)(s)$/);
+  if (m) return <>{m[1]}<span className="text-[0.7em]">{m[2]}</span></>;
+  return value;
 }
 
 // --- Tier-specific colors ---
@@ -168,19 +175,17 @@ function RopeKnotBorder({ color }: { color: string }) {
 
 interface CertificateProps {
   racer: Racer;
-  standing: Standing | undefined;
   stats: RacerStats | undefined;
   tier: CertTier;
   event: Event;
   totalRacers: number;
 }
 
-function Certificate({ racer, standing, stats, tier, event, totalRacers }: CertificateProps) {
+function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProps) {
   const colors = getTierColors(tier);
   const headline = tierHeadline(tier);
   const denImage = racer.den ? DEN_IMAGES[racer.den] : null;
   const isPodium = tier.type === 'podium';
-  const isDen = tier.type === 'den_champion' || tier.type === 'den_top3';
   const subtitle = tierSubtitle(tier, totalRacers);
   const medal = isPodium
     ? tier.place === 1 ? '\uD83E\uDD47' : tier.place === 2 ? '\uD83E\uDD48' : '\uD83E\uDD49'
@@ -233,7 +238,7 @@ function Certificate({ racer, standing, stats, tier, event, totalRacers }: Certi
               </p>
               <h2
                 data-testid="certificate-racer-name"
-                className="font-racing text-5xl text-yellow-950 leading-tight tracking-wide"
+                className="text-5xl text-yellow-950 leading-tight tracking-wide font-cert-heading"
               >
                 {racer.name}
               </h2>
@@ -247,7 +252,7 @@ function Certificate({ racer, standing, stats, tier, event, totalRacers }: Certi
                 <div className="text-center">
                   <span
                     data-testid="certificate-headline"
-                    className="font-racing tracking-wide text-[42px] text-yellow-950"
+                    className="tracking-wide text-[42px] text-yellow-950 font-cert-heading leading-none"
                   >
                     {headline}
                   </span>
@@ -277,7 +282,7 @@ function Certificate({ racer, standing, stats, tier, event, totalRacers }: Certi
 
               if (denImage) {
                 return (
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 font-body">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6">
                     <div className="flex justify-end gap-6">
                       {left.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
                     </div>
@@ -297,7 +302,7 @@ function Certificate({ racer, standing, stats, tier, event, totalRacers }: Certi
               }
 
               return (
-                <div className="flex justify-center items-center gap-6 font-body">
+                <div className="flex justify-center items-center gap-6">
                   {items.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
                 </div>
               );
@@ -308,7 +313,7 @@ function Certificate({ racer, standing, stats, tier, event, totalRacers }: Certi
           {/* BOTTOM: Event info + Signature */}
           <div className="flex justify-between items-end mt-auto">
             <div data-testid="certificate-event-name">
-              <div className="text-base font-bold text-stone-700">
+              <div className="text-base text-stone-700">
                 {event.name}
               </div>
               <div className="text-sm text-stone-500">
@@ -339,12 +344,12 @@ function StatItem({ label, value, highlight }: { label: string; value: string; h
   return (
     <div className="py-1 text-center">
       <div className={cn(
-        "text-3xl font-extrabold font-body leading-7",
+        "text-3xl font-extrabold leading-7 font-cert-numbers",
         highlight ? "text-stone-900" : "text-stone-700"
       )}>
-        {value}
+        {formatStatValue(value)}
       </div>
-      <div className="text-sm uppercase tracking-widest text-stone-400 font-bold">
+      <div className="text-sm uppercase tracking-widest text-stone-400 font-bold font-body">
         {formatOrdinalText(label)}
       </div>
     </div>
@@ -476,14 +481,12 @@ export function CertificateView() {
       </div>
 
       {targetRacers.map(racer => {
-        const standing = standings.find(s => s.racer_id === racer.id);
         const stats = racerStats.get(racer.id);
         const tier = classifyRacer(standings, racers, racer.id);
         return (
           <Certificate
             key={racer.id}
             racer={racer}
-            standing={standing}
             stats={stats}
             tier={tier}
             event={event}

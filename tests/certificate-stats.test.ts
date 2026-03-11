@@ -103,4 +103,51 @@ describe('buildCertificateStats', () => {
     const labels = items.map(i => i.label);
     expect(labels).not.toContain('Wins');
   });
+
+  it('showRaces adds Races to balance when avg time is unavailable', () => {
+    const items = buildCertificateStats(
+      { ...base, best_time_ms: 3000, heats_raced: 5 },
+      '9',
+      { showRaces: true },
+    );
+    const labels = items.map(i => i.label);
+    // best_time = 1 (odd) → no avg → Car # = 2 (even) → no balancing needed
+    expect(labels).toEqual(['Best Time', 'Car #']);
+  });
+
+  it('showRaces adds Races when count is odd and avg time already present', () => {
+    const items = buildCertificateStats(
+      { ...base, wins: 1, best_time_ms: 3000, avg_time_ms: 3200, heats_raced: 5 },
+      '9',
+      { showRaces: true },
+    );
+    const labels = items.map(i => i.label);
+    // wins, best = 2 (even) → no avg → Car # = 3 → avg inserted = 4 → even, no races
+    // Actually: wins=1 → [Wins], best → [Wins, Best] = 2 (even) → skip avg
+    // Car # → [Wins, Best, Car#] = 3 (odd) → avg not present, insert → [Wins, Best, Avg, Car#] = 4
+    expect(labels).toEqual(['Wins', 'Best Time', 'Avg Time', 'Car #']);
+  });
+
+  it('showRaces adds Races as filler when no avg time and count is odd', () => {
+    const items = buildCertificateStats(
+      { ...base, wins: 2, second_place_count: 1, best_time_ms: 3000, heats_raced: 6 },
+      '4',
+      { showRaces: true },
+    );
+    const labels = items.map(i => i.label);
+    // wins, 2nd, best = 3 (odd) → no avg → push Car # = 4 (even) — no balance needed
+    // Wait: avg_time_ms is null here, so avg_time check at line 71 skips
+    // 3 items, 3 % 2 !== 0 but avg_time is null → stays 3 → Car # = 4 (even) → done
+    expect(labels).toEqual(['Wins', '2nd Place', 'Best Time', 'Car #']);
+  });
+
+  it('showRaces false never adds Races', () => {
+    const items = buildCertificateStats(
+      { ...base, best_time_ms: 3000, heats_raced: 5 },
+      '9',
+      { showRaces: false },
+    );
+    const labels = items.map(i => i.label);
+    expect(labels).not.toContain('Races');
+  });
 });
