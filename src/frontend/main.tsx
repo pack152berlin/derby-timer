@@ -33,11 +33,13 @@ function AppRoutes() {
   const [isHydrated, setIsHydrated] = useState(false);
 
   const fetchData = async (eventId: string) => {
-    const [racersData, heatsData, standingsData] = await Promise.all([
+    const [eventData, racersData, heatsData, standingsData] = await Promise.all([
+      api.getEvent(eventId),
       api.getRacers(eventId),
       api.getHeats(eventId),
       api.getStandings(eventId)
     ]);
+    if (eventData) setCurrentEvent(eventData);
     setRacers(racersData);
     setHeats(heatsData);
     setStandings(standingsData);

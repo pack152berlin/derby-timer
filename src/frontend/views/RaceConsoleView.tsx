@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Car, Flag, CheckCircle, Trophy, BarChart3, Loader2 } from 'lucide-react';
+import { AlertCircle, Car, Flag, CheckCircle, Trophy, BarChart3, Loader2, Award } from 'lucide-react';
 import { LilyChevronRight } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -117,10 +117,21 @@ export function RaceConsoleView() {
         <Trophy className="w-20 h-20 mx-auto mb-6 text-yellow-500" />
         <h2 className="text-4xl font-black mb-4 text-slate-900">Race Complete!</h2>
         <p className="text-xl text-slate-500 mb-8">All heats have been completed</p>
-        <Button onClick={() => navigate('/standings')} className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-lg px-8 py-6 cursor-pointer">
-          <BarChart3 className="w-6 h-6 mr-2" />
-          View Final Standings
-        </Button>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Button onClick={() => navigate('/standings')} className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-lg px-8 py-6 cursor-pointer">
+            <BarChart3 className="w-6 h-6 mr-2" />
+            View Final Standings
+          </Button>
+          <a
+            href="/certificates"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold text-lg px-8 py-3 rounded-lg transition-colors cursor-pointer"
+          >
+            <Award className="w-6 h-6" />
+            Print All Certificates
+          </a>
+        </div>
       </div>
     );
   }

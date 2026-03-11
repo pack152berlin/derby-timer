@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Trophy, Search } from 'lucide-react';
+import { Trophy, Search, Award, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useApp } from '../context';
@@ -10,7 +10,7 @@ import { StandingHeader, type SortCol, type SortDir } from './standings/Standing
 import { StandingRow } from './standings/StandingRow';
 
 export function StandingsView() {
-  const { standings, racers, heats, setCurrentRacerId } = useApp();
+  const { standings, racers, heats, setCurrentRacerId, currentEvent } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCol, setSortCol] = useState<SortCol>('rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -89,13 +89,27 @@ export function StandingsView() {
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
-          Race Standings
-        </h1>
-        <p className="text-slate-500 mt-1">
-          Ranked by wins, then losses, then average time
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
+            Race Standings
+          </h1>
+          <p className="text-slate-500 mt-1">
+            Ranked by wins, then losses, then average time
+          </p>
+        </div>
+        {currentEvent?.status === 'complete' && (
+          <a
+            href="/certificates"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#003F87] hover:bg-[#002f66] text-white transition-colors shadow-sm"
+          >
+            <Award size={18} />
+            <span className="hidden sm:inline">Print Certificates</span>
+            <ExternalLink size={14} className="text-white/60" />
+          </a>
+        )}
       </div>
 
       {standings.length > 0 && (

@@ -107,6 +107,9 @@ async function seedAndComplete(): Promise<SeedResult> {
     });
   }
 
+  // Ensure event is marked complete so certificates are accessible
+  await fetch(`${baseUrl}/api/events/${event.id}/end-race`, { method: 'POST' });
+
   return { event, racerIds };
 }
 

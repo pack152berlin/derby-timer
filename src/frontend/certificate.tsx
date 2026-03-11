@@ -283,33 +283,33 @@ function Certificate({ racer, standing, stats, tier, event }: CertificateProps) 
         <RopeKnotBorder color={colors.border} />
 
         {/* Content */}
-        <div style={{ padding: '48px 56px 40px', position: 'relative' }}>
+        <div style={{ padding: '28px 56px 20px', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '560px' }}>
 
           {/* === TOP SECTION: Fleur-de-lis + Title === */}
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '12px' }}>
               <FleurDeLis color={colors.border} size={44} />
               <div>
-                <h2 style={{
-                  fontSize: '13px',
-                  letterSpacing: '0.35em',
-                  textTransform: 'uppercase',
-                  color: '#78716c',
-                  margin: '0 0 4px',
-                  fontWeight: 600,
-                }}>
-                  Cub Scouts of America
-                </h2>
                 <h1 style={{
                   fontSize: '32px',
                   fontWeight: 700,
                   color: colors.border,
-                  margin: 0,
+                  margin: '0 0 1px',
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                 }}>
                   Certificate of Achievement
                 </h1>
+                <h2 style={{
+                  fontSize: '13px',
+                  letterSpacing: '0.35em',
+                  textTransform: 'uppercase',
+                  color: '#78716c',
+                  margin: 0,
+                  fontWeight: 600,
+                }}>
+                  Cub Scouts of America
+                </h2>
               </div>
               <FleurDeLis color={colors.border} size={44} />
             </div>
@@ -320,6 +320,9 @@ function Certificate({ racer, standing, stats, tier, event }: CertificateProps) 
               margin: '0 auto',
             }} />
           </div>
+
+          {/* === MIDDLE: flex-1 to push footer down === */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
 
           {/* === PRESENTED TO === */}
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
@@ -357,20 +360,20 @@ function Certificate({ racer, standing, stats, tier, event }: CertificateProps) 
             <div style={{
               background: colors.ribbon,
               color: colors.ribbonText,
-              padding: isPodium ? '14px 32px' : '10px 28px',
+              padding: isPodium ? '16px 40px' : '14px 36px',
               borderRadius: '4px',
               display: 'inline-block',
               boxShadow: `0 4px 16px ${colors.glow}`,
               position: 'relative',
             }}>
               {medal && (
-                <span style={{ fontSize: '28px', marginRight: '10px', verticalAlign: 'middle' }}>{medal}</span>
+                <span style={{ fontSize: '40px', marginRight: '12px', verticalAlign: 'middle' }}>{medal}</span>
               )}
               <span
                 data-testid="certificate-headline"
                 style={{
                   fontFamily: 'var(--font-racing)',
-                  fontSize: isPodium ? '30px' : isDen ? '26px' : '22px',
+                  fontSize: isPodium ? '34px' : isDen ? '30px' : '26px',
                   letterSpacing: '0.04em',
                   verticalAlign: 'middle',
                 }}
@@ -378,55 +381,78 @@ function Certificate({ racer, standing, stats, tier, event }: CertificateProps) 
                 {headline}
               </span>
               {medal && (
-                <span style={{ fontSize: '28px', marginLeft: '10px', verticalAlign: 'middle' }}>{medal}</span>
+                <span style={{ fontSize: '40px', marginLeft: '12px', verticalAlign: 'middle' }}>{medal}</span>
               )}
             </div>
           </div>
 
-          {/* === MIDDLE: Den image === */}
-          {denImage && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              margin: '16px 0',
-            }}>
-              <img
-                src={denImage}
-                alt={racer.den ?? ''}
-                style={{
-                  width: isDen ? '110px' : '80px',
-                  height: isDen ? '110px' : '80px',
-                  objectFit: 'contain',
-                  opacity: isDen ? 1 : 0.8,
-                }}
-              />
-            </div>
-          )}
+          {/* === STATS ROW with den logo centered === */}
+          {stats && (() => {
+            const leftStats: { label: string; value: string; highlight?: boolean }[] = [];
+            const rightStats: { label: string; value: string; highlight?: boolean }[] = [];
 
-          {/* === STATS ROW === */}
-          {stats && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '40px',
-              margin: '20px 0',
-              fontFamily: 'var(--font-body)',
-            }}>
-              {stats.wins > 0 && <StatItem label="Wins" value={String(stats.wins)} highlight />}
-              {stats.second_place_count > 0 && <StatItem label="2nd Place" value={String(stats.second_place_count)} />}
-              {stats.third_place_count > 0 && <StatItem label="3rd Place" value={String(stats.third_place_count)} />}
-              <StatItem label="Best Time" value={formatTime(stats.best_time_ms)} />
-              <StatItem label="Avg Time" value={formatTime(stats.avg_time_ms)} />
-              <StatItem label="Car #" value={racer.car_number} />
-            </div>
-          )}
+            // Build stat items (order matters: wins first, car # last)
+            const items: { label: string; value: string; highlight?: boolean }[] = [];
+            if (stats.wins > 0) items.push({ label: 'Wins', value: String(stats.wins), highlight: true });
+            if (stats.second_place_count > 0) items.push({ label: '2nd Place', value: String(stats.second_place_count) });
+            if (stats.third_place_count > 0) items.push({ label: '3rd Place', value: String(stats.third_place_count) });
+            if (stats.best_time_ms != null) items.push({ label: 'Best Time', value: formatTime(stats.best_time_ms) });
+            // Include avg time only when it keeps the total even
+            if (stats.avg_time_ms != null && items.length % 2 !== 0) {
+              items.push({ label: 'Avg Time', value: formatTime(stats.avg_time_ms) });
+            }
+            items.push({ label: 'Car #', value: racer.car_number });
+            // If still odd after Car #, add avg time if we haven't yet
+            if (items.length % 2 !== 0 && stats.avg_time_ms != null && !items.some(i => i.label === 'Avg Time')) {
+              items.splice(items.length - 1, 0, { label: 'Avg Time', value: formatTime(stats.avg_time_ms) });
+            }
+
+            const mid = items.length / 2;
+            const balancedLeft = items.slice(0, mid);
+            const balancedRight = items.slice(mid);
+
+            return (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '32px',
+                margin: '24px 0',
+                fontFamily: 'var(--font-body)',
+              }}>
+                <div style={{ display: 'flex', gap: '48px', justifyContent: 'flex-end', flex: 1 }}>
+                  {balancedLeft.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
+                </div>
+                {denImage ? (
+                  <img
+                    src={denImage}
+                    alt={racer.den ?? ''}
+                    style={{
+                      width: isDen ? '110px' : '80px',
+                      height: isDen ? '110px' : '80px',
+                      objectFit: 'contain',
+                      flexShrink: 0,
+                      opacity: isDen ? 1 : 0.8,
+                    }}
+                  />
+                ) : (
+                  <div style={{ width: '80px', flexShrink: 0 }} />
+                )}
+                <div style={{ display: 'flex', gap: '48px', justifyContent: 'flex-start', flex: 1 }}>
+                  {balancedRight.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
+                </div>
+              </div>
+            );
+          })()}
+
+          </div>{/* end middle flex-1 */}
 
           {/* === BOTTOM: Event info + Signature === */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-end',
-            marginTop: '28px',
+            marginTop: 'auto',
             paddingTop: '20px',
             borderTop: `1px solid ${colors.border}33`,
           }}>
@@ -450,7 +476,7 @@ function Certificate({ racer, standing, stats, tier, event }: CertificateProps) 
               <div style={{
                 borderBottom: '1px solid #78716c',
                 height: '32px',
-                marginBottom: '6px',
+                marginBottom: '2px',
               }} />
               <p style={{
                 fontSize: '11px',
@@ -473,25 +499,25 @@ function Certificate({ racer, standing, stats, tier, event }: CertificateProps) 
 
 function StatItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div style={{ padding: '4px 0', textAlign: 'center' }}>
       <div style={{
-        fontSize: '11px',
+        fontSize: '28px',
+        fontWeight: 800,
+        color: highlight ? '#1c1917' : '#44403c',
+        fontFamily: 'var(--font-body)',
+        lineHeight: 1.1,
+        marginBottom: '4px',
+      }}>
+        {value}
+      </div>
+      <div style={{
+        fontSize: '13px',
         textTransform: 'uppercase',
         letterSpacing: '0.12em',
         color: '#a8a29e',
         fontWeight: 700,
-        marginBottom: '2px',
       }}>
         {label}
-      </div>
-      <div style={{
-        fontSize: highlight ? '28px' : '20px',
-        fontWeight: 800,
-        color: highlight ? '#1c1917' : '#44403c',
-        fontFamily: 'var(--font-racing)',
-        lineHeight: 1.1,
-      }}>
-        {value}
       </div>
     </div>
   );
@@ -533,7 +559,6 @@ function CertificateApp() {
         if (!targetEventId) {
           const events = await api.getEvents();
           const activeEvent =
-            events.find(e => e.status === 'racing') ||
             events.find(e => e.status === 'complete') ||
             events[events.length - 1];
           if (!activeEvent) {
@@ -591,6 +616,17 @@ function CertificateApp() {
         minHeight: '100vh', fontFamily: 'Georgia, serif', fontSize: '20px', color: '#ef4444',
       }}>
         {error || 'No event found'}
+      </div>
+    );
+  }
+
+  if (event.status !== 'complete') {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '100vh', fontFamily: 'Georgia, serif', fontSize: '20px', color: '#78716c',
+      }}>
+        Certificates will be available after racing is complete.
       </div>
     );
   }

@@ -17,6 +17,11 @@ export const api = {
     const res = await fetch('/api/events');
     return res.ok ? res.json() : [];
   },
+
+  async getEvent(id: string): Promise<Event | null> {
+    const res = await fetch(`/api/events/${id}`);
+    return res.ok ? res.json() : null;
+  },
   
   async deleteEvent(id: string): Promise<void> {
     const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
@@ -35,6 +40,14 @@ export const api = {
     return res.json();
   },
   
+  async endRace(eventId: string): Promise<void> {
+    const res = await fetch(`/api/events/${eventId}/end-race`, { method: 'POST' });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'Unable to end race');
+    }
+  },
+
   async getRacers(eventId: string): Promise<Racer[]> {
     const res = await fetch(`/api/events/${eventId}/racers`);
     return res.ok ? res.json() : [];
