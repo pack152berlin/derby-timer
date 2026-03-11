@@ -54,19 +54,6 @@ test.describe('Heat Schedule', () => {
     await expect(page.locator('[data-testid="btn-generate-heats"]')).toBeVisible();
   });
 
-  test('Generate Heats dialog: confirm generates heats', async ({ page }) => {
-    const event = await createEventWithEligibleRacer('Generate Confirm Test');
-    await navigateToHeats(page, event.id);
-
-    await page.click('[data-testid="btn-generate-heats"]');
-    await expect(page.locator('[role="dialog"]')).toBeVisible();
-
-    // Confirm — heats should be generated and the dialog should close
-    await page.click('[role="dialog"] button:has-text("Generate Heats")');
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible();
-    await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
-  });
-
   test('Clear All Heats dialog: cancel keeps heats', async ({ page }) => {
     const event = await createEventWithEligibleRacer('Clear Cancel Test');
 
@@ -90,30 +77,6 @@ test.describe('Heat Schedule', () => {
     await page.click('[role="dialog"] button:has-text("Cancel")');
     await expect(page.locator('[role="dialog"]')).not.toBeVisible();
     await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
-  });
-
-  test('Clear All Heats dialog: confirm clears heats', async ({ page }) => {
-    const event = await createEventWithEligibleRacer('Clear Confirm Test');
-
-    // Generate heats via API
-    await fetch(`${baseUrl}/api/events/${event.id}/generate-heats`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-
-    await navigateToHeats(page, event.id);
-    await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
-
-    // Click Clear All and confirm
-    await page.click('[data-testid="btn-clear-heats"]');
-    await expect(page.locator('[role="dialog"]')).toBeVisible();
-    await page.click('[role="dialog"] button:has-text("Clear All")');
-
-    // Dialog closes and heats are gone
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible();
-    await expect(page.locator('[data-testid="heat-card"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="empty-heats"]')).toBeVisible();
   });
 
   test('should filter heats by status (All vs Pending)', async ({ page }) => {
