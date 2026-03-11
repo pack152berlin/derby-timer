@@ -122,15 +122,17 @@ export function RaceConsoleView() {
             <BarChart3 className="w-6 h-6 mr-2" />
             View Final Standings
           </Button>
-          <a
-            href="/certificates"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold text-lg px-8 py-3 rounded-lg transition-colors cursor-pointer"
-          >
-            <Award className="w-6 h-6" />
-            Print All Certificates
-          </a>
+          {currentEvent?.status === 'complete' && (
+            <a
+              href="/certificates"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold text-lg px-8 py-3 rounded-lg transition-colors cursor-pointer"
+            >
+              <Award className="w-6 h-6" />
+              Print All Certificates
+            </a>
+          )}
         </div>
       </div>
     );
