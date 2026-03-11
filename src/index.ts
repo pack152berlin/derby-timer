@@ -582,6 +582,35 @@ const server = Bun.serve({
       },
     },
 
+    "/api/events/:id/end-race": {
+      POST: (req) => {
+        const event = eventsRepo.findById(req.params.id);
+        if (!event) return respondJson({ error: "Event not found" }, 404);
+        if (event.status !== "racing") {
+          return respondJson({ error: "Event is not currently racing" }, 400);
+        }
+
+        // Revert any running heat to pending, then delete all non-complete heats
+        const runningHeat = heatsRepo.findRunning();
+        if (runningHeat?.event_id === req.params.id) {
+          heatsRepo.updateStatus(runningHeat.id, "pending");
+        }
+        heatsRepo.deleteNonCompleteByEvent(req.params.id);
+
+        // Clean up planning state
+        planningStateRepo.clearSettings(req.params.id);
+        clearRoundRacerCache(req.params.id);
+
+        // Mark event complete
+        const updated = eventsRepo.update(req.params.id, { status: "complete" });
+
+        broadcast({ type: "HEATS_UPDATED", eventId: req.params.id });
+        broadcast({ type: "STANDINGS_UPDATED", eventId: req.params.id });
+
+        return respondJson(updated);
+      },
+    },
+
     // ===== RACERS API (includes car info now) =====
     "/api/events/:eventId/racers": {
       GET: (req) => {

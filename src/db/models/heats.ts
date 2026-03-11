@@ -153,4 +153,8 @@ export class HeatRepository {
   deleteByEvent(eventId: string): void {
     this.db.run("DELETE FROM heats WHERE event_id = ?", [eventId]);
   }
+
+  deleteNonCompleteByEvent(eventId: string): void {
+    this.db.run("DELETE FROM heats WHERE event_id = ? AND status != 'complete'", [eventId]);
+  }
 }

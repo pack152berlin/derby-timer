@@ -12,7 +12,7 @@ interface HeatLaneGridProps {
   renderLaneFooter?: (lane: HeatLane) => React.ReactNode;
 }
 
-function EmptyLane({ laneNum, status }: { laneNum: number; status: string }) {
+function EmptyLane({ laneNum, status, showPhoto }: { laneNum: number; status: string; showPhoto: boolean }) {
   return (
     <div className="flex flex-col bg-white overflow-hidden">
       <div className={cn(
@@ -24,12 +24,22 @@ function EmptyLane({ laneNum, status }: { laneNum: number; status: string }) {
         <span className="text-xs font-black uppercase tracking-widest text-white/60">Lane</span>
         <span className="text-3xl font-black text-white leading-none">{laneNum}</span>
       </div>
-      <div className="flex-1 flex items-center justify-center py-6">
-        <div className="relative text-slate-300">
-          <Car className="w-10 h-10" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-px bg-slate-300 rotate-45" />
+      {showPhoto && (
+        <div className="aspect-square w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
+          <div className="relative text-slate-300">
+            <Car className="w-10 h-10" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-px bg-slate-300 rotate-45" />
+            </div>
           </div>
+        </div>
+      )}
+      <div className="px-3 pb-3 bg-white flex-1 text-center">
+        <div className="text-xs font-bold text-slate-400 truncate mt-1 mb-2">
+          Lane unused
+        </div>
+        <div className="text-2xl font-black text-slate-300 leading-none mt-1 line-through decoration-2">
+          0
         </div>
       </div>
     </div>
@@ -60,7 +70,7 @@ export function HeatLaneGrid({ heat, racers, laneCount, renderLaneFooter }: Heat
         const lane = heat.lanes?.find(l => l.lane_number === laneNum);
 
         if (!lane) {
-          return <EmptyLane key={laneNum} laneNum={laneNum} status={heat.status} />;
+          return <EmptyLane key={laneNum} laneNum={laneNum} status={heat.status} showPhoto={anyPhotos} />;
         }
 
         const racer = racerById.get(lane.racer_id);

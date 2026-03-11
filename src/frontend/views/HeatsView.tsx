@@ -373,6 +373,8 @@ export function HeatsView() {
   const [showLaneStats, setShowLaneStats] = useState(false);
   const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showEndRaceStep1, setShowEndRaceStep1] = useState(false);
+  const [showEndRaceStep2, setShowEndRaceStep2] = useState(false);
 
   if (!currentEvent) {
     return (
@@ -457,6 +459,12 @@ export function HeatsView() {
     refreshData();
   };
 
+  const confirmEndRace = async () => {
+    setShowEndRaceStep2(false);
+    await api.endRace(currentEvent.id);
+    refreshData();
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
 
@@ -472,15 +480,26 @@ export function HeatsView() {
         </div>
 
         {heats.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            data-testid="btn-clear-heats"
-            onClick={() => setShowClearConfirm(true)}
-            className="border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
-          >
-            Clear All
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="btn-end-race"
+              onClick={() => setShowEndRaceStep1(true)}
+              className="border-slate-200 text-slate-500 hover:bg-slate-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
+            >
+              End Race
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="btn-clear-heats"
+              onClick={() => setShowClearConfirm(true)}
+              className="border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs tracking-widest h-10 px-4 shadow-sm"
+            >
+              Clear All
+            </Button>
+          </div>
         )}
 
         {heats.length === 0 && (
@@ -738,6 +757,43 @@ export function HeatsView() {
           <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
             <Button variant="outline" onClick={() => setShowClearConfirm(false)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmClear}>Clear All</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* End Race — Step 1 */}
+      <Dialog open={showEndRaceStep1} onOpenChange={(open) => !open && setShowEndRaceStep1(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>End Race?</DialogTitle>
+            <DialogDescription>
+              This will finalize all results. No more heats can be run after this.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowEndRaceStep1(false)}>Cancel</Button>
+            <Button
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+              onClick={() => { setShowEndRaceStep1(false); setShowEndRaceStep2(true); }}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* End Race — Step 2 */}
+      <Dialog open={showEndRaceStep2} onOpenChange={(open) => !open && setShowEndRaceStep2(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. All pending and running heats will be discarded.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowEndRaceStep2(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmEndRace}>End Race</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -360,6 +360,41 @@ describe("DerbyTimer API Integration Tests", () => {
       }
     });
 
+    it("should end race, discarding pending heats and marking event complete", async () => {
+      // Event should be in 'racing' status from prior generate-heats call
+      const eventBefore = await (await fetch(`${baseUrl}/api/events/${eventId}`)).json();
+      expect(eventBefore.status).toBe("racing");
+
+      // Get current heats — should have some pending
+      const heatsBefore = await (await fetch(`${baseUrl}/api/events/${eventId}/heats`)).json();
+      const pendingBefore = heatsBefore.filter((h: { status: string }) => h.status === "pending");
+      expect(pendingBefore.length).toBeGreaterThan(0);
+
+      // End the race
+      const response = await fetch(`${baseUrl}/api/events/${eventId}/end-race`, { method: "POST" });
+      expect(response.status).toBe(200);
+      const updated = await response.json();
+      expect(updated.status).toBe("complete");
+
+      // Pending heats should be gone
+      const heatsAfter = await (await fetch(`${baseUrl}/api/events/${eventId}/heats`)).json();
+      const pendingAfter = heatsAfter.filter((h: { status: string }) => h.status === "pending");
+      expect(pendingAfter.length).toBe(0);
+
+      // All remaining heats should be complete
+      for (const h of heatsAfter) {
+        expect(h.status).toBe("complete");
+      }
+    });
+
+    it("should reject end-race when event is not racing", async () => {
+      // Event is already 'complete' from previous test
+      const response = await fetch(`${baseUrl}/api/events/${eventId}/end-race`, { method: "POST" });
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toContain("not currently racing");
+    });
+
     it("should fail to generate heats when no racers have been inspected", async () => {
       // Create a fresh event with un-inspected racers
       const newEventRes = await fetch(`${baseUrl}/api/events`, {

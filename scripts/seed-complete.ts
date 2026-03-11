@@ -66,6 +66,7 @@ async function main() {
   const dbPath     = values.get('db') ?? 'derby.db';
   const withTimes  = true; // Realistic timings always include times now
 
+  const baseUrl = `http://localhost:${port}`;
   console.log(`seed-complete  db=${dbPath}  lanes=${lanes}  rounds=${rounds}  cars=${racerCount} (realistic timing)`);
 
   const server = startServer(dbPath, port);

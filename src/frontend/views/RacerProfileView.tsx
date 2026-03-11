@@ -205,7 +205,7 @@ export function RacerProfileView() {
           <LilyChevronLeft size={16} />
           Back
         </Button>
-        {standing && (
+        {standing && currentEvent?.status === 'complete' && (
           <a
             href={`/certificate/${racer.id}`}
             target="_blank"
