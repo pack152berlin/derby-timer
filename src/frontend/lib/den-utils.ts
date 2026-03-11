@@ -13,3 +13,13 @@ export const DEN_IMAGES: Record<string, string> = {
   'Webelos': webelosImg,
   'AOLs':    aolImg,
 };
+
+export const DEN_SINGULAR: Record<string, string> = {
+  Lions: 'Lion', Tigers: 'Tiger', Wolves: 'Wolf',
+  Bears: 'Bear', Webelos: 'Webelos', AOLs: 'AOL',
+};
+
+export const DEN_ACCENT: Record<string, string> = {
+  Lions: '#eab308', Tigers: '#ea580c', Wolves: '#2563eb',
+  Bears: '#dc2626', Webelos: '#4f46e5', AOLs: '#059669',
+};

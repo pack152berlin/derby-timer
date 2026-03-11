@@ -1,4 +1,48 @@
-import type { RacerHistoryEntry } from '../types';
+import type { RacerHistoryEntry, Racer, Standing } from '../types';
+import { denPlacement, shouldShowDenRank } from './den-rankings';
+
+// --- Certificate tiering ---
+
+export type CertTier =
+  | { type: 'podium'; place: 1 | 2 | 3 }
+  | { type: 'top5'; place: number }
+  | { type: 'top10'; place: number }
+  | { type: 'den_champion'; rank: 1; den: string; overallPlace: number }
+  | { type: 'den_top3'; rank: 2 | 3; den: string; overallPlace: number }
+  | { type: 'achievement'; overallPlace: number };
+
+export function classifyRacer(
+  standings: Standing[],
+  racers: Racer[],
+  racerId: string,
+): CertTier {
+  const overallIdx = standings.findIndex(s => s.racer_id === racerId);
+  const overallPlace = overallIdx + 1;
+
+  if (overallPlace >= 1 && overallPlace <= 3) {
+    return { type: 'podium', place: overallPlace as 1 | 2 | 3 };
+  }
+  if (overallPlace >= 4 && overallPlace <= 5) {
+    return { type: 'top5', place: overallPlace };
+  }
+  if (overallPlace >= 6 && overallPlace <= 10) {
+    return { type: 'top10', place: overallPlace };
+  }
+
+  const dp = denPlacement(standings, racers, racerId);
+  if (dp && shouldShowDenRank(dp.rank, dp.total)) {
+    if (dp.rank === 1) {
+      return { type: 'den_champion', rank: 1, den: dp.den, overallPlace };
+    }
+    if (dp.rank === 2 || dp.rank === 3) {
+      return { type: 'den_top3', rank: dp.rank as 2 | 3, den: dp.den, overallPlace };
+    }
+  }
+
+  return { type: 'achievement', overallPlace };
+}
+
+// --- Racer stats ---
 
 export interface RacerStats {
   wins: number;
