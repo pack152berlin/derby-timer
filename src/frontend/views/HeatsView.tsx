@@ -461,7 +461,11 @@ export function HeatsView() {
 
   const confirmEndRace = async () => {
     setShowEndRaceStep2(false);
-    await api.endRace(currentEvent.id);
+    try {
+      await api.endRace(currentEvent.id);
+    } catch (err) {
+      console.error('Failed to end race:', err);
+    }
     refreshData();
   };
 

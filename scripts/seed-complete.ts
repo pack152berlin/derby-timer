@@ -111,7 +111,7 @@ async function main() {
       if (Math.random() > PHOTO_RATE) continue;
       const { data, mime } = await realCarPhoto(i);
       const form = new FormData();
-      form.append('photo', new Blob([data], { type: mime }), `car${i}.jpg`);
+      form.append('photo', new Blob([data as BlobPart], { type: mime }), `car${i}.jpg`);
       await fetch(`${baseUrl}/api/racers/${racers[i]!.id}/photo`, { method: 'POST', body: form });
       photoCount++;
     }

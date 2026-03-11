@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&family=Cinzel:wght@700;900&family=Merriweather:wght@700;900&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -31,6 +31,8 @@
     /* Fonts */
     --font-racing: "Anton", sans-serif;
     --font-body: "Rajdhani", sans-serif;
+    --font-cert-heading: "Cinzel", serif;
+    --font-cert-numbers: "Merriweather", serif;
 
     /* Shadcn color mappings */
     --color-background: var(--background);
