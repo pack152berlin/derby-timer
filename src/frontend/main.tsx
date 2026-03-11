@@ -17,6 +17,7 @@ import { RaceConsoleView } from './views/RaceConsoleView';
 import { StandingsView } from './views/StandingsView';
 import { RaceFormatView } from './views/RaceFormatView';
 import { RacerProfileView } from './views/RacerProfileView';
+import { CertificateView } from './views/CertificateView';
 import { PinewoodFullLoader } from './components/PinewoodLoader';
 
 // ===== MAIN APP ROUTES =====
@@ -213,7 +214,13 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <Routes>
+        {/* Certificate routes render without nav chrome */}
+        <Route path="/certificate/:id" element={<CertificateView />} />
+        <Route path="/certificates" element={<CertificateView />} />
+        {/* All other routes go through the main app shell */}
+        <Route path="/*" element={<AppRoutes />} />
+      </Routes>
     </BrowserRouter>
   );
 }

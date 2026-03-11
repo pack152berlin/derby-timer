@@ -48,6 +48,11 @@ export const api = {
     }
   },
 
+  async getRacer(id: string): Promise<Racer | null> {
+    const res = await fetch(`/api/racers/${id}`);
+    return res.ok ? res.json() : null;
+  },
+
   async getRacers(eventId: string): Promise<Racer[]> {
     const res = await fetch(`/api/events/${eventId}/racers`);
     return res.ok ? res.json() : [];
