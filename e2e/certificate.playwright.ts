@@ -166,4 +166,64 @@ test.describe('Certificate Page', () => {
 
     await expect(page.locator('[data-testid="btn-print"]')).toBeVisible();
   });
+
+  test('den champion outside top 10 shows "Fastest <den>" headline', async ({ page }) => {
+    // Seed a separate small event where we control placements precisely:
+    // 11 Wolves + 1 Bear → Bear guaranteed to be outside top 10 and den champion
+    const evRes = await fetch(`${baseUrl}/api/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Den Champion Test', date: '2026-04-01', lane_count: 4 }),
+    });
+    const ev = await evRes.json();
+
+    const ids: string[] = [];
+    const denChampionRacers = [
+      ...Array.from({ length: 11 }, (_, i) => ({ name: `Wolf ${i + 1}`, den: 'Wolves' })),
+      { name: 'Lone Bear', den: 'Bears' },
+    ];
+    for (const r of denChampionRacers) {
+      const res = await fetch(`${baseUrl}/api/events/${ev.id}/racers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(r),
+      });
+      const created = await res.json();
+      ids.push(created.id);
+      await fetch(`${baseUrl}/api/racers/${created.id}/inspect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weight_ok: true }),
+      });
+    }
+
+    // Generate and complete heats — Bear always gets last place
+    await fetch(`${baseUrl}/api/events/${ev.id}/generate-heats`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const heatsRes = await fetch(`${baseUrl}/api/events/${ev.id}/heats`);
+    const evHeats = await heatsRes.json();
+    const bearId = ids[ids.length - 1]!;
+
+    for (const heat of evHeats) {
+      await fetch(`${baseUrl}/api/heats/${heat.id}/start`, { method: 'POST' });
+      const results = heat.lanes.map((lane: any, idx: number) => ({
+        lane_number: lane.lane_number,
+        racer_id: lane.racer_id,
+        // Bear always gets last place in their heat
+        place: lane.racer_id === bearId ? heat.lanes.length : idx + 1,
+      }));
+      await fetch(`${baseUrl}/api/heats/${heat.id}/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results }),
+      });
+    }
+
+    await fetch(`${baseUrl}/api/events/${ev.id}/end-race`, { method: 'POST' });
+
+    await page.goto(`${baseUrl}/certificate/${bearId}`);
+    await page.waitForSelector('[data-testid="certificate"]');
+    await expect(page.locator('[data-testid="certificate-headline"]')).toContainText('Fastest Bear');
+  });
 });

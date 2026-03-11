@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { DEN_IMAGES, DEN_SINGULAR, DEN_ACCENT } from '../lib/den-utils';
 import { classifyRacer, buildCertificateStats, computeRacerStats } from '../lib/certificate-stats';
@@ -316,8 +316,7 @@ function FullPageMessage({ children, color = 'text-stone-500' }: { children: Rea
 
 export function CertificateView() {
   const { id: singleRacerId } = useParams<{ id?: string }>();
-  const location = useLocation();
-  const isBatch = location.pathname === '/certificates';
+  const isBatch = !singleRacerId;
 
   const [event, setEvent] = useState<Event | null>(null);
   const [racers, setRacers] = useState<Racer[]>([]);

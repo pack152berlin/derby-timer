@@ -10,6 +10,7 @@ const standing = (racer_id: string, wins = 0, losses = 0): Standing => ({
 const racer = (id: string, den: string | null = null): Racer => ({
   id, event_id: 'e1', name: '', den, car_number: '1',
   weight_ok: 1, inspected_at: null, car_photo_filename: null,
+  car_photo_mime_type: null, car_photo_bytes: null,
   created_at: '', updated_at: '',
 });
 
