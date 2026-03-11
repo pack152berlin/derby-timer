@@ -79,6 +79,67 @@ test.describe('Heat Schedule', () => {
     await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
   });
 
+  test('End Race: double confirmation flow ends the race', async ({ page }) => {
+    const event = await createEventWithEligibleRacer('End Race Flow Test');
+
+    // Generate heats so the End Race button appears
+    await fetch(`${baseUrl}/api/events/${event.id}/generate-heats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    await navigateToHeats(page, event.id);
+    await expect(page.locator('[data-testid="heat-card"]').first()).toBeVisible();
+
+    // End Race button should be visible
+    await expect(page.locator('[data-testid="btn-end-race"]')).toBeVisible();
+
+    // Click End Race — first confirmation dialog
+    await page.click('[data-testid="btn-end-race"]');
+    const dialog1 = page.locator('[role="dialog"]');
+    await expect(dialog1).toBeVisible();
+    await expect(dialog1).toContainText('End Race?');
+    await expect(dialog1).toContainText('finalize all results');
+
+    // Click Continue — second confirmation dialog appears
+    await page.click('[role="dialog"] button:has-text("Continue")');
+    const dialog2 = page.locator('[role="dialog"]:has-text("Are you sure?")');
+    await expect(dialog2).toBeVisible();
+    await expect(dialog2).toContainText('cannot be undone');
+
+    // Click End Race (destructive) — race ends
+    await dialog2.locator('button:has-text("End Race")').click();
+    await expect(dialog2).not.toBeVisible();
+
+    // Verify event is now complete via API
+    const eventRes = await fetch(`${baseUrl}/api/events/${event.id}`);
+    const updatedEvent = await eventRes.json();
+    expect(updatedEvent.status).toBe('complete');
+  });
+
+  test('End Race: cancel on first dialog does not end race', async ({ page }) => {
+    const event = await createEventWithEligibleRacer('End Race Cancel Test');
+
+    await fetch(`${baseUrl}/api/events/${event.id}/generate-heats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    await navigateToHeats(page, event.id);
+    await page.click('[data-testid="btn-end-race"]');
+    await expect(page.locator('[role="dialog"]')).toBeVisible();
+
+    // Cancel — dialog closes, event still racing
+    await page.click('[role="dialog"] button:has-text("Cancel")');
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible();
+
+    const eventRes = await fetch(`${baseUrl}/api/events/${event.id}`);
+    const updatedEvent = await eventRes.json();
+    expect(updatedEvent.status).toBe('racing');
+  });
+
   test('should filter heats by status (All vs Pending)', async ({ page }) => {
     // 1. Setup: Create event, racer, and generate heats
     const eventResponse = await fetch(`${baseUrl}/api/events`, {
