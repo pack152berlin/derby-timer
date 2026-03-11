@@ -1,53 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { DEN_IMAGES } from '../lib/den-utils';
-import { denPlacement, shouldShowDenRank } from '../lib/den-rankings';
-import { buildCertificateStats, computeRacerStats } from '../lib/certificate-stats';
-import type { RacerStats } from '../lib/certificate-stats';
+import { DEN_IMAGES, DEN_SINGULAR, DEN_ACCENT } from '../lib/den-utils';
+import { classifyRacer, buildCertificateStats, computeRacerStats } from '../lib/certificate-stats';
+import type { CertTier, RacerStats } from '../lib/certificate-stats';
 import type { Event, Racer, Standing } from '../types';
 import { api } from '../api';
-
-// --- Certificate tiering ---
-
-type CertTier =
-  | { type: 'podium'; place: 1 | 2 | 3 }
-  | { type: 'top5'; place: number }
-  | { type: 'top10'; place: number }
-  | { type: 'den_champion'; rank: 1; den: string; overallPlace: number }
-  | { type: 'den_top3'; rank: 2 | 3; den: string; overallPlace: number }
-  | { type: 'achievement'; overallPlace: number };
-
-function classifyRacer(
-  standings: Standing[],
-  racers: Racer[],
-  racerId: string,
-): CertTier {
-  const overallIdx = standings.findIndex(s => s.racer_id === racerId);
-  const overallPlace = overallIdx + 1;
-
-  if (overallPlace >= 1 && overallPlace <= 3) {
-    return { type: 'podium', place: overallPlace as 1 | 2 | 3 };
-  }
-  if (overallPlace >= 4 && overallPlace <= 5) {
-    return { type: 'top5', place: overallPlace };
-  }
-  if (overallPlace >= 6 && overallPlace <= 10) {
-    return { type: 'top10', place: overallPlace };
-  }
-
-  const dp = denPlacement(standings, racers, racerId);
-  if (dp && shouldShowDenRank(dp.rank, dp.total)) {
-    if (dp.rank === 1) {
-      return { type: 'den_champion', rank: 1, den: dp.den, overallPlace };
-    }
-    if (dp.rank === 2 || dp.rank === 3) {
-      return { type: 'den_top3', rank: dp.rank as 2 | 3, den: dp.den, overallPlace };
-    }
-  }
-
-  return { type: 'achievement', overallPlace };
-}
 
 function OrdSuffix({ children }: { children: React.ReactNode }) {
   return <span className="text-[0.65em] opacity-75">{children}</span>;
@@ -57,11 +15,6 @@ function ordinal(n: number): React.ReactNode {
   const suffix = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
   return <>{n}<OrdSuffix>{suffix}</OrdSuffix></>;
 }
-
-const DEN_SINGULAR: Record<string, string> = {
-  Lions: 'Lion', Tigers: 'Tiger', Wolves: 'Wolf',
-  Bears: 'Bear', Webelos: 'Webelos', AOLs: 'AOL',
-};
 
 function tierHeadline(tier: CertTier): React.ReactNode {
   switch (tier.type) {
@@ -116,11 +69,6 @@ const TIER_COLORS: Record<string, { border: string; ribbon: string; ribbonText: 
   'top10':    { border: '#003F87', ribbon: 'linear-gradient(135deg, #1e40af, #003F87, #1e3a5f)', ribbonText: '#ffffff', glow: 'rgba(0,63,135,0.2)' },
   'den':      { border: '#003F87', ribbon: 'linear-gradient(135deg, #1e3a5f, #003F87)', ribbonText: '#ffffff', glow: 'rgba(0,63,135,0.15)' },
   'achievement': { border: '#003F87', ribbon: 'linear-gradient(135deg, #1e3a5f, #003F87)', ribbonText: '#ffffff', glow: 'rgba(0,63,135,0.1)' },
-};
-
-const DEN_ACCENT: Record<string, string> = {
-  Lions: '#eab308', Tigers: '#ea580c', Wolves: '#2563eb',
-  Bears: '#dc2626', Webelos: '#4f46e5', AOLs: '#059669',
 };
 
 function getTierColors(tier: CertTier) {
