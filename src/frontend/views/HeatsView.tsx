@@ -25,6 +25,8 @@ import { AppTabs } from '@/components/AppTabs';
 import { cn } from '@/lib/utils';
 import { splitName } from '@/lib/name-utils';
 import { PLACE_STYLES } from '@/lib/place-styles';
+import { computeLaneStats } from '@/lib/lane-stats';
+import type { LaneStat } from '@/lib/lane-stats';
 import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat } from '../types';
@@ -33,10 +35,10 @@ import type { Heat } from '../types';
 
 const PLACE_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-const ordinal = (n: number) => {
-  const s = ['th', 'st', 'nd', 'rd'];
+const ordinal = (n: number): string => {
+  const suffixes = ['th', 'st', 'nd', 'rd'] as const;
   const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  return n + (suffixes[(v - 20) % 10] ?? suffixes[v] ?? 'th');
 };
 
 const FIRST_NAME_COLOR: Record<number, string> = {
@@ -46,63 +48,6 @@ const FIRST_NAME_COLOR: Record<number, string> = {
 };
 
 // ─── Lane Stats ──────────────────────────────────────────────────────────────
-
-interface LaneStat {
-  lane: number;
-  avg: number | null;
-  best: number | null;
-  worst: number | null;
-  placeCounts: number[];  // index 0 = 1st place, index 1 = 2nd, etc.
-  avgFinish: number | null;
-  hasTimes: boolean;
-}
-
-export function computeLaneStats(heats: Heat[], laneCount: number): LaneStat[] {
-  const lanes: LaneStat[] = Array.from({ length: laneCount }, (_, i) => ({
-    lane: i + 1, avg: null, best: null, worst: null,
-    placeCounts: new Array(laneCount).fill(0), avgFinish: null, hasTimes: false,
-  }));
-
-  for (const heat of heats) {
-    if (!heat.results) continue;
-    for (const r of heat.results) {
-      const s = lanes[r.lane_number - 1];
-      if (!s) continue;
-      if (!r.dnf && r.place != null && r.place >= 1 && r.place <= laneCount) {
-        s.placeCounts[r.place - 1]++;
-      }
-      if (r.time_ms != null && !r.dnf) {
-        s.hasTimes = true;
-        if (s.best === null || r.time_ms < s.best) s.best = r.time_ms;
-        if (s.worst === null || r.time_ms > s.worst) s.worst = r.time_ms;
-      }
-    }
-  }
-
-  // Second pass for proper averages
-  for (const s of lanes) {
-    let timeSum = 0, timeCount = 0;
-    let placeSum = 0, placeCount = 0;
-    for (const heat of heats) {
-      if (!heat.results) continue;
-      for (const r of heat.results) {
-        if (r.lane_number !== s.lane) continue;
-        if (r.time_ms != null && !r.dnf) {
-          timeSum += r.time_ms;
-          timeCount++;
-        }
-        if (r.place != null && !r.dnf) {
-          placeSum += r.place;
-          placeCount++;
-        }
-      }
-    }
-    if (timeCount > 0) s.avg = timeSum / timeCount;
-    s.avgFinish = placeCount > 0 ? placeSum / placeCount : null;
-  }
-
-  return lanes;
-}
 
 const fmtTime = (ms: number | null) => ms != null ? `${(ms / 1000).toFixed(3)}s` : '—';
 
@@ -364,12 +309,14 @@ function CompletedHeatsTable({
   expandedIds,
   expandAll,
   onToggle,
+  laneStats,
 }: {
   heats: Heat[];
   laneCount: number;
   expandedIds: Set<string>;
   expandAll: boolean;
   onToggle: (id: string) => void;
+  laneStats: LaneStat[] | null;
 }) {
   const { setCurrentRacerId } = useApp();
   const laneNums = Array.from({ length: laneCount }, (_, i) => i + 1);
@@ -386,6 +333,9 @@ function CompletedHeatsTable({
           </div>
         ))}
       </div>
+
+      {/* Lane stats — inside overflow-x-auto so it scrolls with the table */}
+      {laneStats && <LaneStatsBar stats={laneStats} laneCount={laneCount} />}
 
       {/* Heat rows — only this section scrolls vertically */}
       <div className="overflow-y-auto min-h-[20rem]" style={{ maxHeight: 'calc(100vh - 22rem)' }}>
@@ -458,12 +408,10 @@ export function HeatsView() {
     return result;
   }, [allCompleted, deferredRoundFilter, deferredSortOrder]);
 
-  const laneStats = useMemo(() =>
-    completedHeats.length > 0 && currentEvent
-      ? computeLaneStats(completedHeats, currentEvent.lane_count)
-      : null,
-    [completedHeats, currentEvent],
-  );
+  const laneStats = useMemo(() => {
+    if (!showLaneStats || !currentEvent || completedHeats.length === 0) return null;
+    return computeLaneStats(completedHeats, currentEvent.lane_count);
+  }, [showLaneStats, completedHeats, currentEvent]);
 
   const lastCompletedHeat = useMemo(() => {
     if (allCompleted.length === 0) return null;
@@ -742,11 +690,6 @@ export function HeatsView() {
                 </div>
               )}
 
-              {/* Lane Stats Bar */}
-              {showLaneStats && laneStats && (
-                <LaneStatsBar stats={laneStats} laneCount={currentEvent.lane_count} />
-              )}
-
               {/* Table or empty state */}
               {completedHeats.length === 0 ? (
                 <p className="text-center py-10 text-slate-400 font-semibold">
@@ -759,6 +702,7 @@ export function HeatsView() {
                   expandedIds={expandedIds}
                   expandAll={expandAll}
                   onToggle={toggleExpanded}
+                  laneStats={laneStats}
                 />
               )}
             </div>
