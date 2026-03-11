@@ -98,6 +98,10 @@ handle migrations with https://github.com/sequelize/umzug
 - Standings display:
   - Rank by wins desc, losses asc, then avg time asc.
   - Filter by class/den.
+  - **Future:** Switch to points-per-place scoring (4/3/2/1) instead of win/loss.
+    Current W/L system treats 2nd and 4th place identically as "loss."
+    Points-per-place is the industry standard for multi-lane derbies.
+    See `docs/notes/standings-ranking-research.md` for full analysis.
 - Add a "Heat Coverage" view:
   - For each car: lane counts, heats run, upcoming lane needs.
 
@@ -113,6 +117,61 @@ handle migrations with https://github.com/sequelize/umzug
 - Post-race
   - Export standings and award winners.
   - Archive event data.
+
+## Setup & Configuration Locking
+
+The setup/config page should make it obvious what can be changed at each phase
+and what gets locked in. Settings are grouped into tiers that lock at key milestones.
+
+### Phase 1: Setup (status = draft)
+Everything is editable. This is the pre-event planning phase.
+
+| Setting | Editable? | Notes |
+|---------|-----------|-------|
+| Event name & date | Yes | Cosmetic, never locks |
+| Lane count | Yes | Can change freely before heats exist |
+| Add/remove racers | Yes | — |
+| Edit racer info | Yes | Name, den, car number |
+| Inspection (pass/fail) | Yes | Only inspected racers enter heats |
+| Race format (rounds, lookahead) | Yes | Chosen at heat generation time |
+
+### Phase 2: Racing (status = racing)
+Triggered when heats are first generated. Race-critical config is locked.
+
+| Setting | Editable? | Notes |
+|---------|-----------|-------|
+| Event name & date | Yes | Still cosmetic |
+| Lane count | **Locked** | Heats are built around this |
+| Add racers | **Locked** | New racers can't join mid-race |
+| Remove racers | **Locked** | Would break heat lane references |
+| Edit racer name/den | Yes | Cosmetic only |
+| Inspection | **Locked** | Roster is fixed |
+| Race format | **Locked** | Rounds/lookahead already committed |
+| Record results | Yes | Core activity of this phase |
+
+### Phase 3: Complete (status = complete)
+Everything is frozen. Certificates available.
+
+| Setting | Editable? | Notes |
+|---------|-----------|-------|
+| Event name & date | Yes | May still need correction |
+| All race config | **Locked** | — |
+| Results | **Locked** | Final standings are official |
+| Certificates | Available | Gated on complete status |
+
+### Future: Check-in phase (status = checkin)
+The `checkin` status exists in the schema but isn't used yet. It could serve as
+an intermediate phase between setup and racing — signaling that volunteers should
+start weighing cars, but still allowing late registrations. Config locking would
+be the same as draft (nothing locked yet) but the UI would shift focus to the
+inspection workflow.
+
+### Setup page UX
+The Race Format / Setup page should visually communicate these tiers:
+- Show current phase prominently
+- Gray out / disable controls that are locked for the current phase
+- Explain *why* something is locked ("Lane count is fixed once heats are generated")
+- Offer an "undo" path where safe (e.g., clearing all heats returns to draft)
 
 ## Acceptance Criteria
 - Registration lets staff add/edit racers and cars in under 30 seconds each.

@@ -185,5 +185,5 @@ The 30-minute staging gap was intentional — cars had to be physically arranged
 
 ### Scoring
 - **Wire up the K1 timer next year.** Without times, mid-pack standings are meaningless ties. With times, every placement is uniquely ranked.
-- **Consider points-based scoring** (1st=4pts, 2nd=3pts, 3rd=2pts, 4th=1pt) as a no-timer alternative that gives credit for 2nd/3rd place instead of treating everything non-1st as a loss.
+- **Switch to points-per-place scoring** (1st=4pts, 2nd=3pts, 3rd=2pts, 4th=1pt). This is the industry standard for multi-lane derby events (used by GrandPrix Race Manager, slot car clubs, and F1-style countback). Gives credit for 2nd/3rd place instead of treating everything non-1st as a loss. The 2026 three-way tie at 4W/4L would have been resolvable with place-count data even without times. See `docs/notes/standings-ranking-research.md` for full analysis and implementation options.
 - **Winning a heat in a field of 4 is not the same as winning a heat of 2.** The current model doesn't account for heat size. Worth considering in any future scoring revamp.

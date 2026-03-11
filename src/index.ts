@@ -1,6 +1,5 @@
 import index from "./frontend/index.html";
 import display from "./frontend/display.html";
-import certificate from "./frontend/certificate.html";
 import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { basename, join } from "node:path";
 import {
@@ -511,10 +510,10 @@ const server = Bun.serve({
     "/race": index,
     "/standings": index,
     "/format": index,
+    "/racer/:id": index,
     "/display": display,
-    "/certificate": certificate,
-    "/certificate/:id": certificate,
-    "/certificates": certificate,
+    "/certificate/:id": index,
+    "/certificates": index,
 
     "/ws": (req, server) => {
       if (server.upgrade(req)) {
