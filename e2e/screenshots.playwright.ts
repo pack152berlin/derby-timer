@@ -484,6 +484,9 @@ test('14-certificate', async ({ page }) => {
     await fetch(`${baseUrl}/api/heats/${heatId}/complete`, { method: 'POST' });
   }
 
+  // Mark event complete so certificates are accessible
+  await fetch(`${baseUrl}/api/events/${event.id}/end-race`, { method: 'POST' });
+
   await page.goto(`${baseUrl}/certificates`);
   await page.waitForTimeout(1500);
 
