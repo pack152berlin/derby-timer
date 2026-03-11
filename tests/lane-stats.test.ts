@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { computeLaneStats } from '../src/frontend/views/HeatsView';
+import { computeLaneStats } from '../src/frontend/lib/lane-stats';
 import type { Heat } from '../src/frontend/types';
 
 const makeHeat = (overrides: Partial<Heat> & { results: Heat['results'] }): Heat => ({
@@ -41,19 +41,19 @@ describe('computeLaneStats', () => {
     expect(stats).toHaveLength(4);
 
     // Lane 1: one 1st, one 2nd
-    expect(stats[0].placeCounts).toEqual([1, 1, 0, 0]);
-    expect(stats[0].avgFinish).toBe(1.5);
+    expect(stats[0]!.placeCounts).toEqual([1, 1, 0, 0]);
+    expect(stats[0]!.avgFinish).toBe(1.5);
 
     // Lane 2: one 1st, one 2nd
-    expect(stats[1].placeCounts).toEqual([1, 1, 0, 0]);
+    expect(stats[1]!.placeCounts).toEqual([1, 1, 0, 0]);
 
     // Lane 3: two 3rds
-    expect(stats[2].placeCounts).toEqual([0, 0, 2, 0]);
-    expect(stats[2].avgFinish).toBe(3.0);
+    expect(stats[2]!.placeCounts).toEqual([0, 0, 2, 0]);
+    expect(stats[2]!.avgFinish).toBe(3.0);
 
     // Lane 4: two 4ths
-    expect(stats[3].placeCounts).toEqual([0, 0, 0, 2]);
-    expect(stats[3].avgFinish).toBe(4.0);
+    expect(stats[3]!.placeCounts).toEqual([0, 0, 0, 2]);
+    expect(stats[3]!.avgFinish).toBe(4.0);
   });
 
   it('scales placeCounts to lane count (6 lanes)', () => {
@@ -72,10 +72,10 @@ describe('computeLaneStats', () => {
 
     const stats = computeLaneStats(heats, 6);
     expect(stats).toHaveLength(6);
-    expect(stats[0].placeCounts).toEqual([1, 0, 0, 0, 0, 0]);
-    expect(stats[1].placeCounts).toEqual([0, 0, 0, 0, 1, 0]);
-    expect(stats[2].placeCounts).toEqual([0, 0, 0, 0, 0, 1]);
-    expect(stats[4].placeCounts).toEqual([0, 0, 1, 0, 0, 0]);
+    expect(stats[0]!.placeCounts).toEqual([1, 0, 0, 0, 0, 0]);
+    expect(stats[1]!.placeCounts).toEqual([0, 0, 0, 0, 1, 0]);
+    expect(stats[2]!.placeCounts).toEqual([0, 0, 0, 0, 0, 1]);
+    expect(stats[4]!.placeCounts).toEqual([0, 0, 1, 0, 0, 0]);
   });
 
   it('computes avg, best, worst with times', () => {
@@ -99,14 +99,14 @@ describe('computeLaneStats', () => {
 
     const stats = computeLaneStats(heats, 2);
 
-    expect(stats[0].hasTimes).toBe(true);
-    expect(stats[0].avg).toBe(3200);   // (3000 + 3400) / 2
-    expect(stats[0].best).toBe(3000);
-    expect(stats[0].worst).toBe(3400);
+    expect(stats[0]!.hasTimes).toBe(true);
+    expect(stats[0]!.avg).toBe(3200);   // (3000 + 3400) / 2
+    expect(stats[0]!.best).toBe(3000);
+    expect(stats[0]!.worst).toBe(3400);
 
-    expect(stats[1].avg).toBe(3400);   // (3200 + 3600) / 2
-    expect(stats[1].best).toBe(3200);
-    expect(stats[1].worst).toBe(3600);
+    expect(stats[1]!.avg).toBe(3400);   // (3200 + 3600) / 2
+    expect(stats[1]!.best).toBe(3200);
+    expect(stats[1]!.worst).toBe(3600);
   });
 
   it('excludes DNF results from stats', () => {
@@ -120,22 +120,22 @@ describe('computeLaneStats', () => {
     ];
 
     const stats = computeLaneStats(heats, 2);
-    expect(stats[0].hasTimes).toBe(true);
-    expect(stats[0].best).toBe(3000);
-    expect(stats[0].placeCounts).toEqual([1, 0]);
+    expect(stats[0]!.hasTimes).toBe(true);
+    expect(stats[0]!.best).toBe(3000);
+    expect(stats[0]!.placeCounts).toEqual([1, 0]);
 
-    expect(stats[1].hasTimes).toBe(false);
-    expect(stats[1].avg).toBeNull();
-    expect(stats[1].placeCounts).toEqual([0, 0]);
-    expect(stats[1].avgFinish).toBeNull();
+    expect(stats[1]!.hasTimes).toBe(false);
+    expect(stats[1]!.avg).toBeNull();
+    expect(stats[1]!.placeCounts).toEqual([0, 0]);
+    expect(stats[1]!.avgFinish).toBeNull();
   });
 
   it('returns empty stats for heats with no results', () => {
     const heats: Heat[] = [makeHeat({ results: [] })];
     const stats = computeLaneStats(heats, 4);
     expect(stats).toHaveLength(4);
-    expect(stats[0].placeCounts).toEqual([0, 0, 0, 0]);
-    expect(stats[0].hasTimes).toBe(false);
+    expect(stats[0]!.placeCounts).toEqual([0, 0, 0, 0]);
+    expect(stats[0]!.hasTimes).toBe(false);
   });
 
   it('handles empty heats array', () => {
@@ -160,13 +160,13 @@ describe('computeLaneStats', () => {
     ];
 
     const stats = computeLaneStats(heats, 4);
-    expect(stats[0].placeCounts).toEqual([1, 0, 0, 0]);
-    expect(stats[0].avgFinish).toBe(1.0);
-    expect(stats[1].placeCounts).toEqual([0, 0, 0, 0]);
-    expect(stats[1].avgFinish).toBeNull();
-    expect(stats[2].placeCounts).toEqual([0, 1, 0, 0]);
-    expect(stats[2].avgFinish).toBe(2.0);
-    expect(stats[3].avgFinish).toBeNull();
+    expect(stats[0]!.placeCounts).toEqual([1, 0, 0, 0]);
+    expect(stats[0]!.avgFinish).toBe(1.0);
+    expect(stats[1]!.placeCounts).toEqual([0, 0, 0, 0]);
+    expect(stats[1]!.avgFinish).toBeNull();
+    expect(stats[2]!.placeCounts).toEqual([0, 1, 0, 0]);
+    expect(stats[2]!.avgFinish).toBe(2.0);
+    expect(stats[3]!.avgFinish).toBeNull();
   });
 
   it('avgFinish includes all placements, not just top 3', () => {
@@ -193,11 +193,11 @@ describe('computeLaneStats', () => {
 
     const stats = computeLaneStats(heats, 4);
     // Lane 1: places 4 + 3 = avg 3.5
-    expect(stats[0].avgFinish).toBe(3.5);
+    expect(stats[0]!.avgFinish).toBe(3.5);
     // Lane 2: places 4 + 4 = avg 4.0
-    expect(stats[1].avgFinish).toBe(4.0);
+    expect(stats[1]!.avgFinish).toBe(4.0);
     // Lane 3: places 1 + 2 = avg 1.5
-    expect(stats[2].avgFinish).toBe(1.5);
+    expect(stats[2]!.avgFinish).toBe(1.5);
   });
 
   it('handles heats with undefined results gracefully', () => {
@@ -209,8 +209,8 @@ describe('computeLaneStats', () => {
     ];
 
     const stats = computeLaneStats(heats, 2);
-    expect(stats[0].placeCounts).toEqual([1, 0]);
-    expect(stats[1].placeCounts).toEqual([0, 0]);
+    expect(stats[0]!.placeCounts).toEqual([1, 0]);
+    expect(stats[1]!.placeCounts).toEqual([0, 0]);
   });
 
   it('times and placements are independent (times on some, not all)', () => {
@@ -226,14 +226,14 @@ describe('computeLaneStats', () => {
 
     const stats = computeLaneStats(heats, 2);
     // Lane 1 has times
-    expect(stats[0].hasTimes).toBe(true);
-    expect(stats[0].avg).toBe(3000);
-    expect(stats[0].avgFinish).toBe(1.0);
+    expect(stats[0]!.hasTimes).toBe(true);
+    expect(stats[0]!.avg).toBe(3000);
+    expect(stats[0]!.avgFinish).toBe(1.0);
 
     // Lane 2 has no times but still has placement
-    expect(stats[1].hasTimes).toBe(false);
-    expect(stats[1].avg).toBeNull();
-    expect(stats[1].avgFinish).toBe(2.0);
-    expect(stats[1].placeCounts).toEqual([0, 1]);
+    expect(stats[1]!.hasTimes).toBe(false);
+    expect(stats[1]!.avg).toBeNull();
+    expect(stats[1]!.avgFinish).toBe(2.0);
+    expect(stats[1]!.placeCounts).toEqual([0, 1]);
   });
 });
