@@ -42,6 +42,40 @@ export function classifyRacer(
   return { type: 'achievement', overallPlace };
 }
 
+// --- Best lane ---
+
+/**
+ * Determine the lane where a racer performed best.
+ * Prefers average time when timing data exists, falls back to average place.
+ */
+export function bestLane(history: RacerHistoryEntry[]): number | null {
+  const valid = history.filter(h => !h.dnf && h.place != null);
+  if (valid.length === 0) return null;
+
+  const byLane = new Map<number, { totalTime: number; totalPlace: number; count: number; hasTimes: boolean }>();
+  for (const h of valid) {
+    const entry = byLane.get(h.lane_number) ?? { totalTime: 0, totalPlace: 0, count: 0, hasTimes: false };
+    entry.totalPlace += h.place!;
+    entry.count++;
+    if (h.time_ms != null && h.time_ms > 0) {
+      entry.totalTime += h.time_ms;
+      entry.hasTimes = true;
+    }
+    byLane.set(h.lane_number, entry);
+  }
+
+  let best: number | null = null;
+  let bestScore = Infinity;
+  for (const [lane, stats] of byLane) {
+    const score = stats.hasTimes ? stats.totalTime / stats.count : stats.totalPlace / stats.count;
+    if (score < bestScore) {
+      bestScore = score;
+      best = lane;
+    }
+  }
+  return best;
+}
+
 // --- Racer stats ---
 
 export interface RacerStats {

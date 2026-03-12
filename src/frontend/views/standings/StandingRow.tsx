@@ -36,7 +36,7 @@ function ordinal(n: number) {
 function DenBadge({ den }: { den: string }) {
   const img = DEN_IMAGES[den];
   if (img) {
-    return <img src={img} alt={den} title={den} className="h-9 w-9 object-contain" />;
+    return <img src={img} alt={den} title={den} className="h-9 max-w-12 object-contain" />;
   }
   return (
     <span className="inline-block text-sm font-black tracking-widest leading-none text-slate-700">

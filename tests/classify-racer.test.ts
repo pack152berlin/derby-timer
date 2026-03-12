@@ -92,8 +92,7 @@ describe('classifyRacer', () => {
       expect(tier).toEqual({ type: 'den_top3', rank: 2, den: 'Bears', overallPlace: 12 });
     });
 
-    it('bottom 2 of den are hidden → falls through to achievement', () => {
-      // 4-person den: ranks 3 and 4 are hidden (bottom 2)
+    it('rank 3 in den is always shown as den_top3', () => {
       const racers = [
         ...makeRacers(10),
         racer('r11', 'Tigers'), racer('r12', 'Tigers'),
@@ -101,7 +100,19 @@ describe('classifyRacer', () => {
         racer('r15', null),
       ];
       const tier = classifyRacer(standings, racers, 'r13');
-      expect(tier).toEqual({ type: 'achievement', overallPlace: 13 });
+      expect(tier).toEqual({ type: 'den_top3', rank: 3, den: 'Tigers', overallPlace: 13 });
+    });
+
+    it('bottom of den hidden → falls through to achievement', () => {
+      // 5-person den: rank 4 is hidden (bottom 2)
+      const racers = [
+        ...makeRacers(10),
+        racer('r11', 'Tigers'), racer('r12', 'Tigers'),
+        racer('r13', 'Tigers'), racer('r14', 'Tigers'),
+        racer('r15', 'Tigers'),
+      ];
+      const tier = classifyRacer(standings, racers, 'r14');
+      expect(tier).toEqual({ type: 'achievement', overallPlace: 14 });
     });
   });
 

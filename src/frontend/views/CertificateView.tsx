@@ -80,7 +80,9 @@ function getTierColors(tier: CertTier) {
   if (tier.type === 'podium') return TIER_COLORS[`podium-${tier.place}`]!;
   if (tier.type === 'top5' || tier.type === 'top10') return TIER_COLORS.top10!;
   if (tier.type === 'den_champion' || tier.type === 'den_top3') {
-    const accent = DEN_ACCENT[tier.den] ?? '#003F87';
+    const raw = DEN_ACCENT[tier.den] ?? '#003F87';
+    const TOO_LOW_CONTRAST_DENS = ['Bears', 'AOLs'];
+    const accent = TOO_LOW_CONTRAST_DENS.includes(tier.den) ? '#003F87' : raw;
     return { border: accent, ribbon: `linear-gradient(135deg, ${accent}, ${accent}dd)`, ribbonText: '#ffffff', glow: `${accent}25` };
   }
   return TIER_COLORS.achievement!;
@@ -147,9 +149,10 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
   return (
     <div
       data-testid="certificate"
-      className="certificate-page break-after-page py-6 px-4"
+      className="certificate-page break-after-page py-6 px-4 print:py-0 print:px-0"
     >
-      <div className="rounded max-w-[960px] mx-auto bg-[#fffdf7] relative overflow-hidden font-serif">
+      <div className="cert-scale-wrapper mx-auto">
+        <div className="cert-card rounded print:rounded-none bg-[#fffdf7] relative overflow-hidden font-serif" style={{ width: '100%', height: '100%' }}>
         <div
           className="absolute inset-2 rounded-sm pointer-events-none"
           style={{ border: `2px solid ${colors.border}55` }}
@@ -157,7 +160,7 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
 
         <RopeKnotBorder color={colors.border} />
 
-        <div className="pt-7 px-14 pb-5 relative flex flex-col min-h-[540px]">
+        <div className="cert-inner pt-7 px-14 pb-5 relative flex flex-col" style={{ height: '100%', boxSizing: 'border-box' }}>
 
           {/* TOP: Fleur-de-lis + Title */}
           <div className="text-center">
@@ -165,12 +168,12 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
               <FleurDeLis color={colors.border} size={44} />
               <div>
                 <h1
-                  className="text-3xl font-bold uppercase tracking-wider m-0"
+                  className="text-4xl font-bold uppercase tracking-wider m-0"
                   style={{ color: colors.border }}
                 >
                   Certificate of Achievement
                 </h1>
-                <h2 className="text-sm font-semibold uppercase tracking-[0.35em] text-stone-500 m-0">
+                <h2 className="text-base font-semibold uppercase tracking-[0.35em] text-stone-500 m-0">
                   Cub Scouts of America
                 </h2>
               </div>
@@ -183,7 +186,7 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
           </div>
 
           {/* MAIN CONTENT: name + ribbon + stats */}
-          <div className="flex-1 flex flex-col items-center justify-between py-6">
+          <div className="flex-1 flex flex-col items-center justify-around py-6">
 
             <div className="text-center">
               <p className="text-sm text-stone-400 italic">
@@ -197,31 +200,34 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
               </h2>
             </div>
 
-            <div className="text-center max-w-lg">
-              <div className={cn("rounded inline-flex items-center justify-center relative", isPodium ? "py-4 px-10 gap-6" : "py-3.5 px-9")}>
+            <div className="text-center w-full max-w-2xl mx-auto">
+              <div className={cn("rounded inline-flex items-center justify-center relative ", isPodium ? "py-4 px-14" : "py-3.5 px-9")}>
                 {medal && (
-                  <span className="text-[64px] shrink-0 leading-none">{medal}</span>
+                  <span className="absolute -left-24 text-[64px] leading-none">{medal}</span>
                 )}
-                <div className="text-center">
+                <div className="text-center leading-none">
                   <span
                     data-testid="certificate-headline"
-                    className="tracking-wide text-[42px] text-yellow-950 font-cert-heading leading-none"
+                    className={cn(
+                      "tracking-wide text-yellow-950 font-cert-heading leading-none",
+                      isPodium ? "text-[48px]" : "text-[42px]"
+                    )}
                   >
                     {headline}
                   </span>
                   {subtitle && (
-                    <div className="text-sm font-semibold tracking-wide opacity-70 font-body">
+                    <div className="text-base font-semibold tracking-wide opacity-70 font-body leading-none">
                       {subtitle}
                     </div>
                   )}
                   {isPodium && (
-                    <div className="text-xs font-semibold tracking-widest uppercase opacity-60">
+                    <div className="text-sm font-semibold tracking-widest uppercase opacity-60 leading-none mt-1">
                       {event.name}
                     </div>
                   )}
                 </div>
                 {medal && (
-                  <span className="text-[64px] shrink-0 leading-none">{medal}</span>
+                  <span className="absolute -right-24 text-[64px] leading-none">{medal}</span>
                 )}
               </div>
             </div>
@@ -235,8 +241,8 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
 
               if (denImage) {
                 return (
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6">
-                    <div className="flex justify-end gap-6">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-12">
+                    <div className="flex justify-end gap-12">
                       {left.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
                     </div>
                     <img
@@ -244,10 +250,10 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
                       alt={racer.den ?? ''}
                       className={cn(
                         "object-contain shrink-0",
-                        isPodium ? "w-20 h-20 opacity-80" : "w-28 h-28"
+                        isPodium ? "w-[104px] h-[104px] opacity-80" : "w-[146px] h-[146px]"
                       )}
                     />
-                    <div className="flex justify-start gap-6">
+                    <div className="flex justify-start gap-12">
                       {right.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
                     </div>
                   </div>
@@ -255,7 +261,7 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
               }
 
               return (
-                <div className="flex justify-center items-center gap-6">
+                <div className="flex justify-center items-center gap-12">
                   {items.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
                 </div>
               );
@@ -289,20 +295,21 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
 
         </div>
       </div>
+      </div>
     </div>
   );
 }
 
 function StatItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="py-1 text-center">
+    <div className="text-center">
       <div className={cn(
-        "text-3xl font-extrabold leading-7 font-cert-numbers",
+        "text-3xl font-extrabold font-cert-numbers h-9 flex items-end justify-center",
         highlight ? "text-stone-900" : "text-stone-700"
       )}>
         {formatStatValue(value)}
       </div>
-      <div className="text-sm uppercase tracking-widest text-stone-400 font-bold font-body">
+      <div className="text-sm uppercase tracking-widest text-stone-400 font-bold font-body mt-0.5">
         {formatOrdinalText(label)}
       </div>
     </div>
@@ -418,7 +425,7 @@ export function CertificateView() {
   }
 
   return (
-    <div className="bg-stone-200 min-h-screen p-4">
+    <div className="bg-stone-200 min-h-screen p-4 print:bg-white print:p-0">
       <div className="no-print text-center mb-4">
         <button
           data-testid="btn-print"
@@ -448,21 +455,36 @@ export function CertificateView() {
       })}
 
       <style>{`
+        .cert-scale-wrapper {
+          width: 1045px;
+          aspect-ratio: 1045 / 717;
+          transform: scale(var(--cert-scale, 0.7));
+          transform-origin: top center;
+          margin-bottom: calc(717px * (var(--cert-scale, 0.7) - 1));
+        }
+        @media (min-width: 900px)  { :root { --cert-scale: 0.8; } }
+        @media (min-width: 1100px) { :root { --cert-scale: 0.9; } }
+        @media (min-width: 1300px) { :root { --cert-scale: 1; } }
         @media print {
+          html, body { margin: 0; padding: 0; background: white !important; }
           .no-print { display: none !important; }
-          body { margin: 0; padding: 0; background: white !important; }
+          .cert-scale-wrapper {
+            width: 100% !important;
+            height: 100% !important;
+            aspect-ratio: auto !important;
+            transform: none !important;
+            margin-bottom: 0 !important;
+          }
+          .cert-card { background: white !important; border-radius: 0 !important; }
           .certificate-page {
             page-break-after: always;
-            padding: 12px 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100vh;
           }
-          .certificate-page:last-child {
-            page-break-after: auto;
-          }
+          .certificate-page:last-child { page-break-after: auto; }
         }
-        @page {
-          size: landscape;
-          margin: 0.4in;
-        }
+        @page { size: landscape; margin: 0.4in; }
       `}</style>
     </div>
   );
