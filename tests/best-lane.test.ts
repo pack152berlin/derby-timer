@@ -70,13 +70,12 @@ describe('bestLane', () => {
     expect(bestLane(history)).toBe(1);
   });
 
-  it('handles mixed timing — lane with times uses time, lane without uses place', () => {
+  it('mixed timing — only timed lanes compete when any have times', () => {
     const history = [
-      entry(1, 1, 5000), // has timing: score = 5000
-      entry(2, 1),       // no timing: score = 1 (avg place)
+      entry(1, 1, 5000), // has timing
+      entry(2, 1),       // no timing — skipped from comparison
     ];
-    // Lane 2 wins because avg place 1 < avg time 5000
-    // This is expected — when lanes have different data types, the comparison is imperfect
-    expect(bestLane(history)).toBe(2);
+    // Lane 1 is the only timed lane, so it wins
+    expect(bestLane(history)).toBe(1);
   });
 });
