@@ -436,7 +436,7 @@ export function HeatsView() {
 
   const tabs = [
     { id: 'pending',   label: 'Pending',   count: pendingHeats.length },
-    { id: 'completed', label: 'Completed', count: allCompleted.length },
+    { id: 'completed', label: 'History', count: allCompleted.length },
   ];
 
   const handleGenerate = async () => {

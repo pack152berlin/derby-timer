@@ -129,7 +129,7 @@ function AppRoutes() {
     setLoading(true);
     await fetchData(event.id);
     setLoading(false);
-    navigate('/register');
+    navigate(event.status === 'complete' ? '/standings' : '/register');
   };
 
   const contextValue = {
@@ -191,10 +191,7 @@ function AppRoutes() {
               path="/standings" 
               element={currentEvent ? <StandingsView /> : <Navigate to="/" replace />} 
             />
-            <Route 
-              path="/format" 
-              element={currentEvent ? <RaceFormatView /> : <Navigate to="/" replace />} 
-            />
+            <Route path="/format" element={<RaceFormatView />} />
             <Route 
               path="/racer/:id" 
               element={currentEvent ? <RacerProfileView /> : <Navigate to="/" replace />} 
@@ -238,7 +235,7 @@ function Navigation({
   
   const navItems = [
     { id: 'register', label: 'Registration', icon: Users, path: '/register' },
-    { id: 'heats', label: 'Schedule', icon: Clock, path: '/heats' },
+    { id: 'heats', label: 'Races', icon: Clock, path: '/heats' },
     { id: 'race', label: 'Race Control', icon: Flag, path: '/race' },
     { id: 'standings', label: 'Standings', icon: BarChart3, path: '/standings' }
   ];

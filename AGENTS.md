@@ -225,7 +225,9 @@ Place shared constants, formatters, and small helpers in `src/frontend/lib/`. Im
 
 Examples of things that belong in `src/frontend/lib/`:
 - `PLACE_STYLES` — place-number → Tailwind class map
-- `DEN_IMAGES` — den name → imported image asset map
+- `den-utils.ts` — `DEN_IMAGES`, `DEN_SINGULAR`, `DEN_ACCENT` colors, and `DENS_WITH_LIGHT_ACCENT` (dens whose accent is too light for white text)
+- `den-rankings.ts` — `denPlacement()`, `shouldShowDenRank()` (top 3 always shown, hide bottom 2)
+- `racer-stats.ts` — `bestLane()`, `computeRacerStats()` — shared racer analytics used by both profiles and certificates
 - `ordinal(n)` — number to "1st / 2nd / 3rd" string
 
 ## Type Management & Domain Boundaries
