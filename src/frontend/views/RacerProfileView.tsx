@@ -266,7 +266,7 @@ export function RacerProfileView() {
               totalRacers={racers.length}
             />
 
-            {showDen && (
+            {denPlace && showDen && (
               <DenPlacementStrip rank={denPlace.rank} den={denPlace.den} isPodium={rank !== null && rank <= 3} />
             )}
 

@@ -78,4 +78,13 @@ describe('bestLane', () => {
     // Lane 1 is the only timed lane, so it wins
     expect(bestLane(history)).toBe(1);
   });
+
+  it('tiebreaks by lane number when averages are equal', () => {
+    const history = [
+      entry(1, 1, 3000),
+      entry(2, 1, 3000),
+    ];
+    // Equal avg time — first lane encountered wins
+    expect(bestLane(history)).toBe(1);
+  });
 });
