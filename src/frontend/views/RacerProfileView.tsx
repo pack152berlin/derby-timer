@@ -14,9 +14,9 @@ import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat, Racer, RacerHistoryEntry } from '../types';
 
-import { DEN_IMAGES, DEN_ACCENT } from '../lib/den-utils';
+import { DEN_IMAGES, DEN_ACCENT, DENS_WITH_LIGHT_ACCENT } from '../lib/den-utils';
 import { denPlacement } from '../lib/den-rankings';
-import { bestLane } from '../lib/certificate-stats';
+import { bestLane } from '../lib/racer-stats';
 import { PLACE_STYLES } from '../lib/place-styles';
 
 function ordinal(n: number) {
@@ -96,6 +96,31 @@ function buildLaneCols(
           time_ms: entry.time_ms,
         }
       : EMPTY_COL(laneNum)
+  );
+}
+
+// ===== DEN PLACEMENT STRIP =====
+
+function DenPlacementStrip({ rank, den, isPodium }: { rank: number; den: string; isPodium: boolean }) {
+  if (isPodium) {
+    return (
+      <div className="flex items-center justify-center gap-1.5 px-5 py-1.5 bg-[#003F87] text-white text-xs font-bold uppercase tracking-widest">
+        <span>{ordinal(rank)} in {den}</span>
+      </div>
+    );
+  }
+  const accent = DEN_ACCENT[den] ?? '#003F87';
+  const isLight = DENS_WITH_LIGHT_ACCENT.has(den);
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-center gap-1.5 px-5 py-1.5 text-xs font-bold uppercase tracking-widest",
+        isLight ? "text-slate-800" : "text-white"
+      )}
+      style={{ backgroundColor: accent }}
+    >
+      <span>{ordinal(rank)} in {den}</span>
+    </div>
   );
 }
 
@@ -241,25 +266,9 @@ export function RacerProfileView() {
               totalRacers={racers.length}
             />
 
-            {showDen && rank !== null && rank <= 3 ? (
-              <div className="flex items-center justify-center gap-1.5 px-5 py-1.5 bg-[#003F87] text-white text-xs font-bold uppercase tracking-widest">
-                <span>{ordinal(denPlace.rank)} in {denPlace.den}</span>
-              </div>
-            ) : showDen && (() => {
-              const accent = DEN_ACCENT[denPlace.den] ?? '#003F87';
-              const isLight = ['Lions', 'Bears', 'AOLs'].includes(denPlace.den);
-              return (
-                <div
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 px-5 py-1.5 text-xs font-bold uppercase tracking-widest",
-                    isLight ? "text-slate-800" : "text-white"
-                  )}
-                  style={{ backgroundColor: accent }}
-                >
-                  <span>{ordinal(denPlace.rank)} in {denPlace.den}</span>
-                </div>
-              );
-            })()}
+            {showDen && (
+              <DenPlacementStrip rank={denPlace.rank} den={denPlace.den} isPodium={rank !== null && rank <= 3} />
+            )}
 
             {photoUrl && (
               <div className="aspect-square w-full bg-slate-100">

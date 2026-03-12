@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { DEN_IMAGES, DEN_SINGULAR, DEN_ACCENT } from '../lib/den-utils';
+import { DEN_IMAGES, DEN_SINGULAR, DEN_ACCENT, DENS_WITH_LIGHT_ACCENT } from '../lib/den-utils';
 import { classifyRacer, buildCertificateStats, computeRacerStats } from '../lib/certificate-stats';
 import type { CertTier, RacerStats } from '../lib/certificate-stats';
 import type { Event, Racer, Standing } from '../types';
@@ -81,8 +81,7 @@ function getTierColors(tier: CertTier) {
   if (tier.type === 'top5' || tier.type === 'top10') return TIER_COLORS.top10!;
   if (tier.type === 'den_champion' || tier.type === 'den_top3') {
     const raw = DEN_ACCENT[tier.den] ?? '#003F87';
-    const TOO_LOW_CONTRAST_DENS = ['Bears', 'AOLs'];
-    const accent = TOO_LOW_CONTRAST_DENS.includes(tier.den) ? '#003F87' : raw;
+    const accent = DENS_WITH_LIGHT_ACCENT.has(tier.den) ? '#003F87' : raw;
     return { border: accent, ribbon: `linear-gradient(135deg, ${accent}, ${accent}dd)`, ribbonText: '#ffffff', glow: `${accent}25` };
   }
   return TIER_COLORS.achievement!;
