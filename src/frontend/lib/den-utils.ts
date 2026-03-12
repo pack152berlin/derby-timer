@@ -20,6 +20,6 @@ export const DEN_SINGULAR: Record<string, string> = {
 };
 
 export const DEN_ACCENT: Record<string, string> = {
-  Lions: '#eab308', Tigers: '#ea580c', Wolves: '#2563eb',
-  Bears: '#dc2626', Webelos: '#4f46e5', AOLs: '#059669',
+  Lions: '#eab308', Tigers: '#ea580c', Wolves: '#dc2626',
+  Bears: '#a1dfca', Webelos: '#4f46e5', AOLs: '#fddb00',
 };

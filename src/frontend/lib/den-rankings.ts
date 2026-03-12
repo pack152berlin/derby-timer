@@ -60,8 +60,10 @@ export function denPlacement<T extends RankedStanding>(
 /**
  * Returns false if the racer is in the bottom 2 of their den —
  * we never show a ranking that makes a kid feel bad.
+ * Top 3 in a den are always shown regardless of den size.
  */
 export function shouldShowDenRank(rank: number, total: number): boolean {
-  if (total <= 2) return true; // tiny den, everyone's a winner
+  if (rank <= 3) return true;
+  if (total <= 2) return true;
   return rank <= total - 2;
 }

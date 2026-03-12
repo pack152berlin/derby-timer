@@ -14,7 +14,9 @@ import { api } from '../api';
 import { useApp } from '../context';
 import type { Heat, Racer, RacerHistoryEntry } from '../types';
 
-import { DEN_IMAGES } from '../lib/den-utils';
+import { DEN_IMAGES, DEN_ACCENT } from '../lib/den-utils';
+import { denPlacement } from '../lib/den-rankings';
+import { bestLane } from '../lib/certificate-stats';
 import { PLACE_STYLES } from '../lib/place-styles';
 
 function ordinal(n: number) {
@@ -188,8 +190,16 @@ export function RacerProfileView() {
     ? standings.findIndex(s => s.racer_id === racer.id) + 1
     : null;
 
+  const denPlace = denPlacement(standings, racers, racer.id);
+  // Show den rank for top racers — hide bottom 2 so no kid feels bad
+  const showDen = denPlace != null && (
+    denPlace.rank <= 3 || denPlace.total <= 2 || denPlace.rank <= denPlace.total - 2
+  );
+
+  const wins = standing?.wins ?? 0;
   const seconds = history.filter(r => r.place === 2 && !r.dnf).length;
   const thirds  = history.filter(r => r.place === 3 && !r.dnf).length;
+  const bestLaneNum = bestLane(history);
   const timedRuns = history.filter(r => r.time_ms != null && !r.dnf);
   const bestMs = timedRuns.length > 0 ? Math.min(...timedRuns.map(r => r.time_ms!)) : null;
 
@@ -230,6 +240,26 @@ export function RacerProfileView() {
               rank={rank}
               totalRacers={racers.length}
             />
+
+            {showDen && rank !== null && rank <= 3 ? (
+              <div className="flex items-center justify-center gap-1.5 px-5 py-1.5 bg-[#003F87] text-white text-xs font-bold uppercase tracking-widest">
+                <span>{ordinal(denPlace.rank)} in {denPlace.den}</span>
+              </div>
+            ) : showDen && (() => {
+              const accent = DEN_ACCENT[denPlace.den] ?? '#003F87';
+              const isLight = ['Lions', 'Bears', 'AOLs'].includes(denPlace.den);
+              return (
+                <div
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 px-5 py-1.5 text-xs font-bold uppercase tracking-widest",
+                    isLight ? "text-slate-800" : "text-white"
+                  )}
+                  style={{ backgroundColor: accent }}
+                >
+                  <span>{ordinal(denPlace.rank)} in {denPlace.den}</span>
+                </div>
+              );
+            })()}
 
             {photoUrl && (
               <div className="aspect-square w-full bg-slate-100">
@@ -274,13 +304,15 @@ export function RacerProfileView() {
         {/* Right: Stats + History */}
         <div className="flex-1 min-w-0 space-y-5">
           <div className="flex gap-3">
-            <StatsCard
-              label="Wins"
-              value={standing?.wins ?? 0}
-              icon={<Trophy size={16} className="text-amber-500" />}
-              valueClass="text-amber-600"
-              highlight
-            />
+            {wins > 0 && (
+              <StatsCard
+                label="Wins"
+                value={wins}
+                icon={<Trophy size={16} className="text-amber-500" />}
+                valueClass="text-amber-600"
+                highlight
+              />
+            )}
             <StatsCard
               label="2nd Place"
               value={seconds}
@@ -299,6 +331,14 @@ export function RacerProfileView() {
               icon={<Clock size={16} className="text-slate-400" />}
               valueClass="text-slate-900"
             />
+            {wins === 0 && bestLaneNum != null && (
+              <StatsCard
+                label="Best Lane"
+                value={bestLaneNum}
+                icon={<Flag size={16} className="text-emerald-500" />}
+                valueClass="text-emerald-700"
+              />
+            )}
           </div>
 
           <HeatHistory

@@ -78,10 +78,12 @@ describe('shouldShowDenRank', () => {
     expect(shouldShowDenRank(2, 2)).toBe(true);
   });
 
-  it('shows top racers in 3-person den (rank 1 only)', () => {
+  it('always shows top 3 regardless of den size', () => {
     expect(shouldShowDenRank(1, 3)).toBe(true);
-    expect(shouldShowDenRank(2, 3)).toBe(false);
-    expect(shouldShowDenRank(3, 3)).toBe(false);
+    expect(shouldShowDenRank(2, 3)).toBe(true);
+    expect(shouldShowDenRank(3, 3)).toBe(true);
+    expect(shouldShowDenRank(3, 4)).toBe(true);
+    expect(shouldShowDenRank(3, 5)).toBe(true);
   });
 
   it('hides bottom 2 in larger dens', () => {
@@ -92,10 +94,17 @@ describe('shouldShowDenRank', () => {
     expect(shouldShowDenRank(5, 5)).toBe(false);
   });
 
-  it('hides bottom 2 in 4-person den', () => {
+  it('shows rank 4 when den is large enough (total - 2 >= 4)', () => {
+    // 6-person den: show 1-4, hide 5-6
+    expect(shouldShowDenRank(4, 6)).toBe(true);
+    expect(shouldShowDenRank(5, 6)).toBe(false);
+    expect(shouldShowDenRank(6, 6)).toBe(false);
+  });
+
+  it('hides bottom 2 in 4-person den (but top 3 always shown)', () => {
     expect(shouldShowDenRank(1, 4)).toBe(true);
     expect(shouldShowDenRank(2, 4)).toBe(true);
-    expect(shouldShowDenRank(3, 4)).toBe(false);
+    expect(shouldShowDenRank(3, 4)).toBe(true);
     expect(shouldShowDenRank(4, 4)).toBe(false);
   });
 });
