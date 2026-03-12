@@ -118,7 +118,7 @@ export function RaceConsoleView() {
         <h2 className="text-4xl font-black mb-4 text-slate-900">Race Complete!</h2>
         <p className="text-xl text-slate-500 mb-8">All heats have been completed</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button onClick={() => navigate('/standings')} className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-lg px-8 py-6 cursor-pointer">
+          <Button onClick={() => navigate('/standings')} className="h-14 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-lg px-8 cursor-pointer">
             <BarChart3 className="w-6 h-6 mr-2" />
             View Final Standings
           </Button>
@@ -127,7 +127,7 @@ export function RaceConsoleView() {
               href="/certificates"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold text-lg px-8 py-3 rounded-lg transition-colors cursor-pointer"
+              className="h-14 inline-flex items-center gap-2 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold text-lg px-8 rounded-lg transition-colors cursor-pointer"
             >
               <Award className="w-6 h-6" />
               Print All Certificates
