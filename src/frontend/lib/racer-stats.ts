@@ -22,10 +22,15 @@ export function bestLane(history: RacerHistoryEntry[]): number | null {
     byLane.set(h.lane_number, entry);
   }
 
+  // If any lane has timing data, compare only timed lanes by avg time.
+  // Otherwise fall back to avg place for all lanes.
+  const anyTimed = [...byLane.values()].some(s => s.hasTimes);
+
   let best: number | null = null;
   let bestScore = Infinity;
   for (const [lane, stats] of byLane) {
-    const score = stats.hasTimes ? stats.totalTime / stats.count : stats.totalPlace / stats.count;
+    if (anyTimed && !stats.hasTimes) continue;
+    const score = anyTimed ? stats.totalTime / stats.count : stats.totalPlace / stats.count;
     if (score < bestScore) {
       bestScore = score;
       best = lane;

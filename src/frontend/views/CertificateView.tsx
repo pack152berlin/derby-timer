@@ -151,7 +151,7 @@ function Certificate({ racer, stats, tier, event, totalRacers }: CertificateProp
       className="certificate-page break-after-page py-6 px-4 print:py-0 print:px-0"
     >
       <div className="cert-scale-wrapper mx-auto">
-        <div className="cert-card rounded print:rounded-none bg-[#fffdf7] relative overflow-hidden font-serif" style={{ width: '100%', height: '100%' }}>
+        <div className="cert-card rounded print:rounded-none bg-[#fffdf7] relative overflow-hidden font-serif w-full h-full">
         <div
           className="absolute inset-2 rounded-sm pointer-events-none"
           style={{ border: `2px solid ${colors.border}55` }}
@@ -461,9 +461,9 @@ export function CertificateView() {
           transform-origin: top center;
           margin-bottom: calc(717px * (var(--cert-scale, 0.7) - 1));
         }
-        @media (min-width: 900px)  { :root { --cert-scale: 0.8; } }
-        @media (min-width: 1100px) { :root { --cert-scale: 0.9; } }
-        @media (min-width: 1300px) { :root { --cert-scale: 1; } }
+        @media (min-width: 900px)  { .cert-scale-wrapper { --cert-scale: 0.8; } }
+        @media (min-width: 1100px) { .cert-scale-wrapper { --cert-scale: 0.9; } }
+        @media (min-width: 1300px) { .cert-scale-wrapper { --cert-scale: 1; } }
         @media print {
           html, body { margin: 0; padding: 0; background: white !important; }
           .no-print { display: none !important; }
