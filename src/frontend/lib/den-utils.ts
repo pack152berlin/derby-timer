@@ -23,3 +23,6 @@ export const DEN_ACCENT: Record<string, string> = {
   Lions: '#eab308', Tigers: '#ea580c', Wolves: '#dc2626',
   Bears: '#a1dfca', Webelos: '#4f46e5', AOLs: '#fddb00',
 };
+
+/** Dens whose accent color is too light for white text */
+export const DENS_WITH_LIGHT_ACCENT = new Set(['Lions', 'Bears', 'AOLs']);

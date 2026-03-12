@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { bestLane } from '../src/frontend/lib/certificate-stats';
+import { bestLane } from '../src/frontend/lib/racer-stats';
 import type { RacerHistoryEntry } from '../src/frontend/types';
 
 const entry = (lane_number: number, place: number | null, time_ms: number | null = null, dnf = false): RacerHistoryEntry => ({
