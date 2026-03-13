@@ -15,6 +15,7 @@ export interface AppContextType {
   setCurrentRacerId: (id: string | null) => void;
   refreshData: () => Promise<void>;
   refreshDataSilent: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
   selectEvent: (event: Event | null) => Promise<void>;
 }
 

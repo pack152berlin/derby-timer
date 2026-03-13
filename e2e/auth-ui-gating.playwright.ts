@@ -52,10 +52,16 @@ test.describe('UI gating – viewer mode', () => {
     await expect(page.locator('[data-testid="nav-race"]')).toHaveCount(0);
   });
 
+  test('selecting event navigates viewer to heats, not register', async ({ page }) => {
+    await page.goto(baseUrl);
+    await page.click(`[data-testid="event-card-${event.id}"]`);
+    await expect(page).toHaveURL(new RegExp('/heats$'));
+  });
+
   test('registration page shows admin wall', async ({ page }) => {
     await page.goto(baseUrl);
     await page.click(`[data-testid="event-card-${event.id}"]`);
-    // selectEvent navigates to /register for non-complete events
+    await page.goto(`${baseUrl}/register`);
     await expect(page.locator('text=Admin access required')).toBeVisible();
     await expect(page.locator('text=Registration is only available to administrators')).toBeVisible();
   });
@@ -78,5 +84,22 @@ test.describe('UI gating – viewer mode', () => {
   test('batch certificates page shows admin required', async ({ page }) => {
     await page.goto(`${baseUrl}/certificates`);
     await expect(page.locator('text=Admin access required to print batch certificates')).toBeVisible();
+  });
+
+  test('login button visible and login flow works', async ({ page }) => {
+    await page.goto(baseUrl);
+    // Login button should be visible
+    await expect(page.locator('text=Admin Login')).toBeVisible();
+    // Click login
+    await page.click('text=Admin Login');
+    // Dialog should appear
+    await expect(page.locator('text=Password')).toBeVisible();
+    // Submit correct password
+    await page.fill('input[type="password"]', ADMIN_PASSWORD);
+    await page.locator('[data-slot="dialog-content"] button:has-text("Login")').click();
+    // After login, should see New Event button (now admin)
+    await expect(page.locator('button:has-text("New Event")')).toBeVisible();
+    // Login button should be replaced with Logout
+    await expect(page.locator('text=Logout')).toBeVisible();
   });
 });
