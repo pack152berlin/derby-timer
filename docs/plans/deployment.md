@@ -263,9 +263,10 @@ With auto-stop, the machine hibernates when no one is viewing and wakes on the n
 See [Auth Plan](./auth.md) for the full authentication design. Key deployment-specific notes:
 
 - Set `DERBY_ADMIN_KEY` via `fly secrets set` (not in fly.toml or Dockerfile)
-- The `auto` key mode writes to `/data/.derby_admin_key` on the volume — it persists across deploys
+- Optionally set `DERBY_VIEWER_KEY` to require a password for all viewers (privacy mode for families who don't want public access)
+- The `auto` admin key mode writes to `/data/.derby_admin_key` on the volume — it persists across deploys
 - Force HTTPS is enabled in fly.toml; cookies should set `Secure` flag in production
-- Rate limiting on `/admin/login` is important when publicly accessible
+- Rate limiting on `/admin/login` and `/viewer/login` is important when publicly accessible
 
 ## Custom Domain
 
@@ -284,7 +285,7 @@ Fly.io provides free TLS certificates via Let's Encrypt.
 4. [ ] Create `fly.toml`
 5. [ ] Add a `build` script to `package.json` (frontend bundle)
 6. [ ] `fly launch` + `fly volumes create`
-7. [ ] `fly secrets set DERBY_ADMIN_KEY=...`
+7. [ ] `fly secrets set DERBY_ADMIN_KEY=...` (and optionally `DERBY_VIEWER_KEY=...`)
 8. [ ] `fly deploy` and verify
 9. [ ] (Optional) Set up Litestream for backup
 10. [ ] (Optional) Add custom domain
