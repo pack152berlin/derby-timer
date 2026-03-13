@@ -113,6 +113,11 @@ export const VIEWER_PURPOSE = "derby_viewer_session";
 export const ADMIN_LOGIN_PURPOSE = "derby_admin_login";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
+// Precompute expected HMACs at startup — keys never change at runtime
+const _expectedAdminHmac = _adminKey ? await computeHmac(_adminKey, ADMIN_PURPOSE) : null;
+const _expectedViewerHmac = _viewerKey ? await computeHmac(_viewerKey, VIEWER_PURPOSE) : null;
+const _expectedAdminLoginHmac = _adminKey ? await computeHmac(_adminKey, ADMIN_LOGIN_PURPOSE) : null;
+
 export const isSecureRequest = (req: Request): boolean => {
   if (new URL(req.url).protocol === "https:") return true;
   const proto = req.headers.get("x-forwarded-proto");
@@ -131,16 +136,14 @@ const setCookie = (
   headers.append("Set-Cookie", cookie);
 };
 
-export const setAdminCookie = async (headers: Headers, secure: boolean = false): Promise<void> => {
-  if (!_adminKey) return;
-  const hmac = await computeHmac(_adminKey, ADMIN_PURPOSE);
-  setCookie(headers, ADMIN_COOKIE, hmac, COOKIE_MAX_AGE, secure);
+export const setAdminCookie = (headers: Headers, secure: boolean = false): void => {
+  if (!_expectedAdminHmac) return;
+  setCookie(headers, ADMIN_COOKIE, _expectedAdminHmac, COOKIE_MAX_AGE, secure);
 };
 
-export const setViewerCookie = async (headers: Headers, secure: boolean = false): Promise<void> => {
-  if (!_viewerKey) return;
-  const hmac = await computeHmac(_viewerKey, VIEWER_PURPOSE);
-  setCookie(headers, VIEWER_COOKIE, hmac, COOKIE_MAX_AGE, secure);
+export const setViewerCookie = (headers: Headers, secure: boolean = false): void => {
+  if (!_expectedViewerHmac) return;
+  setCookie(headers, VIEWER_COOKIE, _expectedViewerHmac, COOKIE_MAX_AGE, secure);
 };
 
 export const clearAdminCookie = (headers: Headers): void => {
@@ -153,32 +156,30 @@ export const clearViewerCookie = (headers: Headers): void => {
 
 // ===== COOKIE VALIDATION =====
 
-const validateAdminCookie = async (
+const validateAdminCookie = (
   cookies: Record<string, string>
-): Promise<boolean> => {
-  if (!_adminKey) return false;
+): boolean => {
+  if (!_expectedAdminHmac) return false;
   const cookie = cookies[ADMIN_COOKIE];
   if (!cookie) return false;
-  const expected = await computeHmac(_adminKey, ADMIN_PURPOSE);
-  return timingSafeEqual(cookie, expected);
+  return timingSafeEqual(cookie, _expectedAdminHmac);
 };
 
-const validateViewerCookie = async (
+const validateViewerCookie = (
   cookies: Record<string, string>
-): Promise<boolean> => {
-  if (!_viewerKey) return false;
+): boolean => {
+  if (!_expectedViewerHmac) return false;
   const cookie = cookies[VIEWER_COOKIE];
   if (!cookie) return false;
-  const expected = await computeHmac(_viewerKey, VIEWER_PURPOSE);
-  return timingSafeEqual(cookie, expected);
+  return timingSafeEqual(cookie, _expectedViewerHmac);
 };
 
-export const hasViewerAccess = async (req: Request): Promise<boolean> => {
+export const hasViewerAccess = (req: Request): boolean => {
   if (_publicMode) return true;
   if (!_privateMode) return true;
   const cookies = parseCookies(req);
-  if (await validateAdminCookie(cookies)) return true;
-  if (await validateViewerCookie(cookies)) return true;
+  if (validateAdminCookie(cookies)) return true;
+  if (validateViewerCookie(cookies)) return true;
   return false;
 };
 
@@ -193,8 +194,7 @@ export const adminOnly = (handler: Handler): Handler => {
     }
 
     const cookies = parseCookies(req);
-    const isAdmin = await validateAdminCookie(cookies);
-    if (!isAdmin) {
+    if (!validateAdminCookie(cookies)) {
       return respondJson({ error: "Unauthorized" }, 401);
     }
 
@@ -215,13 +215,11 @@ export const viewerRequired = (handler: Handler): Handler => {
     const cookies = parseCookies(req);
 
     // Admin cookie implicitly satisfies viewer check
-    const isAdmin = await validateAdminCookie(cookies);
-    if (isAdmin) {
+    if (validateAdminCookie(cookies)) {
       return handler(req, server);
     }
 
-    const isViewer = await validateViewerCookie(cookies);
-    if (isViewer) {
+    if (validateViewerCookie(cookies)) {
       return handler(req, server);
     }
 
@@ -231,29 +229,77 @@ export const viewerRequired = (handler: Handler): Handler => {
 
 // ===== AUTH STATUS =====
 
-export const getAuthStatus = async (
+export const getAuthStatus = (
   req: Request
-): Promise<{
+): {
   admin: boolean;
   viewer: boolean;
   publicMode: boolean;
   privateMode: boolean;
-}> => {
+} => {
   if (_publicMode) {
     return { admin: true, viewer: true, publicMode: true, privateMode: false };
   }
 
   const cookies = parseCookies(req);
-  const admin = await validateAdminCookie(cookies);
-  const viewer = admin || (_privateMode && (await validateViewerCookie(cookies)));
+  const admin = validateAdminCookie(cookies);
+  const viewer = admin || (_privateMode && validateViewerCookie(cookies));
 
   return { admin, viewer, publicMode: false, privateMode: _privateMode };
 };
+
+// ===== LOGIN TOKEN VALIDATION =====
+
+export const validateLoginToken = (token: string): boolean => {
+  if (!_expectedAdminLoginHmac) return false;
+  return timingSafeEqual(token, _expectedAdminLoginHmac);
+};
+
+// ===== LOGIN RATE LIMITING =====
+
+const LOGIN_RATE_LIMIT = 10;
+const LOGIN_RATE_WINDOW_MS = 60_000;
+const _loginAttempts = new Map<string, number[]>();
+
+const getClientIp = (req: Request): string => {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]!.trim();
+  return req.headers.get("x-real-ip") ?? "direct";
+};
+
+export const checkLoginRateLimit = (req: Request): boolean => {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const attempts = _loginAttempts.get(ip);
+  const recent = attempts ? attempts.filter((t) => now - t < LOGIN_RATE_WINDOW_MS) : [];
+
+  if (recent.length >= LOGIN_RATE_LIMIT) {
+    _loginAttempts.set(ip, recent);
+    return false;
+  }
+
+  recent.push(now);
+  _loginAttempts.set(ip, recent);
+  return true;
+};
+
+// Periodic cleanup to prevent unbounded memory growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, attempts] of _loginAttempts) {
+    const recent = attempts.filter((t) => now - t < LOGIN_RATE_WINDOW_MS);
+    if (recent.length === 0) _loginAttempts.delete(ip);
+    else _loginAttempts.set(ip, recent);
+  }
+}, LOGIN_RATE_WINDOW_MS).unref();
 
 // ===== STARTUP LOGGING =====
 
 export const logAuthConfig = (): void => {
   if (!_adminKey) {
+    if (_viewerKey) {
+      console.warn("Auth: DERBY_VIEWER_KEY is set but DERBY_ADMIN_KEY is not — viewer key ignored");
+    }
     console.log("Auth: PUBLIC MODE (no DERBY_ADMIN_KEY set)");
     return;
   }

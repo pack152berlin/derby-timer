@@ -201,7 +201,8 @@ export const api = {
     });
     if (!res.ok) return null;
     const data = await res.json() as { role: string };
-    return data.role as 'admin' | 'viewer';
+    if (data.role === 'admin' || data.role === 'viewer') return data.role;
+    return null;
   },
 
   async logout(): Promise<void> {

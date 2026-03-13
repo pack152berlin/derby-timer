@@ -42,4 +42,40 @@ test.describe('Private mode – login gate', () => {
     // Should see admin controls
     await expect(page.locator('button:has-text("New Event")')).toBeVisible();
   });
+
+  test('viewer logout restores login gate', async ({ page }) => {
+    // Login as viewer
+    await page.goto(baseUrl);
+    await page.fill('input[type="password"]', VIEWER_PASSWORD);
+    await page.click('button:has-text("Log In")');
+    await expect(page.locator('text=Event Password')).not.toBeVisible({ timeout: 3000 });
+
+    // Logout
+    await page.click('button:has-text("Logout")');
+
+    // Gate should reappear
+    await expect(page.locator('text=Event Password')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('viewer cannot create events (read-only)', async ({ page }) => {
+    // Login as viewer
+    await page.goto(baseUrl);
+    await page.fill('input[type="password"]', VIEWER_PASSWORD);
+    await page.click('button:has-text("Log In")');
+    await expect(page.locator('text=No events yet')).toBeVisible({ timeout: 3000 });
+
+    // "New Event" button should not be visible for viewer
+    await expect(page.locator('button:has-text("New Event")')).toHaveCount(0);
+
+    // Direct API call should be rejected
+    const res = await page.evaluate(async () => {
+      const r = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Hack', date: '2026-01-01' }),
+      });
+      return r.status;
+    });
+    expect(res).toBe(401);
+  });
 });

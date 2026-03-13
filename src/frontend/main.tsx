@@ -169,6 +169,7 @@ function AppRoutes() {
     heats,
     standings,
     isAdmin: authStatus.admin,
+    isViewer: authStatus.viewer,
     isPublicMode: authStatus.publicMode,
     isPrivateMode: authStatus.privateMode,
     canEdit: authStatus.admin || authStatus.publicMode,
@@ -308,10 +309,15 @@ function PrivateLoginGate({ onAuth }: { onAuth: () => Promise<void> }) {
     e.preventDefault();
     setError(false);
     setSubmitting(true);
-    const role = await api.login(password);
-    if (role) {
-      await onAuth();
-    } else {
+    try {
+      const role = await api.login(password);
+      if (role) {
+        await onAuth();
+      } else {
+        setError(true);
+        setSubmitting(false);
+      }
+    } catch {
       setError(true);
       setSubmitting(false);
     }
@@ -368,7 +374,7 @@ function Navigation({
 }: {
   onGoHome: () => void;
 }) {
-  const { currentEvent, canEdit, isAdmin, isPublicMode, refreshAuth } = useApp();
+  const { currentEvent, canEdit, isAdmin, isViewer, isPublicMode, refreshAuth } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogin, setShowLogin] = useState(false);
@@ -486,8 +492,8 @@ function Navigation({
                 )}
               </div>
 
-              {showAuthButton && !currentEvent && (
-                isAdmin ? (
+              {showAuthButton && (
+                (isAdmin || isViewer) ? (
                   <button
                     onClick={handleLogout}
                     className="h-11 shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100 border-l border-slate-300 ml-1"

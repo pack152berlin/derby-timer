@@ -340,6 +340,9 @@ export function CertificateView() {
 
   useEffect(() => {
     (async () => {
+      setAuthDenied(false);
+      setNeedsLogin(false);
+      setError(null);
       try {
         // Check auth status — in private mode, viewer cookie is required
         try {

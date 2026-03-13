@@ -29,21 +29,23 @@ const extractSetCookies = (res: Response): string[] => {
 
 describe("Auth Integration Tests", () => {
   describe("Admin Login", () => {
-    it("POST /admin/login with correct password → 200 + Set-Cookie", async () => {
-      const res = await fetch(`${baseUrl}/admin/login`, {
+    it("POST /auth/login with admin password → 200 + admin role + Set-Cookie", async () => {
+      const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: ADMIN_KEY }),
       });
       expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.role).toBe("admin");
       const cookies = extractSetCookies(res);
       const adminCookie = cookies.find((c) => c.startsWith("derby_admin="));
       expect(adminCookie).toBeDefined();
       expect(adminCookie).toContain("HttpOnly");
     });
 
-    it("POST /admin/login with wrong password → 401", async () => {
-      const res = await fetch(`${baseUrl}/admin/login`, {
+    it("POST /auth/login with wrong password → 401", async () => {
+      const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: "wrong" }),
@@ -82,20 +84,22 @@ describe("Auth Integration Tests", () => {
   });
 
   describe("Viewer Login", () => {
-    it("POST /viewer/login with correct password → 200 + Set-Cookie", async () => {
-      const res = await fetch(`${baseUrl}/viewer/login`, {
+    it("POST /auth/login with viewer password → 200 + viewer role + Set-Cookie", async () => {
+      const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: VIEWER_KEY }),
       });
       expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.role).toBe("viewer");
       const cookies = extractSetCookies(res);
       const viewerCookie = cookies.find((c) => c.startsWith("derby_viewer="));
       expect(viewerCookie).toBeDefined();
     });
 
-    it("POST /viewer/login with wrong password → 401", async () => {
-      const res = await fetch(`${baseUrl}/viewer/login`, {
+    it("POST /auth/login with wrong password → 401", async () => {
+      const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: "wrong" }),
@@ -223,6 +227,27 @@ describe("Auth Integration Tests", () => {
       const viewerCookie = cookies.find((c) => c.startsWith("derby_viewer="));
       expect(viewerCookie).toBeDefined();
       expect(viewerCookie).toContain("Max-Age=0");
+    });
+  });
+
+  describe("Rate Limiting", () => {
+    // NOTE: All requests from this test file share the same IP ("direct").
+    // This test must run last — once the rate limit is hit, subsequent login
+    // attempts from this IP will also be rejected until the 60s window expires.
+    it("11 rapid login attempts → 429", async () => {
+      for (let i = 0; i < 10; i++) {
+        await fetch(`${baseUrl}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: "wrong" }),
+        });
+      }
+      const res = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: "wrong" }),
+      });
+      expect(res.status).toBe(429);
     });
   });
 });
