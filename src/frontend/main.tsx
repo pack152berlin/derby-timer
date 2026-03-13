@@ -333,11 +333,11 @@ function PrivateLoginGate({ onAuth }: { onAuth: () => Promise<void> }) {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="grid gap-5">
               <div>
-                <label className="block text-base font-semibold mb-2 text-slate-600">Password</label>
+                <label className="block text-base font-semibold mb-2 text-slate-600">Event Password</label>
                 <PasswordInput
                   value={password}
                   onChange={(v) => { setPassword(v); setError(false); }}
-                  placeholder="Enter password"
+                  placeholder="Enter event password"
                   autoFocus
                   disabled={submitting}
                   className="h-12 text-base"
@@ -386,8 +386,8 @@ function Navigation({
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(false);
-    const ok = await api.adminLogin(loginPassword);
-    if (ok) {
+    const role = await api.login(loginPassword);
+    if (role) {
       setShowLogin(false);
       setLoginPassword('');
       await refreshAuth();
@@ -397,7 +397,7 @@ function Navigation({
   };
 
   const handleLogout = async () => {
-    await api.adminLogout();
+    await api.logout();
     await refreshAuth();
     navigate('/');
   };

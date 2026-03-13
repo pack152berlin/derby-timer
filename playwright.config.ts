@@ -18,12 +18,17 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: ['**/screenshots.playwright.ts', '**/auth-ui-gating.playwright.ts'],
+      testIgnore: ['**/screenshots.playwright.ts', '**/auth-ui-gating.playwright.ts', '**/auth-private-mode.playwright.ts'],
     },
     {
       name: 'auth',
       use: { ...devices['Desktop Chrome'] },
       testMatch: '**/auth-ui-gating.playwright.ts',
+    },
+    {
+      name: 'private',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/auth-private-mode.playwright.ts',
     },
     {
       name: 'screenshots',

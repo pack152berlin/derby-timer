@@ -26,6 +26,7 @@ import {
   parseCookies,
   isPublicMode,
   isPrivateMode,
+  timingSafeEqual,
   logAuthConfig,
 } from "./auth";
 import {
@@ -1138,14 +1139,14 @@ const server = Bun.serve({
         if (!body.password) return respondJson({ error: "Password required" }, 400);
 
         const adminKey = getAdminKey();
-        if (adminKey && body.password === adminKey) {
+        if (adminKey && timingSafeEqual(body.password, adminKey)) {
           const headers = new Headers({ "Content-Type": "application/json" });
           await setAdminCookie(headers);
           return new Response(JSON.stringify({ role: "admin" }), { status: 200, headers });
         }
 
         const viewerKey = getViewerKey();
-        if (viewerKey && body.password === viewerKey) {
+        if (viewerKey && timingSafeEqual(body.password, viewerKey)) {
           const headers = new Headers({ "Content-Type": "application/json" });
           await setViewerCookie(headers);
           return new Response(JSON.stringify({ role: "viewer" }), { status: 200, headers });
@@ -1159,7 +1160,7 @@ const server = Bun.serve({
       POST: async (req) => {
         const body = (await req.json()) as { password?: string };
         const adminKey = getAdminKey();
-        if (!adminKey || body.password !== adminKey) {
+        if (!adminKey || !body.password || !timingSafeEqual(body.password, adminKey)) {
           return respondJson({ error: "Invalid password" }, 401);
         }
         const headers = new Headers({ "Content-Type": "application/json" });
@@ -1196,7 +1197,7 @@ const server = Bun.serve({
       POST: async (req) => {
         const body = (await req.json()) as { password?: string };
         const viewerKey = getViewerKey();
-        if (!viewerKey || body.password !== viewerKey) {
+        if (!viewerKey || !body.password || !timingSafeEqual(body.password, viewerKey)) {
           return respondJson({ error: "Invalid password" }, 401);
         }
         const headers = new Headers({ "Content-Type": "application/json" });
