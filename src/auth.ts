@@ -37,7 +37,7 @@ const resolveAdminKey = (): string | null => {
 const _adminKey = resolveAdminKey();
 const _viewerKey = Bun.env.DERBY_VIEWER_KEY || null;
 const _publicMode = _adminKey === null;
-const _privateMode = _viewerKey !== null;
+const _privateMode = _adminKey !== null && _viewerKey !== null;
 
 export const getAdminKey = (): string | null => _adminKey;
 export const getViewerKey = (): string | null => _viewerKey;
@@ -146,12 +146,12 @@ export const setViewerCookie = (headers: Headers, secure: boolean = false): void
   setCookie(headers, VIEWER_COOKIE, _expectedViewerHmac, COOKIE_MAX_AGE, secure);
 };
 
-export const clearAdminCookie = (headers: Headers): void => {
-  setCookie(headers, ADMIN_COOKIE, "", 0);
+export const clearAdminCookie = (headers: Headers, secure: boolean = false): void => {
+  setCookie(headers, ADMIN_COOKIE, "", 0, secure);
 };
 
-export const clearViewerCookie = (headers: Headers): void => {
-  setCookie(headers, VIEWER_COOKIE, "", 0);
+export const clearViewerCookie = (headers: Headers, secure: boolean = false): void => {
+  setCookie(headers, VIEWER_COOKIE, "", 0, secure);
 };
 
 // ===== COOKIE VALIDATION =====

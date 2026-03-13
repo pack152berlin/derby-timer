@@ -140,11 +140,11 @@ DerbyTimer supports three auth modes controlled by environment variables. **By d
 ```bash
 # Test admin-protected mode
 DERBY_ADMIN_KEY=secret bun start
-# Then POST to /admin/login with { "password": "secret" }
+# Then POST to /auth/login with { "password": "secret" }
 
 # Test fully private mode
 DERBY_ADMIN_KEY=secret DERBY_VIEWER_KEY=viewer bun start
-# All pages require login. Use /admin/login or /viewer/login.
+# All pages require login. POST to /auth/login with either password.
 
 # Auto-generated admin key (persisted to .derby_admin_key file)
 DERBY_ADMIN_KEY=auto bun start

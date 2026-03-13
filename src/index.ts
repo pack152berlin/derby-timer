@@ -1176,9 +1176,9 @@ const server = Bun.serve({
     },
 
     "/admin/logout": {
-      POST: (_req) => {
+      POST: (req) => {
         const headers = new Headers({ "Content-Type": "application/json" });
-        clearAdminCookie(headers);
+        clearAdminCookie(headers, isSecureRequest(req));
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       },
     },
@@ -1200,9 +1200,9 @@ const server = Bun.serve({
     },
 
     "/viewer/logout": {
-      POST: (_req) => {
+      POST: (req) => {
         const headers = new Headers({ "Content-Type": "application/json" });
-        clearViewerCookie(headers);
+        clearViewerCookie(headers, isSecureRequest(req));
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       },
     },

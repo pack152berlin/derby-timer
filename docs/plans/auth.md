@@ -136,10 +136,10 @@ Admin-only pages (Registration, Race Control, Batch Certificates) show a centere
    - `isPublicMode()` — returns true when no admin key is configured
    - `isPrivateMode()` — returns true when viewer key is configured
 2. Add routes:
-   - `GET /admin/login?token=...` — validates token, sets admin cookie, `302` redirects to `/`
-   - `POST /admin/login` — accepts `{ password }` JSON body, validates, sets admin cookie
+   - `POST /auth/login` — unified login: accepts `{ password }`, checks admin key then viewer key, sets appropriate cookie
+   - `GET /admin/login?token=...` — validates HMAC token, sets admin cookie, `302` redirects to `/`
    - `POST /admin/logout` — clears admin cookie
-   - `POST /viewer/login` — accepts `{ password }` JSON body, validates, sets viewer cookie
+   - `POST /viewer/logout` — clears viewer cookie
    - `GET /admin/status` — returns `{ admin: true/false, viewer: true/false, publicMode: true/false, privateMode: true/false }`
 3. Wrap all `POST`/`PATCH`/`DELETE` routes with `adminOnly()` except explicitly public ones
 4. When `DERBY_VIEWER_KEY` is set, wrap all `GET` routes with `viewerRequired()` except login and healthcheck
@@ -149,7 +149,7 @@ Admin-only pages (Registration, Race Control, Batch Certificates) show a centere
 
 1. Add `isAdmin`, `isViewer`, `isPublicMode`, and `isPrivateMode` to `AppContext`
 2. On app load, call `GET /admin/status` to determine auth state
-3. If `privateMode && !isViewer && !isAdmin`, redirect to `/viewer/login`
+3. If `privateMode && !isViewer && !isAdmin`, show in-app `PrivateLoginGate` (full-screen login form)
 4. No URL param handling needed — the cookie flow is entirely server-side
 
 ### Phase 3: Frontend UI Updates
@@ -158,14 +158,14 @@ Admin-only pages (Registration, Race Control, Batch Certificates) show a centere
 2. Show "Admin access required" banner on admin-only views when `!isAdmin && !isPublicMode`
 3. In public mode (no key set), everything works as it does today — no banners, no restrictions
 
-### Phase 4: Admin Login Page
+### Phase 4: Admin Login UI
 
-1. Create a simple `/admin` page:
-   - If `isPublicMode`: show "Public Mode — all users have admin access"
-   - If `!isAdmin`: show a password input form (POST to `/admin/login`)
-   - If `isAdmin`: show QR code for other volunteers, local IP, "Revoke All Sessions" button
-2. Local mode: QR code is the primary login method
-3. Cloud mode: password form is the primary login method
+1. Login dialog in the app shell (no separate `/admin` page):
+   - "Admin Login" button in the nav bar opens a password dialog
+   - Dialog POSTs to `/auth/login` — the unified endpoint checks admin key then viewer key
+   - On success, the app refreshes auth state and shows admin controls
+2. Local mode: QR code at `/admin/login?token=HMAC` is the primary login method for volunteers
+3. Cloud mode: the nav bar password dialog is the primary login method
 
 ## 5. Cloud Deployment Considerations
 
@@ -231,24 +231,25 @@ All test scripts set both keys and include the appropriate cookies in requests:
 *   `POST /api/heats/:id/start` with valid admin cookie → `200`
 *   `GET /admin/login?token=wrong` → `401`
 *   `GET /admin/login?token=correct` → `302` + `Set-Cookie` with `HttpOnly`
-*   `POST /admin/login` with correct password → `200` + `Set-Cookie`
+*   `POST /auth/login` with admin password → `200` + `Set-Cookie` (`derby_admin`) + `role: "admin"`
+*   `POST /auth/login` with viewer password → `200` + `Set-Cookie` (`derby_viewer`) + `role: "viewer"`
 *   `GET /api/events` without cookie (no viewer key) → `200` (public read)
 *   `GET /api/events` without cookie (viewer key set) → `401`
 *   `GET /api/events` with viewer cookie (viewer key set) → `200`
 *   `GET /api/events` with admin cookie (viewer key set) → `200` (admin implies viewer)
 *   `POST /viewer/login` with correct password → `200` + `Set-Cookie` (`derby_viewer`)
 *   `POST /viewer/login` with wrong password → `401`
-*   Rate limiting: 11 rapid login attempts → `429` (applies to both `/admin/login` and `/viewer/login`)
+*   Rate limiting: 11 rapid login attempts → `429` (applies to all login endpoints)
 *   Cookie has `Secure` flag when request includes `X-Forwarded-Proto: https`
 
 ### E2E Tests (`e2e/auth.playwright.ts`)
 
 *   **Guest Path**: Navigate to `/register`. See read-only view with "Admin required" banner.
-*   **Admin Path**: Hit `/admin/login?token=test-secret`. Verify cookie is set, redirected to `/`, all actions available.
-*   **Password Login**: Submit password on `/admin` form. Verify cookie is set.
+*   **Admin Path**: Hit `/admin/login?token=HMAC`. Verify cookie is set, redirected to `/`, all actions available.
+*   **Password Login**: Use "Admin Login" button in nav, submit password. Verify cookie is set via `/auth/login`.
 *   **Logout**: Call `/admin/logout`. Verify admin actions disappear.
 *   **Public Mode**: Start server without `DERBY_ADMIN_KEY`. Verify no banners, full access.
-*   **Private Mode**: Start server with `DERBY_VIEWER_KEY=test-viewer`. Navigate to `/standings` — redirected to viewer login. Enter password, verify standings load.
+*   **Private Mode**: Start server with `DERBY_VIEWER_KEY=test-viewer`. Navigate to `/` — see `PrivateLoginGate`. Enter viewer password, verify events page loads.
 *   **Private Mode Admin**: In private mode, admin cookie grants full access without needing viewer password.
 
 ## 7. Related Plans
