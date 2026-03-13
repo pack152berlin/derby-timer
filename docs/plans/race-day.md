@@ -101,7 +101,7 @@ handle migrations with https://github.com/sequelize/umzug
   - **Future:** Switch to points-per-place scoring (4/3/2/1) instead of win/loss.
     Current W/L system treats 2nd and 4th place identically as "loss."
     Points-per-place is the industry standard for multi-lane derbies.
-    See `docs/notes/standings-ranking-research.md` for full analysis.
+    See `docs/plans/standings-scoring.md` for full analysis.
 - Add a "Heat Coverage" view:
   - For each car: lane counts, heats run, upcoming lane needs.
 
