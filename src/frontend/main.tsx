@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { cn, CURRENT_EVENT_KEY } from '@/lib/utils';
 import './styles/styles.css';
 
 import type { Event, Racer, Heat, Standing } from './types';
@@ -70,7 +70,7 @@ function AppRoutes() {
         console.error('Failed to fetch auth status:', e);
       }
 
-      const savedEventId = localStorage.getItem('derby_current_event_id');
+      const savedEventId = localStorage.getItem(CURRENT_EVENT_KEY);
       if (savedEventId) {
         try {
           const events = await api.getEvents();
@@ -79,7 +79,7 @@ function AppRoutes() {
             setCurrentEvent(event);
             await fetchData(event.id);
           } else {
-            localStorage.removeItem('derby_current_event_id');
+            localStorage.removeItem(CURRENT_EVENT_KEY);
           }
         } catch (e) {
           console.error('Failed to hydrate event:', e);
@@ -140,13 +140,13 @@ function AppRoutes() {
       setRacers([]);
       setHeats([]);
       setStandings([]);
-      localStorage.removeItem('derby_current_event_id');
+      localStorage.removeItem(CURRENT_EVENT_KEY);
       navigate('/');
       return;
     }
     
     setCurrentEvent(event);
-    localStorage.setItem('derby_current_event_id', event.id);
+    localStorage.setItem(CURRENT_EVENT_KEY, event.id);
     setLoading(true);
     await fetchData(event.id);
     setLoading(false);
