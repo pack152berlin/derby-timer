@@ -192,15 +192,6 @@ export const api = {
     return res.json();
   },
 
-  async adminLogin(password: string): Promise<boolean> {
-    const res = await fetch('/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    return res.ok;
-  },
-
   /** Unified login — tries admin key first, then viewer key. Returns the matched role or null. */
   async login(password: string): Promise<'admin' | 'viewer' | null> {
     const res = await fetch('/auth/login', {
@@ -213,8 +204,9 @@ export const api = {
     return data.role as 'admin' | 'viewer';
   },
 
-  async adminLogout(): Promise<void> {
+  async logout(): Promise<void> {
     await fetch('/admin/logout', { method: 'POST' });
+    await fetch('/viewer/logout', { method: 'POST' });
   },
 
   async getRacerHistory(racerId: string): Promise<RacerHistoryEntry[]> {

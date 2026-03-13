@@ -44,6 +44,18 @@ export const getViewerKey = (): string | null => _viewerKey;
 export const isPublicMode = (): boolean => _publicMode;
 export const isPrivateMode = (): boolean => _privateMode;
 
+// ===== TIMING-SAFE COMPARISON =====
+
+import { timingSafeEqual as _tsEqual } from "node:crypto";
+
+export const timingSafeEqual = (a: string, b: string): boolean => {
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  if (bufA.byteLength !== bufB.byteLength) return false;
+  return _tsEqual(bufA, bufB);
+};
+
 // ===== SHARED HTTP HELPER =====
 
 export const respondJson = (payload: unknown, status = 200) => {
