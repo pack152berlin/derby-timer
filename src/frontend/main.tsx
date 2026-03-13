@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, BookOpen, LogIn, LogOut } from 'lucide-react';
+import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, BookOpen, LogIn, LogOut, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -153,6 +154,15 @@ function AppRoutes() {
     navigate(event.status === 'complete' ? '/standings' : canEdit ? '/register' : '/heats');
   };
 
+  const refreshAuth = async () => {
+    try {
+      const status = await api.getAuthStatus();
+      setAuthStatus(status);
+    } catch (e) {
+      console.error('Failed to refresh auth status:', e);
+    }
+  };
+
   const contextValue = {
     currentEvent,
     racers,
@@ -182,19 +192,17 @@ function AppRoutes() {
       if (!currentEvent) return;
       await fetchData(currentEvent.id);
     },
-    refreshAuth: async () => {
-      try {
-        const status = await api.getAuthStatus();
-        setAuthStatus(status);
-      } catch (e) {
-        console.error('Failed to refresh auth status:', e);
-      }
-    },
+    refreshAuth,
     selectEvent
   };
 
   if (!isHydrated) {
     return <PinewoodFullLoader visible />;
+  }
+
+  // Private mode gate: show login screen when no auth at all
+  if (authStatus.privateMode && !authStatus.admin && !authStatus.viewer) {
+    return <PrivateLoginGate onAuth={refreshAuth} />;
   }
 
   return (
@@ -252,6 +260,104 @@ function App() {
         <Route path="/*" element={<AppRoutes />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+// ===== PASSWORD INPUT WITH TOGGLE =====
+
+function PasswordInput({ value, onChange, placeholder, autoFocus, disabled, className }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        disabled={disabled}
+        className={cn('pr-10', className)}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setShow(!show)}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+      >
+        {show ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  );
+}
+
+// ===== PRIVATE MODE LOGIN GATE =====
+
+function PrivateLoginGate({ onAuth }: { onAuth: () => Promise<void> }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(false);
+    setSubmitting(true);
+    const role = await api.login(password);
+    if (role) {
+      await onAuth();
+    } else {
+      setError(true);
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-14 h-14 bg-gradient-to-br from-[#003F87] to-[#CE1126] rounded-xl flex items-center justify-center shadow-lg mb-4">
+            <Flag className="w-8 h-8 text-white" />
+          </div>
+          <span className="text-2xl font-black uppercase tracking-tight text-slate-900">
+            Derby<span className="text-[#CE1126]">Timer</span>
+          </span>
+        </div>
+
+        <Card className="border-2 border-slate-200">
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="grid gap-5">
+              <div>
+                <label className="block text-base font-semibold mb-2 text-slate-600">Password</label>
+                <PasswordInput
+                  value={password}
+                  onChange={(v) => { setPassword(v); setError(false); }}
+                  placeholder="Enter password"
+                  autoFocus
+                  disabled={submitting}
+                  className="h-12 text-base"
+                />
+                {error && (
+                  <p className="text-sm text-red-600 mt-2">Invalid password</p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                disabled={submitting || !password}
+                className="w-full h-12 text-base bg-[#003F87] hover:bg-[#002f66] text-white font-semibold"
+              >
+                {submitting ? 'Logging in...' : 'Log In'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
@@ -339,7 +445,7 @@ function Navigation({
                 </button>
 
                 {!currentEvent ? (
-                  <Badge variant="outline" className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center">
+                  <Badge variant="outline" className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center cursor-not-allowed">
                     Select an event to begin
                   </Badge>
                 ) : (
@@ -380,7 +486,7 @@ function Navigation({
                 )}
               </div>
 
-              {showAuthButton && (
+              {showAuthButton && !currentEvent && (
                 isAdmin ? (
                   <button
                     onClick={handleLogout}
@@ -407,27 +513,27 @@ function Navigation({
       <Dialog open={showLogin} onOpenChange={(open) => { if (!open) { setShowLogin(false); setLoginError(false); setLoginPassword(''); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Admin Login</DialogTitle>
+            <DialogTitle className="text-xl">Admin Login</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleLogin} className="grid gap-4">
+          <form onSubmit={handleLogin} className="grid gap-5">
             <div>
-              <label className="block text-sm font-semibold mb-2 text-slate-600">Password</label>
-              <Input
-                type="password"
+              <label className="block text-base font-semibold mb-2 text-slate-600">Password</label>
+              <PasswordInput
                 value={loginPassword}
-                onChange={(e) => { setLoginPassword(e.target.value); setLoginError(false); }}
+                onChange={(v) => { setLoginPassword(v); setLoginError(false); }}
                 placeholder="Enter admin password"
                 autoFocus
+                className="h-12 text-base"
               />
               {loginError && (
-                <p className="text-sm text-red-600 mt-1">Invalid password</p>
+                <p className="text-sm text-red-600 mt-2">Invalid password</p>
               )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowLogin(false)}>
+              <Button type="button" variant="outline" className="h-11 text-base" onClick={() => setShowLogin(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#003F87] hover:bg-[#002f66] text-white">
+              <Button type="submit" className="h-11 text-base bg-[#003F87] hover:bg-[#002f66] text-white">
                 Login
               </Button>
             </DialogFooter>

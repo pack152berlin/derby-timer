@@ -201,6 +201,18 @@ export const api = {
     return res.ok;
   },
 
+  /** Unified login — tries admin key first, then viewer key. Returns the matched role or null. */
+  async login(password: string): Promise<'admin' | 'viewer' | null> {
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { role: string };
+    return data.role as 'admin' | 'viewer';
+  },
+
   async adminLogout(): Promise<void> {
     await fetch('/admin/logout', { method: 'POST' });
   },
