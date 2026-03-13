@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import './styles/styles.css';
 
 import type { Event, Racer, Heat, Standing } from './types';
+import type { AuthStatus } from './api';
 import { AppContext, useApp } from './context';
 import { api } from './api';
 
@@ -32,6 +33,9 @@ function AppRoutes() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>({
+    admin: false, viewer: false, publicMode: true, privateMode: false,
+  });
 
   const fetchData = async (eventId: string) => {
     const [eventData, racersData, heatsData, standingsData] = await Promise.all([
@@ -49,6 +53,13 @@ function AppRoutes() {
   // Hydrate from localStorage on initial load
   useEffect(() => {
     const hydrate = async () => {
+      try {
+        const status = await api.getAuthStatus();
+        setAuthStatus(status);
+      } catch (e) {
+        console.error('Failed to fetch auth status:', e);
+      }
+
       const savedEventId = localStorage.getItem('derby_current_event_id');
       if (savedEventId) {
         try {
@@ -137,6 +148,9 @@ function AppRoutes() {
     racers,
     heats,
     standings,
+    isAdmin: authStatus.admin,
+    isPublicMode: authStatus.publicMode,
+    isPrivateMode: authStatus.privateMode,
     setCurrentRacerId: (id: string | null) => {
       if (id) {
         if (!location.pathname.startsWith('/racer/')) {
