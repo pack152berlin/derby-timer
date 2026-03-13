@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { computeHmac } from "../src/auth";
+import { computeHmac, ADMIN_PURPOSE, VIEWER_PURPOSE } from "../src/auth";
 
 const port = Bun.env.PORT ?? "3000";
 const baseUrl = `http://localhost:${port}`;
@@ -8,12 +8,12 @@ const ADMIN_KEY = "test-secret";
 const VIEWER_KEY = "test-viewer";
 
 const getAdminCookie = async () => {
-  const hmac = await computeHmac(ADMIN_KEY, "derby_admin_session");
+  const hmac = await computeHmac(ADMIN_KEY, ADMIN_PURPOSE);
   return `derby_admin=${hmac}`;
 };
 
 const getViewerCookie = async () => {
-  const hmac = await computeHmac(VIEWER_KEY, "derby_viewer_session");
+  const hmac = await computeHmac(VIEWER_KEY, VIEWER_PURPOSE);
   return `derby_viewer=${hmac}`;
 };
 

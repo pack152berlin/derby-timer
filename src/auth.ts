@@ -94,10 +94,10 @@ export const parseCookies = (req: Request): Record<string, string> => {
   return cookies;
 };
 
-const ADMIN_COOKIE = "derby_admin";
-const VIEWER_COOKIE = "derby_viewer";
-const ADMIN_PURPOSE = "derby_admin_session";
-const VIEWER_PURPOSE = "derby_viewer_session";
+export const ADMIN_COOKIE = "derby_admin";
+export const VIEWER_COOKIE = "derby_viewer";
+export const ADMIN_PURPOSE = "derby_admin_session";
+export const VIEWER_PURPOSE = "derby_viewer_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 const setCookie = (

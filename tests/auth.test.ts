@@ -6,6 +6,8 @@ import {
   getViewerKey,
   isPublicMode,
   isPrivateMode,
+  adminOnly,
+  viewerRequired,
 } from "../src/auth";
 
 describe("Auth Module", () => {
@@ -89,6 +91,46 @@ describe("Auth Module", () => {
   describe("isPrivateMode (cached at load)", () => {
     it("should return false when no viewer key at import time", () => {
       expect(isPrivateMode()).toBe(false);
+    });
+  });
+
+  // Tests run without keys → public mode → wrappers pass through unconditionally.
+  // Auth-enforcement paths are covered by integration tests (test:integration:auth).
+  describe("adminOnly (public mode pass-through)", () => {
+    it("should call the wrapped handler and return its response", async () => {
+      const inner = () => new Response("ok", { status: 200 });
+      const wrapped = adminOnly(inner);
+      const req = new Request("http://localhost");
+      const res = await wrapped(req, null);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("ok");
+    });
+
+    it("should forward request and server args to the handler", async () => {
+      let receivedReq: any;
+      let receivedServer: any;
+      const inner = (req: any, server: any) => {
+        receivedReq = req;
+        receivedServer = server;
+        return new Response("ok");
+      };
+      const wrapped = adminOnly(inner);
+      const req = new Request("http://localhost/test");
+      const server = { fake: true };
+      await wrapped(req, server);
+      expect(receivedReq).toBe(req);
+      expect(receivedServer).toBe(server);
+    });
+  });
+
+  describe("viewerRequired (public mode pass-through)", () => {
+    it("should call the wrapped handler and return its response", async () => {
+      const inner = () => new Response("viewer ok", { status: 200 });
+      const wrapped = viewerRequired(inner);
+      const req = new Request("http://localhost");
+      const res = await wrapped(req, null);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("viewer ok");
     });
   });
 });
