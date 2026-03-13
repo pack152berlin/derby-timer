@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { computeHmac, ADMIN_PURPOSE, VIEWER_PURPOSE } from "../src/auth";
+import { computeHmac, ADMIN_PURPOSE, VIEWER_PURPOSE, ADMIN_LOGIN_PURPOSE } from "../src/auth";
 
 const port = Bun.env.PORT ?? "3000";
 const baseUrl = `http://localhost:${port}`;
@@ -51,9 +51,10 @@ describe("Auth Integration Tests", () => {
       expect(res.status).toBe(401);
     });
 
-    it("GET /admin/login?token=<correct> → 302 + Set-Cookie", async () => {
+    it("GET /admin/login?token=<hmac> → 302 + Set-Cookie", async () => {
+      const hmac = await computeHmac(ADMIN_KEY, ADMIN_LOGIN_PURPOSE);
       const res = await fetch(
-        `${baseUrl}/admin/login?token=${ADMIN_KEY}`,
+        `${baseUrl}/admin/login?token=${hmac}`,
         { redirect: "manual" }
       );
       expect(res.status).toBe(302);
@@ -63,16 +64,12 @@ describe("Auth Integration Tests", () => {
       expect(adminCookie).toBeDefined();
     });
 
-    it("GET /admin/login?token=<hmac> → 302 + Set-Cookie", async () => {
-      const hmac = await computeHmac(ADMIN_KEY, "derby_admin_login");
+    it("GET /admin/login?token=<raw-key> → 401 (raw key rejected)", async () => {
       const res = await fetch(
-        `${baseUrl}/admin/login?token=${hmac}`,
+        `${baseUrl}/admin/login?token=${ADMIN_KEY}`,
         { redirect: "manual" }
       );
-      expect(res.status).toBe(302);
-      const cookies = extractSetCookies(res);
-      const adminCookie = cookies.find((c) => c.startsWith("derby_admin="));
-      expect(adminCookie).toBeDefined();
+      expect(res.status).toBe(401);
     });
 
     it("GET /admin/login?token=wrong → 401", async () => {

@@ -148,7 +148,7 @@ These hold across all future work:
 |------|--------|-------------|
 | [Race Day](./plans/race-day.md) | Implemented | Original spec — data model, UI flow, heat scheduling |
 | [Achievement Certificates](./plans/achievement-certificate.md) | Implemented | Certificate tiering, layout, scout theming, den rankings |
-| [Auth](./plans/auth.md) | Not started | Cookie-based admin key for local + cloud |
+| [Auth](./plans/auth.md) | Implemented | Cookie-based admin key for local + cloud |
 | [Deployment](./plans/deployment.md) | Not started | Fly.io deployment with SQLite + Litestream |
 | [Edge Cases](./plans/edge-cases.md) | Not started | Heat re-runs, withdrawals, DQs, tiebreakers |
 | [Standings Scoring](./plans/standings-scoring.md) | Not started | Points-per-place to replace win/loss |

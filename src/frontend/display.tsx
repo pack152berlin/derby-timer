@@ -44,6 +44,16 @@ interface Standing {
 }
 
 const api = {
+  async checkAuth(): Promise<{ privateMode: boolean; authenticated: boolean }> {
+    const res = await fetch('/admin/status');
+    if (!res.ok) return { privateMode: false, authenticated: false };
+    const data = await res.json();
+    return {
+      privateMode: data.privateMode,
+      authenticated: data.admin || data.viewer,
+    };
+  },
+
   async getEvents(): Promise<Event[]> {
     const res = await fetch('/api/events');
     return res.ok ? res.json() : [];
@@ -66,10 +76,21 @@ function DisplayApp() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const refreshData = async () => {
     try {
+      // On first load, check if private mode requires auth
+      if (loading) {
+        const auth = await api.checkAuth();
+        if (auth.privateMode && !auth.authenticated) {
+          setNeedsLogin(true);
+          setLoading(false);
+          return;
+        }
+      }
+
       if (!currentEvent) {
         const events = await api.getEvents();
         const activeEvent = events.find(e => e.status === 'racing') || events[events.length - 1];
@@ -119,6 +140,18 @@ function DisplayApp() {
 
   const currentHeat = getCurrentHeat();
   const topStandings = getTopStandings();
+
+  if (needsLogin) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <Flag size={80} className="mx-auto mb-6 text-[#003F87]" />
+          <p className="text-3xl text-slate-600 font-black">Authentication Required</p>
+          <p className="text-xl text-slate-400 mt-4">Please log in from the main page first.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
