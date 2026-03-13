@@ -10,7 +10,7 @@ import { StandingHeader, type SortCol, type SortDir } from './standings/Standing
 import { StandingRow } from './standings/StandingRow';
 
 export function StandingsView() {
-  const { standings, racers, heats, setCurrentRacerId, currentEvent } = useApp();
+  const { standings, racers, heats, setCurrentRacerId, currentEvent, canEdit } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCol, setSortCol] = useState<SortCol>('rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -98,7 +98,7 @@ export function StandingsView() {
             Ranked by wins, then losses, then average time
           </p>
         </div>
-        {currentEvent?.status === 'complete' && (
+        {canEdit && currentEvent?.status === 'complete' && (
           <a
             href="/certificates"
             target="_blank"

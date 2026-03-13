@@ -6,6 +6,25 @@ Built with Bun, SQLite, and React. One laptop, one network, zero cloud dependenc
 
 See [plans](docs/plans/) for the long-term vision — cloud deployment, hardware timer integration, and more.
 
+## Screenshots
+
+<table>
+<tr>
+<td><a href="screenshots/01-registration-list.png"><img src="screenshots/01-registration-list.png" width="480" alt="Registration"></a></td>
+<td><a href="screenshots/02-registration-form.png"><img src="screenshots/02-registration-form.png" width="480" alt="Add Racer"></a></td>
+</tr>
+<tr>
+<td><a href="screenshots/09-race-control-running.png"><img src="screenshots/09-race-control-running.png" width="480" alt="Race Control"></a></td>
+<td><a href="screenshots/10-standings.png"><img src="screenshots/10-standings.png" width="480" alt="Standings"></a></td>
+</tr>
+<tr>
+<td><a href="screenshots/12-racer-profile-with-photo.png"><img src="screenshots/12-racer-profile-with-photo.png" width="480" alt="Racer Profile"></a></td>
+<td><a href="screenshots/14-certificate.png"><img src="screenshots/14-certificate.png" width="480" alt="Certificate"></a></td>
+</tr>
+</table>
+
+<sub><a href="https://github.com/pack152berlin/derby-timer/tree/main/screenshots">See all screenshots</a></sub>
+
 ## Features
 
 - **Event Management** — Create and manage race day events
