@@ -23,10 +23,8 @@ import {
   clearAdminCookie,
   clearViewerCookie,
   computeHmac,
-  parseCookies,
-  isPublicMode,
-  isPrivateMode,
   isSecureRequest,
+  ADMIN_LOGIN_PURPOSE,
   timingSafeEqual,
   logAuthConfig,
 } from "./auth";
@@ -1176,9 +1174,8 @@ const server = Bun.serve({
         if (!adminKey || !token) {
           return respondJson({ error: "Invalid token" }, 401);
         }
-        // Accept either the raw key or its HMAC so the URL doesn't have to contain the secret
-        const hmac = await computeHmac(adminKey, "derby_admin_login");
-        if (token !== hmac && token !== adminKey) {
+        const hmac = await computeHmac(adminKey, ADMIN_LOGIN_PURPOSE);
+        if (token !== hmac) {
           return respondJson({ error: "Invalid token" }, 401);
         }
         const headers = new Headers({ Location: "/" });

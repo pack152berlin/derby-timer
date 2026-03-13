@@ -76,7 +76,7 @@ The pack leader shares the viewer password with families. Anyone with the passwo
     *   `SameSite=Lax` — prevents CSRF on cross-origin requests
     *   `Secure` — set when the request came over HTTPS (detected via URL scheme or `X-Forwarded-Proto` header)
     *   `Path=/` — available on all routes
-    *   `Max-Age=604800` (7 days) — reasonable session length for post-event viewing
+    *   `Max-Age=2592000` (30 days) — long session for post-event viewing
 *   **Logout**: `POST /admin/logout` clears the cookie.
 
 ### E. Routes That Must Stay Public
@@ -93,7 +93,7 @@ The only truly always-public routes (even with viewer key set):
 
 *   `/viewer/login` — the viewer login page itself
 *   `/admin/login` — the admin login page
-*   `/healthcheck` — for Fly.io health checks
+*   `/admin/status` — auth status check (used by frontend)
 
 ## 3. Protected Areas
 

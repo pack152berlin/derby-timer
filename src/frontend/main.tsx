@@ -287,8 +287,8 @@ function PasswordInput({ value, onChange, placeholder, autoFocus, disabled, clas
       />
       <button
         type="button"
-        tabIndex={-1}
         onClick={() => setShow(!show)}
+        aria-label={show ? 'Hide password' : 'Show password'}
         className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
       >
         {show ? <EyeOff size={18} /> : <Eye size={18} />}

@@ -110,6 +110,7 @@ export const ADMIN_COOKIE = "derby_admin";
 export const VIEWER_COOKIE = "derby_viewer";
 export const ADMIN_PURPOSE = "derby_admin_session";
 export const VIEWER_PURPOSE = "derby_viewer_session";
+export const ADMIN_LOGIN_PURPOSE = "derby_admin_login";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export const isSecureRequest = (req: Request): boolean => {
