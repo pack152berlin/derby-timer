@@ -13,6 +13,8 @@ import {
 import {
   adminOnly,
   viewerRequired,
+  hasViewerAccess,
+  respondJson,
   getAdminKey,
   getViewerKey,
   getAuthStatus,
@@ -50,10 +52,6 @@ const racersRepo = new RacerRepository();
 const heatsRepo = new HeatRepository();
 const resultsRepo = new ResultRepository();
 const planningStateRepo = new PlanningStateRepository();
-
-const jsonHeaders = {
-  "Content-Type": "application/json",
-};
 
 const photoUploadDir = Bun.env.DERBY_UPLOAD_DIR ?? "uploads/car-photos";
 const parsedMaxPhotoBytes = Number(Bun.env.DERBY_MAX_PHOTO_BYTES ?? "1200000");
@@ -95,13 +93,6 @@ const deletePhotoFile = (filename: string | null) => {
   } catch {
     // Ignore missing files while cleaning up old photos.
   }
-};
-
-const respondJson = (payload: unknown, status = 200) => {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: jsonHeaders,
-  });
 };
 
 const isSqliteUniqueConstraintError = (
@@ -532,7 +523,10 @@ const server = Bun.serve({
     "/certificate/:id": index,
     "/certificates": index,
 
-    "/ws": (req, server) => {
+    "/ws": async (req, server) => {
+      if (!(await hasViewerAccess(req))) {
+        return respondJson({ error: "Unauthorized" }, 401);
+      }
       if (server.upgrade(req)) {
         return;
       }
@@ -1151,7 +1145,12 @@ const server = Bun.serve({
         const url = new URL(req.url);
         const token = url.searchParams.get("token");
         const adminKey = getAdminKey();
-        if (!adminKey || token !== adminKey) {
+        if (!adminKey || !token) {
+          return respondJson({ error: "Invalid token" }, 401);
+        }
+        // Accept either the raw key or its HMAC so the URL doesn't have to contain the secret
+        const hmac = await computeHmac(adminKey, "derby_admin_login");
+        if (token !== hmac && token !== adminKey) {
           return respondJson({ error: "Invalid token" }, 401);
         }
         const headers = new Headers({ Location: "/" });
@@ -1177,6 +1176,14 @@ const server = Bun.serve({
         }
         const headers = new Headers({ "Content-Type": "application/json" });
         await setViewerCookie(headers);
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      },
+    },
+
+    "/viewer/logout": {
+      POST: (_req) => {
+        const headers = new Headers({ "Content-Type": "application/json" });
+        clearViewerCookie(headers);
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       },
     },

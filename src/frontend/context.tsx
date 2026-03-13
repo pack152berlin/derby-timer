@@ -6,6 +6,7 @@ export interface AppContextType {
   racers: Racer[];
   heats: Heat[];
   standings: Standing[];
+  // Auth status — plumbed for Phase 2 (frontend UI gating). Do not remove.
   isAdmin: boolean;
   isPublicMode: boolean;
   isPrivateMode: boolean;
