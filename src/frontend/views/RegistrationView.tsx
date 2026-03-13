@@ -45,7 +45,7 @@ import { cn } from '@/lib/utils';
 import type { Racer } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
-import { AdminBanner } from '../components/AdminBanner';
+
 import { SearchInput } from '../components/SearchInput';
 import { AppTabs } from '../components/AppTabs';
 

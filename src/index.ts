@@ -26,6 +26,7 @@ import {
   parseCookies,
   isPublicMode,
   isPrivateMode,
+  isSecureRequest,
   timingSafeEqual,
   logAuthConfig,
 } from "./auth";
@@ -1137,18 +1138,19 @@ const server = Bun.serve({
       POST: async (req) => {
         const body = (await req.json()) as { password?: string };
         if (!body.password) return respondJson({ error: "Password required" }, 400);
+        const secure = isSecureRequest(req);
 
         const adminKey = getAdminKey();
         if (adminKey && timingSafeEqual(body.password, adminKey)) {
           const headers = new Headers({ "Content-Type": "application/json" });
-          await setAdminCookie(headers);
+          await setAdminCookie(headers, secure);
           return new Response(JSON.stringify({ role: "admin" }), { status: 200, headers });
         }
 
         const viewerKey = getViewerKey();
         if (viewerKey && timingSafeEqual(body.password, viewerKey)) {
           const headers = new Headers({ "Content-Type": "application/json" });
-          await setViewerCookie(headers);
+          await setViewerCookie(headers, secure);
           return new Response(JSON.stringify({ role: "viewer" }), { status: 200, headers });
         }
 
@@ -1164,7 +1166,7 @@ const server = Bun.serve({
           return respondJson({ error: "Invalid password" }, 401);
         }
         const headers = new Headers({ "Content-Type": "application/json" });
-        await setAdminCookie(headers);
+        await setAdminCookie(headers, isSecureRequest(req));
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       },
       GET: async (req) => {
@@ -1180,7 +1182,7 @@ const server = Bun.serve({
           return respondJson({ error: "Invalid token" }, 401);
         }
         const headers = new Headers({ Location: "/" });
-        await setAdminCookie(headers);
+        await setAdminCookie(headers, isSecureRequest(req));
         return new Response(null, { status: 302, headers });
       },
     },
@@ -1201,7 +1203,7 @@ const server = Bun.serve({
           return respondJson({ error: "Invalid password" }, 401);
         }
         const headers = new Headers({ "Content-Type": "application/json" });
-        await setViewerCookie(headers);
+        await setViewerCookie(headers, isSecureRequest(req));
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       },
     },

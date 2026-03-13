@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import type { HeatResult } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
-import { AdminBanner } from '../components/AdminBanner';
+
 
 function ordinal(n: number) {
   if (n === 1) return '1st';
