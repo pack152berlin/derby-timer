@@ -27,13 +27,17 @@ const racers = [
 ];
 
 function saveIfChanged(screenshotPath: string, buffer: Buffer) {
+  const name = path.basename(screenshotPath);
   const existing = fs.existsSync(screenshotPath) ? fs.readFileSync(screenshotPath) : null;
-  if (!existing || !existing.equals(buffer)) {
+  if (!existing) {
     fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
     fs.writeFileSync(screenshotPath, buffer);
-    console.log(`  updated: ${path.basename(screenshotPath)}`);
+    console.log(`  \x1b[32m✚ new:\x1b[0m ${name}`);
+  } else if (!existing.equals(buffer)) {
+    fs.writeFileSync(screenshotPath, buffer);
+    console.log(`  \x1b[33m✎ updated:\x1b[0m ${name}`);
   } else {
-    console.log(`  unchanged: ${path.basename(screenshotPath)}`);
+    console.log(`  \x1b[2m· unchanged:\x1b[0m ${name}`);
   }
 }
 

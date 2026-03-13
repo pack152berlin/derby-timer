@@ -148,6 +148,10 @@ DERBY_ADMIN_KEY=secret DERBY_VIEWER_KEY=viewer bun start
 
 # Auto-generated admin key (persisted to .derby_admin_key file)
 DERBY_ADMIN_KEY=auto bun start
+
+# Logout (run in browser console)
+# fetch('/admin/logout', {method:'POST'}).then(() => location.reload())
+# fetch('/viewer/logout', {method:'POST'}).then(() => location.reload())
 ```
 
 ## Race Day Workflow
