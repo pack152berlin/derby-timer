@@ -1,21 +1,44 @@
-import { describe, expect, it } from "bun:test";
-import {
-  computeHmac,
-  parseCookies,
-  getAdminKey,
-  getViewerKey,
-  isPublicMode,
-  isPrivateMode,
-  adminOnly,
-  viewerRequired,
-} from "../src/auth";
+import { describe, expect, it, beforeAll } from "bun:test";
 
-// Auth module caches keys at import time. These tests assume no keys are set.
-// If DERBY_ADMIN_KEY or DERBY_VIEWER_KEY are in the environment (e.g., from another
-// test script), the cached-key and public-mode assertions will fail.
-const keysSet = !!(process.env.DERBY_ADMIN_KEY || process.env.DERBY_VIEWER_KEY);
+// Auth module caches keys at module load. To make these tests self-contained,
+// we clear the env vars and dynamically import the module so it always sees
+// a clean (public mode) environment — regardless of what the calling shell sets.
 
-describe.skipIf(keysSet)("Auth Module", () => {
+let computeHmac: typeof import("../src/auth").computeHmac;
+let parseCookies: typeof import("../src/auth").parseCookies;
+let getAdminKey: typeof import("../src/auth").getAdminKey;
+let getViewerKey: typeof import("../src/auth").getViewerKey;
+let isPublicMode: typeof import("../src/auth").isPublicMode;
+let isPrivateMode: typeof import("../src/auth").isPrivateMode;
+let adminOnly: typeof import("../src/auth").adminOnly;
+let viewerRequired: typeof import("../src/auth").viewerRequired;
+
+beforeAll(async () => {
+  // Snapshot and clear auth env vars so the module initialises in public mode
+  const savedAdmin = process.env.DERBY_ADMIN_KEY;
+  const savedViewer = process.env.DERBY_VIEWER_KEY;
+  delete process.env.DERBY_ADMIN_KEY;
+  delete process.env.DERBY_VIEWER_KEY;
+
+  // Dynamic import with cache-bust so Bun loads a fresh module
+  const mod = await import(`../src/auth?t=${Date.now()}`);
+  computeHmac = mod.computeHmac;
+  parseCookies = mod.parseCookies;
+  getAdminKey = mod.getAdminKey;
+  getViewerKey = mod.getViewerKey;
+  isPublicMode = mod.isPublicMode;
+  isPrivateMode = mod.isPrivateMode;
+  adminOnly = mod.adminOnly;
+  viewerRequired = mod.viewerRequired;
+
+  // Restore env vars so other test files aren't affected
+  if (savedAdmin !== undefined) process.env.DERBY_ADMIN_KEY = savedAdmin;
+  else delete process.env.DERBY_ADMIN_KEY;
+  if (savedViewer !== undefined) process.env.DERBY_VIEWER_KEY = savedViewer;
+  else delete process.env.DERBY_VIEWER_KEY;
+});
+
+describe("Auth Module", () => {
 
   describe("computeHmac", () => {
     it("should produce consistent hex output", async () => {
@@ -74,7 +97,7 @@ describe.skipIf(keysSet)("Auth Module", () => {
     });
   });
 
-  // Keys are cached at module load. Tests run without DERBY_ADMIN_KEY / DERBY_VIEWER_KEY.
+  // Keys are cached at module load — dynamic import above ensured no keys.
   describe("getAdminKey (cached at load)", () => {
     it("should return null when env was not set at import time", () => {
       expect(getAdminKey()).toBeNull();
