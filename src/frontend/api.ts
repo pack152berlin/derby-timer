@@ -188,7 +188,7 @@ export const api = {
 
   async getAuthStatus(): Promise<AuthStatus> {
     const res = await fetch('/admin/status');
-    if (!res.ok) return { admin: false, viewer: false, publicMode: true, privateMode: false };
+    if (!res.ok) return { admin: false, viewer: false, publicMode: false, privateMode: false };
     return res.json();
   },
 

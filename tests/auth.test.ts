@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import {
   computeHmac,
   parseCookies,
@@ -9,14 +9,6 @@ import {
 } from "../src/auth";
 
 describe("Auth Module", () => {
-  const originalEnv = { ...process.env };
-
-  afterEach(() => {
-    // Restore original env
-    delete process.env.DERBY_ADMIN_KEY;
-    delete process.env.DERBY_VIEWER_KEY;
-    Object.assign(process.env, originalEnv);
-  });
 
   describe("computeHmac", () => {
     it("should produce consistent hex output", async () => {
@@ -75,56 +67,28 @@ describe("Auth Module", () => {
     });
   });
 
-  describe("getAdminKey", () => {
-    it("should return null when env not set", () => {
-      delete process.env.DERBY_ADMIN_KEY;
-      expect(getAdminKey()).toBeNull();
-    });
-
-    it("should return env value when set explicitly", () => {
-      process.env.DERBY_ADMIN_KEY = "my-secret";
-      expect(getAdminKey()).toBe("my-secret");
-    });
-
-    it("should return null for empty string", () => {
-      process.env.DERBY_ADMIN_KEY = "";
+  // Keys are cached at module load. Tests run without DERBY_ADMIN_KEY / DERBY_VIEWER_KEY.
+  describe("getAdminKey (cached at load)", () => {
+    it("should return null when env was not set at import time", () => {
       expect(getAdminKey()).toBeNull();
     });
   });
 
-  describe("getViewerKey", () => {
-    it("should return null when env not set", () => {
-      delete process.env.DERBY_VIEWER_KEY;
+  describe("getViewerKey (cached at load)", () => {
+    it("should return null when env was not set at import time", () => {
       expect(getViewerKey()).toBeNull();
     });
-
-    it("should return env value when set", () => {
-      process.env.DERBY_VIEWER_KEY = "viewer-pass";
-      expect(getViewerKey()).toBe("viewer-pass");
-    });
   });
 
-  describe("isPublicMode", () => {
-    it("should return true when no admin key", () => {
-      delete process.env.DERBY_ADMIN_KEY;
+  describe("isPublicMode (cached at load)", () => {
+    it("should return true when no admin key at import time", () => {
       expect(isPublicMode()).toBe(true);
     });
-
-    it("should return false when admin key set", () => {
-      process.env.DERBY_ADMIN_KEY = "secret";
-      expect(isPublicMode()).toBe(false);
-    });
   });
 
-  describe("isPrivateMode", () => {
-    it("should return false when no viewer key", () => {
-      delete process.env.DERBY_VIEWER_KEY;
+  describe("isPrivateMode (cached at load)", () => {
+    it("should return false when no viewer key at import time", () => {
       expect(isPrivateMode()).toBe(false);
-    });
-
-    it("should return true when viewer key set", () => {
-      process.env.DERBY_VIEWER_KEY = "viewer-pass";
-      expect(isPrivateMode()).toBe(true);
     });
   });
 });

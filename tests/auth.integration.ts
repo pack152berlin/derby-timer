@@ -63,6 +63,18 @@ describe("Auth Integration Tests", () => {
       expect(adminCookie).toBeDefined();
     });
 
+    it("GET /admin/login?token=<hmac> → 302 + Set-Cookie", async () => {
+      const hmac = await computeHmac(ADMIN_KEY, "derby_admin_login");
+      const res = await fetch(
+        `${baseUrl}/admin/login?token=${hmac}`,
+        { redirect: "manual" }
+      );
+      expect(res.status).toBe(302);
+      const cookies = extractSetCookies(res);
+      const adminCookie = cookies.find((c) => c.startsWith("derby_admin="));
+      expect(adminCookie).toBeDefined();
+    });
+
     it("GET /admin/login?token=wrong → 401", async () => {
       const res = await fetch(
         `${baseUrl}/admin/login?token=wrong`,
@@ -201,6 +213,19 @@ describe("Auth Integration Tests", () => {
       const adminCookie = cookies.find((c) => c.startsWith("derby_admin="));
       expect(adminCookie).toBeDefined();
       expect(adminCookie).toContain("Max-Age=0");
+    });
+  });
+
+  describe("Viewer Logout", () => {
+    it("POST /viewer/logout clears the viewer cookie", async () => {
+      const res = await fetch(`${baseUrl}/viewer/logout`, {
+        method: "POST",
+      });
+      expect(res.status).toBe(200);
+      const cookies = extractSetCookies(res);
+      const viewerCookie = cookies.find((c) => c.startsWith("derby_viewer="));
+      expect(viewerCookie).toBeDefined();
+      expect(viewerCookie).toContain("Max-Age=0");
     });
   });
 });

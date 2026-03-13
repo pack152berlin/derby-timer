@@ -26,23 +26,31 @@ const resolveAutoKey = (): string => {
   return key;
 };
 
-export const getAdminKey = (): string | null => {
+const resolveAdminKey = (): string | null => {
   const envValue = Bun.env.DERBY_ADMIN_KEY;
   if (!envValue) return null;
   if (envValue === "auto") return resolveAutoKey();
   return envValue;
 };
 
-export const getViewerKey = (): string | null => {
-  return Bun.env.DERBY_VIEWER_KEY || null;
-};
+// Cache at module load — env vars don't change at runtime
+const _adminKey = resolveAdminKey();
+const _viewerKey = Bun.env.DERBY_VIEWER_KEY || null;
+const _publicMode = _adminKey === null;
+const _privateMode = _viewerKey !== null;
 
-export const isPublicMode = (): boolean => {
-  return getAdminKey() === null;
-};
+export const getAdminKey = (): string | null => _adminKey;
+export const getViewerKey = (): string | null => _viewerKey;
+export const isPublicMode = (): boolean => _publicMode;
+export const isPrivateMode = (): boolean => _privateMode;
 
-export const isPrivateMode = (): boolean => {
-  return getViewerKey() !== null;
+// ===== SHARED HTTP HELPER =====
+
+export const respondJson = (payload: unknown, status = 200) => {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 };
 
 // ===== HMAC COOKIE =====
@@ -105,16 +113,14 @@ const setCookie = (
 };
 
 export const setAdminCookie = async (headers: Headers): Promise<void> => {
-  const key = getAdminKey();
-  if (!key) return;
-  const hmac = await computeHmac(key, ADMIN_PURPOSE);
+  if (!_adminKey) return;
+  const hmac = await computeHmac(_adminKey, ADMIN_PURPOSE);
   setCookie(headers, ADMIN_COOKIE, hmac, COOKIE_MAX_AGE);
 };
 
 export const setViewerCookie = async (headers: Headers): Promise<void> => {
-  const key = getViewerKey();
-  if (!key) return;
-  const hmac = await computeHmac(key, VIEWER_PURPOSE);
+  if (!_viewerKey) return;
+  const hmac = await computeHmac(_viewerKey, VIEWER_PURPOSE);
   setCookie(headers, VIEWER_COOKIE, hmac, COOKIE_MAX_AGE);
 };
 
@@ -131,35 +137,35 @@ export const clearViewerCookie = (headers: Headers): void => {
 const validateAdminCookie = async (
   cookies: Record<string, string>
 ): Promise<boolean> => {
-  const key = getAdminKey();
-  if (!key) return false;
-  const expected = await computeHmac(key, ADMIN_PURPOSE);
+  if (!_adminKey) return false;
+  const expected = await computeHmac(_adminKey, ADMIN_PURPOSE);
   return cookies[ADMIN_COOKIE] === expected;
 };
 
 const validateViewerCookie = async (
   cookies: Record<string, string>
 ): Promise<boolean> => {
-  const key = getViewerKey();
-  if (!key) return false;
-  const expected = await computeHmac(key, VIEWER_PURPOSE);
+  if (!_viewerKey) return false;
+  const expected = await computeHmac(_viewerKey, VIEWER_PURPOSE);
   return cookies[VIEWER_COOKIE] === expected;
+};
+
+export const hasViewerAccess = async (req: Request): Promise<boolean> => {
+  if (_publicMode) return true;
+  if (!_privateMode) return true;
+  const cookies = parseCookies(req);
+  if (await validateAdminCookie(cookies)) return true;
+  if (await validateViewerCookie(cookies)) return true;
+  return false;
 };
 
 // ===== MIDDLEWARE WRAPPERS =====
 
 type Handler = (req: any, server: any) => Response | Promise<Response>;
 
-const respondJson = (payload: unknown, status = 200) => {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-};
-
 export const adminOnly = (handler: Handler): Handler => {
   return async (req, server) => {
-    if (isPublicMode()) {
+    if (_publicMode) {
       return handler(req, server);
     }
 
@@ -175,11 +181,11 @@ export const adminOnly = (handler: Handler): Handler => {
 
 export const viewerRequired = (handler: Handler): Handler => {
   return async (req, server) => {
-    if (isPublicMode()) {
+    if (_publicMode) {
       return handler(req, server);
     }
 
-    if (!isPrivateMode()) {
+    if (!_privateMode) {
       return handler(req, server);
     }
 
@@ -210,33 +216,31 @@ export const getAuthStatus = async (
   publicMode: boolean;
   privateMode: boolean;
 }> => {
-  const pub = isPublicMode();
-  const priv = isPrivateMode();
-
-  if (pub) {
+  if (_publicMode) {
     return { admin: true, viewer: true, publicMode: true, privateMode: false };
   }
 
   const cookies = parseCookies(req);
   const admin = await validateAdminCookie(cookies);
-  const viewer = admin || (priv && (await validateViewerCookie(cookies)));
+  const viewer = admin || (_privateMode && (await validateViewerCookie(cookies)));
 
-  return { admin, viewer, publicMode: false, privateMode: priv };
+  return { admin, viewer, publicMode: false, privateMode: _privateMode };
 };
 
 // ===== STARTUP LOGGING =====
 
 export const logAuthConfig = (): void => {
-  const adminKey = getAdminKey();
-  if (!adminKey) {
+  if (!_adminKey) {
     console.log("Auth: PUBLIC MODE (no DERBY_ADMIN_KEY set)");
     return;
   }
 
-  console.log(`Auth: Admin key configured (${adminKey.length} chars)`);
-  console.log(`Auth: Admin key: ${adminKey}`);
+  const masked = _adminKey.length <= 8
+    ? `${"*".repeat(_adminKey.length)}`
+    : `${_adminKey.slice(0, 4)}..${_adminKey.slice(-4)}`;
+  console.log(`Auth: Admin key configured (${_adminKey.length} chars, ${masked})`);
 
-  if (isPrivateMode()) {
+  if (_privateMode) {
     console.log("Auth: PRIVATE MODE (viewer password required for reads)");
   } else {
     console.log("Auth: Standard mode (reads are public, mutations require admin)");
