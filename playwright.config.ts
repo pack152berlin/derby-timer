@@ -18,7 +18,12 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: '**/screenshots.playwright.ts',
+      testIgnore: ['**/screenshots.playwright.ts', '**/auth-ui-gating.playwright.ts'],
+    },
+    {
+      name: 'auth',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/auth-ui-gating.playwright.ts',
     },
     {
       name: 'screenshots',

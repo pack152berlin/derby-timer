@@ -151,6 +151,7 @@ function AppRoutes() {
     isAdmin: authStatus.admin,
     isPublicMode: authStatus.publicMode,
     isPrivateMode: authStatus.privateMode,
+    canEdit: authStatus.admin || authStatus.publicMode,
     setCurrentRacerId: (id: string | null) => {
       if (id) {
         if (!location.pathname.startsWith('/racer/')) {
@@ -243,16 +244,17 @@ function Navigation({
 }: { 
   onGoHome: () => void;
 }) {
-  const { currentEvent } = useApp();
+  const { currentEvent, canEdit } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const navItems = [
-    { id: 'register', label: 'Registration', icon: Users, path: '/register' },
-    { id: 'heats', label: 'Races', icon: Clock, path: '/heats' },
-    { id: 'race', label: 'Race Control', icon: Flag, path: '/race' },
-    { id: 'standings', label: 'Standings', icon: BarChart3, path: '/standings' }
+
+  const allNavItems = [
+    { id: 'register', label: 'Registration', icon: Users, path: '/register', adminOnly: true },
+    { id: 'heats', label: 'Races', icon: Clock, path: '/heats', adminOnly: false },
+    { id: 'race', label: 'Race Control', icon: Flag, path: '/race', adminOnly: true },
+    { id: 'standings', label: 'Standings', icon: BarChart3, path: '/standings', adminOnly: false }
   ];
+  const navItems = allNavItems.filter(item => !item.adminOnly || canEdit);
 
   return (
     <nav className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">

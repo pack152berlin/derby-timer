@@ -6,10 +6,12 @@ export interface AppContextType {
   racers: Racer[];
   heats: Heat[];
   standings: Standing[];
-  // Auth status — plumbed for Phase 2 (frontend UI gating). Do not remove.
+  // Auth status
   isAdmin: boolean;
   isPublicMode: boolean;
   isPrivateMode: boolean;
+  /** True when the current user can perform mutations (admin or public mode). */
+  canEdit: boolean;
   setCurrentRacerId: (id: string | null) => void;
   refreshData: () => Promise<void>;
   refreshDataSilent: () => Promise<void>;

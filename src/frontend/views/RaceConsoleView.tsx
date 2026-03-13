@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Car, Flag, CheckCircle, Trophy, BarChart3, Loader2, Award } from 'lucide-react';
+import { AlertCircle, Car, Flag, CheckCircle, Trophy, BarChart3, Loader2, Award, ShieldAlert } from 'lucide-react';
 import { LilyChevronRight } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import type { HeatResult } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
+import { AdminBanner } from '../components/AdminBanner';
 
 function ordinal(n: number) {
   if (n === 1) return '1st';
@@ -20,7 +21,7 @@ function ordinal(n: number) {
 
 export function RaceConsoleView() {
   const navigate = useNavigate();
-  const { currentEvent, racers, heats, refreshData } = useApp();
+  const { currentEvent, racers, heats, refreshData, canEdit } = useApp();
   const [heatResults, setHeatResults] = useState<Record<string, HeatResult[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [isStartingHeat, setIsStartingHeat] = useState(false);
@@ -30,6 +31,16 @@ export function RaceConsoleView() {
       <div className="text-center py-20">
         <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
         <p className="text-xl text-slate-500 font-semibold">Please select an event first</p>
+      </div>
+    );
+  }
+
+  if (!canEdit) {
+    return (
+      <div className="text-center py-20">
+        <ShieldAlert className="w-16 h-16 mx-auto mb-4 text-amber-300" />
+        <p className="text-xl text-slate-500 font-semibold">Admin access required</p>
+        <p className="text-slate-400 mt-1">Race Control is only available to administrators.</p>
       </div>
     );
   }
@@ -122,7 +133,7 @@ export function RaceConsoleView() {
             <BarChart3 className="w-6 h-6 mr-2" />
             View Final Standings
           </Button>
-          {currentEvent?.status === 'complete' && (
+          {canEdit && currentEvent?.status === 'complete' && (
             <a
               href="/certificates"
               target="_blank"
@@ -341,7 +352,7 @@ export function RaceConsoleView() {
 
       <div className="flex justify-center gap-4">
         {currentHeat.status === 'running' && (
-          <Button 
+          <Button
             data-testid="btn-complete-heat"
             onClick={handleComplete}
             disabled={!canCompleteHeat}

@@ -29,6 +29,7 @@ import { computeLaneStats } from '@/lib/lane-stats';
 import type { LaneStat } from '@/lib/lane-stats';
 import { api } from '../api';
 import { useApp } from '../context';
+import { AdminBanner } from '../components/AdminBanner';
 import type { Heat } from '../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -358,7 +359,7 @@ function CompletedHeatsTable({
 // ─── HeatsView ────────────────────────────────────────────────────────────────
 
 export function HeatsView() {
-  const { currentEvent, racers, heats, refreshData } = useApp();
+  const { currentEvent, racers, heats, refreshData, canEdit } = useApp();
   const [lookahead, setLookahead] = useState<2 | 3>(3);
   // Default to completed tab if all heats are already done when the page loads
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>(
@@ -483,7 +484,7 @@ export function HeatsView() {
           </p>
         </div>
 
-        {heats.length > 0 && (
+        {canEdit && heats.length > 0 && (
           <div className="flex items-center gap-2">
             {currentEvent.status === 'racing' && (
               <Button
@@ -508,7 +509,7 @@ export function HeatsView() {
           </div>
         )}
 
-        {heats.length === 0 && (
+        {canEdit && heats.length === 0 && (
           <div className="flex items-center gap-3">
             <div className="rounded-lg border border-slate-200 bg-white p-1 flex items-center gap-1">
               {[2, 3].map((value) => (
@@ -537,13 +538,19 @@ export function HeatsView() {
         )}
       </div>
 
+      {heats.length > 0 && <AdminBanner />}
+
       {/* ── Empty state ── */}
       {heats.length === 0 && (
         <Card data-testid="empty-heats" className="border-2 border-dashed border-slate-300">
           <div className="text-center py-16">
             <Clock className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg text-slate-500 font-medium mb-2">No heats generated yet</p>
-            <p className="text-slate-400">DerbyTimer will queue only 2-3 heats at a time and keep matching by lane needs and wins.</p>
+            <p className="text-lg text-slate-500 font-medium mb-2">No heats scheduled yet</p>
+            <p className="text-slate-400">
+              {canEdit
+                ? 'DerbyTimer will queue only 2-3 heats at a time and keep matching by lane needs and wins.'
+                : 'Heats will appear here once an admin starts the race.'}
+            </p>
           </div>
         </Card>
       )}

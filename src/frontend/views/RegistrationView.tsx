@@ -12,6 +12,7 @@ import {
   Pencil,
   Plus,
   Search,
+  ShieldAlert,
   Trash2,
   Users,
   X,
@@ -44,6 +45,7 @@ import { cn } from '@/lib/utils';
 import type { Racer } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
+import { AdminBanner } from '../components/AdminBanner';
 import { SearchInput } from '../components/SearchInput';
 import { AppTabs } from '../components/AppTabs';
 
@@ -152,7 +154,7 @@ async function optimizePhotoForUpload(file: File): Promise<File> {
 }
 
 export function RegistrationView() {
-  const { currentEvent, racers, refreshData } = useApp();
+  const { currentEvent, racers, refreshData, canEdit } = useApp();
   const [activeTab, setActiveTab] = useState('registerTab');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'car'>('newest');
@@ -163,6 +165,16 @@ export function RegistrationView() {
       <div className="text-center py-20">
         <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
         <p className="text-xl text-slate-500 font-semibold">Please select an event first</p>
+      </div>
+    );
+  }
+
+  if (!canEdit) {
+    return (
+      <div className="text-center py-20">
+        <ShieldAlert className="w-16 h-16 mx-auto mb-4 text-amber-300" />
+        <p className="text-xl text-slate-500 font-semibold">Admin access required</p>
+        <p className="text-slate-400 mt-1">Registration is only available to administrators.</p>
       </div>
     );
   }

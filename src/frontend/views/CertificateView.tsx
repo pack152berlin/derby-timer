@@ -335,10 +335,27 @@ export function CertificateView() {
   const [racerStats, setRacerStats] = useState<Map<string, RacerStats>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authDenied, setAuthDenied] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
+        // Batch certificate printing requires admin access
+        if (isBatch) {
+          try {
+            const status = await api.getAuthStatus();
+            if (!status.admin && !status.publicMode) {
+              setAuthDenied(true);
+              setLoading(false);
+              return;
+            }
+          } catch {
+            setAuthDenied(true);
+            setLoading(false);
+            return;
+          }
+        }
+
         let targetEventId: string | null = null;
 
         if (singleRacerId) {
@@ -391,6 +408,10 @@ export function CertificateView() {
       }
     })();
   }, [singleRacerId]);
+
+  if (authDenied) {
+    return <FullPageMessage color="text-amber-600">Admin access required to print batch certificates.</FullPageMessage>;
+  }
 
   if (loading) {
     return <FullPageMessage>Loading certificates...</FullPageMessage>;
