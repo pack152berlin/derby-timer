@@ -8,6 +8,7 @@ export interface AppContextType {
   standings: Standing[];
   // Auth status
   isAdmin: boolean;
+  isViewer: boolean;
   isPublicMode: boolean;
   isPrivateMode: boolean;
   /** True when the current user can perform mutations (admin or public mode). */

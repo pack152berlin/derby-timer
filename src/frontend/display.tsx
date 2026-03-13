@@ -77,12 +77,14 @@ function DisplayApp() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needsLogin, setNeedsLogin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const refreshData = async () => {
     try {
-      // On first load, check if private mode requires auth
-      if (loading) {
+      // Check auth once on first load
+      if (!authChecked) {
+        setAuthChecked(true);
         const auth = await api.checkAuth();
         if (auth.privateMode && !auth.authenticated) {
           setNeedsLogin(true);

@@ -3,6 +3,7 @@ node_modules
 
 *.db
 uploads/
+.derby_admin_key
 
 # output
 out

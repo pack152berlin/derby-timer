@@ -22,10 +22,10 @@ import {
   setViewerCookie,
   clearAdminCookie,
   clearViewerCookie,
-  computeHmac,
   isSecureRequest,
-  ADMIN_LOGIN_PURPOSE,
   timingSafeEqual,
+  validateLoginToken,
+  checkLoginRateLimit,
   logAuthConfig,
 } from "./auth";
 import {
@@ -1134,6 +1134,9 @@ const server = Bun.serve({
     // Unified login: password is checked against admin key first, then viewer key
     "/auth/login": {
       POST: async (req) => {
+        if (!checkLoginRateLimit(req)) {
+          return respondJson({ error: "Too many login attempts. Try again later." }, 429);
+        }
         const body = (await req.json()) as { password?: string };
         if (!body.password) return respondJson({ error: "Password required" }, 400);
         const secure = isSecureRequest(req);
@@ -1141,14 +1144,14 @@ const server = Bun.serve({
         const adminKey = getAdminKey();
         if (adminKey && timingSafeEqual(body.password, adminKey)) {
           const headers = new Headers({ "Content-Type": "application/json" });
-          await setAdminCookie(headers, secure);
+          setAdminCookie(headers, secure);
           return new Response(JSON.stringify({ role: "admin" }), { status: 200, headers });
         }
 
         const viewerKey = getViewerKey();
         if (viewerKey && timingSafeEqual(body.password, viewerKey)) {
           const headers = new Headers({ "Content-Type": "application/json" });
-          await setViewerCookie(headers, secure);
+          setViewerCookie(headers, secure);
           return new Response(JSON.stringify({ role: "viewer" }), { status: 200, headers });
         }
 
@@ -1157,29 +1160,17 @@ const server = Bun.serve({
     },
 
     "/admin/login": {
-      POST: async (req) => {
-        const body = (await req.json()) as { password?: string };
-        const adminKey = getAdminKey();
-        if (!adminKey || !body.password || !timingSafeEqual(body.password, adminKey)) {
-          return respondJson({ error: "Invalid password" }, 401);
-        }
-        const headers = new Headers({ "Content-Type": "application/json" });
-        await setAdminCookie(headers, isSecureRequest(req));
-        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-      },
       GET: async (req) => {
+        if (!checkLoginRateLimit(req)) {
+          return respondJson({ error: "Too many login attempts. Try again later." }, 429);
+        }
         const url = new URL(req.url);
         const token = url.searchParams.get("token");
-        const adminKey = getAdminKey();
-        if (!adminKey || !token) {
-          return respondJson({ error: "Invalid token" }, 401);
-        }
-        const hmac = await computeHmac(adminKey, ADMIN_LOGIN_PURPOSE);
-        if (token !== hmac) {
+        if (!token || !validateLoginToken(token)) {
           return respondJson({ error: "Invalid token" }, 401);
         }
         const headers = new Headers({ Location: "/" });
-        await setAdminCookie(headers, isSecureRequest(req));
+        setAdminCookie(headers, isSecureRequest(req));
         return new Response(null, { status: 302, headers });
       },
     },
@@ -1194,13 +1185,16 @@ const server = Bun.serve({
 
     "/viewer/login": {
       POST: async (req) => {
+        if (!checkLoginRateLimit(req)) {
+          return respondJson({ error: "Too many login attempts. Try again later." }, 429);
+        }
         const body = (await req.json()) as { password?: string };
         const viewerKey = getViewerKey();
         if (!viewerKey || !body.password || !timingSafeEqual(body.password, viewerKey)) {
           return respondJson({ error: "Invalid password" }, 401);
         }
         const headers = new Headers({ "Content-Type": "application/json" });
-        await setViewerCookie(headers, isSecureRequest(req));
+        setViewerCookie(headers, isSecureRequest(req));
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       },
     },

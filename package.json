@@ -16,7 +16,7 @@
     "test:all": "bun run test && bun run test:ui && bun run test:ui:auth && bun run test:ui:private",
     "test:unit": "bun test ./tests",
     "test:integration": "bun run test:integration:api && bun run test:integration:auth",
-    "test:integration:api": "DERBY_DB_PATH=test-integration.db PORT=3099 bun src/index.ts & until curl -sf http://localhost:3099/api/events > /dev/null; do sleep 0.2; done && PORT=3099 bun test ./tests/api.integration.ts; EXIT_CODE=$?; kill $!; rm -f test-integration.db; exit $EXIT_CODE",
+    "test:integration:api": "DERBY_DB_PATH=test-integration.db PORT=3099 bun src/index.ts & until curl -sf http://localhost:3099/api/events > /dev/null; do sleep 0.2; done && PORT=3099 bun test $(find ./tests -name '*.integration.ts' ! -name 'auth.integration.ts'); EXIT_CODE=$?; kill $!; rm -f test-integration.db; exit $EXIT_CODE",
     "test:integration:auth": "DERBY_DB_PATH=test-auth.db DERBY_ADMIN_KEY=test-secret DERBY_VIEWER_KEY=test-viewer PORT=3098 bun src/index.ts & until curl -sf http://localhost:3098/admin/status > /dev/null; do sleep 0.2; done && PORT=3098 bun test ./tests/auth.integration.ts; EXIT_CODE=$?; kill $!; rm -f test-auth.db; exit $EXIT_CODE",
     "test:ui": "DERBY_DB_PATH=test-ui.db PORT=3001 bun src/index.ts & until curl -sf http://localhost:3001/api/events > /dev/null; do sleep 0.2; done && bunx playwright test --project=chromium; EXIT_CODE=$?; kill $!; rm -f test-ui.db; exit $EXIT_CODE",
     "test:ui:auth": "DERBY_DB_PATH=test-ui-auth.db DERBY_ADMIN_KEY=test-secret PORT=3002 bun src/index.ts & until curl -sf http://localhost:3002/admin/status > /dev/null; do sleep 0.2; done && bunx playwright test --project=auth; EXIT_CODE=$?; kill $!; rm -f test-ui-auth.db; exit $EXIT_CODE",

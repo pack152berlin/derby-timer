@@ -6,11 +6,10 @@ const ADMIN_PASSWORD = 'test-secret';
 
 /** Login and return the cookie string for admin API calls. */
 async function getAdminCookie(): Promise<string> {
-  const res = await fetch(`${baseUrl}/admin/login`, {
+  const res = await fetch(`${baseUrl}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: ADMIN_PASSWORD }),
-    redirect: 'manual',
   });
   const setCookie = res.headers.get('set-cookie') ?? '';
   return setCookie.split(';')[0]; // "derby_admin=<hmac>"
