@@ -192,6 +192,19 @@ export const api = {
     return res.json();
   },
 
+  async adminLogin(password: string): Promise<boolean> {
+    const res = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return res.ok;
+  },
+
+  async adminLogout(): Promise<void> {
+    await fetch('/admin/logout', { method: 'POST' });
+  },
+
   async getRacerHistory(racerId: string): Promise<RacerHistoryEntry[]> {
     const res = await fetch(`/api/racers/${racerId}/history`);
     if (!res.ok) return [];

@@ -29,7 +29,6 @@ import { computeLaneStats } from '@/lib/lane-stats';
 import type { LaneStat } from '@/lib/lane-stats';
 import { api } from '../api';
 import { useApp } from '../context';
-import { AdminBanner } from '../components/AdminBanner';
 import type { Heat } from '../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -538,7 +537,6 @@ export function HeatsView() {
         )}
       </div>
 
-      {heats.length > 0 && <AdminBanner />}
 
       {/* ── Empty state ── */}
       {heats.length === 0 && (

@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, BookOpen } from 'lucide-react';
+import { Flag, Users, Monitor, ExternalLink, Clock, BarChart3, BookOpen, LogIn, LogOut } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import './styles/styles.css';
 
@@ -140,7 +149,8 @@ function AppRoutes() {
     setLoading(true);
     await fetchData(event.id);
     setLoading(false);
-    navigate(event.status === 'complete' ? '/standings' : '/register');
+    const canEdit = authStatus.admin || authStatus.publicMode;
+    navigate(event.status === 'complete' ? '/standings' : canEdit ? '/register' : '/heats');
   };
 
   const contextValue = {
@@ -171,6 +181,14 @@ function AppRoutes() {
     refreshDataSilent: async () => {
       if (!currentEvent) return;
       await fetchData(currentEvent.id);
+    },
+    refreshAuth: async () => {
+      try {
+        const status = await api.getAuthStatus();
+        setAuthStatus(status);
+      } catch (e) {
+        console.error('Failed to refresh auth status:', e);
+      }
     },
     selectEvent
   };
@@ -239,14 +257,17 @@ function App() {
 
 // ===== NAVIGATION =====
 
-function Navigation({ 
+function Navigation({
   onGoHome
-}: { 
+}: {
   onGoHome: () => void;
 }) {
-  const { currentEvent, canEdit } = useApp();
+  const { currentEvent, canEdit, isAdmin, isPublicMode, refreshAuth } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState(false);
 
   const allNavItems = [
     { id: 'register', label: 'Registration', icon: Users, path: '/register', adminOnly: true },
@@ -256,87 +277,164 @@ function Navigation({
   ];
   const navItems = allNavItems.filter(item => !item.adminOnly || canEdit);
 
-  return (
-    <nav className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-col gap-3 py-3 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0">
-          <div 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={onGoHome}
-          >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-[#003F87] to-[#CE1126] rounded-lg flex items-center justify-center shadow-lg">
-              <Flag className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900 leading-none">
-                Derby<span className="text-[#CE1126]">Timer</span>
-              </span>
-              {currentEvent && (
-                <span className="text-xs text-slate-500 font-medium truncate max-w-[68vw] sm:max-w-[200px]">
-                  {currentEvent.name}
-                </span>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible sm:pb-0">
-            <button
-              onClick={() => navigate('/format')}
-              className={cn(
-                "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
-                location.pathname === '/format'
-                  ? "bg-[#003F87] text-white shadow-md"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              )}
-            >
-              <BookOpen size={18} />
-              <span>Race Format</span>
-            </button>
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(false);
+    const ok = await api.adminLogin(loginPassword);
+    if (ok) {
+      setShowLogin(false);
+      setLoginPassword('');
+      await refreshAuth();
+    } else {
+      setLoginError(true);
+    }
+  };
 
-            {!currentEvent ? (
-              <Badge variant="outline" className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center">
-                Select an event to begin
-              </Badge>
-            ) : (
-              <>
-                {navItems.map(item => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <button
-                      key={item.id}
-                      data-testid={`nav-${item.id}`}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200",
-                        isActive
-                          ? "bg-[#003F87] text-white shadow-md"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      )}
-                    >
-                      <Icon size={18} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-                
-                <a
-                  href="/display"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border-l border-slate-300 ml-2"
-                  title="Open Display View for Projector"
+  const handleLogout = async () => {
+    await api.adminLogout();
+    await refreshAuth();
+    navigate('/');
+  };
+
+  // Show login/logout when auth is configured (not public mode)
+  const showAuthButton = !isPublicMode;
+
+  return (
+    <>
+      <nav className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col gap-3 py-3 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0">
+            <div
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={onGoHome}
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-[#003F87] to-[#CE1126] rounded-lg flex items-center justify-center shadow-lg">
+                <Flag className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900 leading-none">
+                  Derby<span className="text-[#CE1126]">Timer</span>
+                </span>
+                {currentEvent && (
+                  <span className="text-xs text-slate-500 font-medium truncate max-w-[68vw] sm:max-w-[200px]">
+                    {currentEvent.name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <div className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible sm:pb-0">
+                <button
+                  onClick={() => navigate('/format')}
+                  className={cn(
+                    "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer",
+                    location.pathname === '/format'
+                      ? "bg-[#003F87] text-white shadow-md"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  )}
                 >
-                  <Monitor size={18} />
-                  <span>Display</span>
-                  <ExternalLink size={14} className="text-slate-400" />
-                </a>
-              </>
-            )}
+                  <BookOpen size={18} />
+                  <span>Race Format</span>
+                </button>
+
+                {!currentEvent ? (
+                  <Badge variant="outline" className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center">
+                    Select an event to begin
+                  </Badge>
+                ) : (
+                  <>
+                    {navItems.map(item => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <button
+                          key={item.id}
+                          data-testid={`nav-${item.id}`}
+                          onClick={() => navigate(item.path)}
+                          className={cn(
+                            "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer",
+                            isActive
+                              ? "bg-[#003F87] text-white shadow-md"
+                              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                          )}
+                        >
+                          <Icon size={18} />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    <a
+                      href="/display"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border-l border-slate-300 ml-2"
+                      title="Open Display View for Projector"
+                    >
+                      <Monitor size={18} />
+                      <span>Display</span>
+                      <ExternalLink size={14} className="text-slate-400" />
+                    </a>
+                  </>
+                )}
+              </div>
+
+              {showAuthButton && (
+                isAdmin ? (
+                  <button
+                    onClick={handleLogout}
+                    className="h-11 shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100 border-l border-slate-300 ml-1"
+                  >
+                    <LogOut size={18} />
+                    <span>Logout</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowLogin(true)}
+                    className="h-11 shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer text-amber-700 hover:text-amber-900 hover:bg-amber-50 border-l border-slate-300 ml-1"
+                  >
+                    <LogIn size={18} />
+                    <span>Admin Login</span>
+                  </button>
+                )
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <Dialog open={showLogin} onOpenChange={(open) => { if (!open) { setShowLogin(false); setLoginError(false); setLoginPassword(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Admin Login</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleLogin} className="grid gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-slate-600">Password</label>
+              <Input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => { setLoginPassword(e.target.value); setLoginError(false); }}
+                placeholder="Enter admin password"
+                autoFocus
+              />
+              {loginError && (
+                <p className="text-sm text-red-600 mt-1">Invalid password</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowLogin(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-[#003F87] hover:bg-[#002f66] text-white">
+                Login
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
