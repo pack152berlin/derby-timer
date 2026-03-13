@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { cn, CURRENT_EVENT_KEY } from '@/lib/utils';
 import { DEN_IMAGES, DEN_SINGULAR, DEN_ACCENT, DENS_WITH_LIGHT_ACCENT } from '../lib/den-utils';
-import { classifyRacer, buildCertificateStats, computeRacerStats } from '../lib/certificate-stats';
+import { classifyRacer, buildCertificateStats, computeRacerStats, bestLane } from '../lib/certificate-stats';
 import type { CertTier, RacerStats } from '../lib/certificate-stats';
-import type { Event, Racer, Standing } from '../types';
+import type { Event, Racer, Standing, RacerHistoryEntry } from '../types';
 import { api } from '../api';
 
 function OrdSuffix({ children }: { children: React.ReactNode }) {
@@ -315,6 +315,337 @@ function StatItem({ label, value, highlight }: { label: string; value: string; h
   );
 }
 
+// --- Results helpers ---
+
+type PrintMode = 'cert' | 'cert-results' | 'combined';
+
+function fmtTime(ms: number | null): string {
+  if (ms == null) return '\u2014';
+  return (ms / 1000).toFixed(3) + 's';
+}
+
+function placeDisplay(place: number | null, dnf: boolean): { node: React.ReactNode; cls: string } {
+  if (dnf) return { node: 'DNF', cls: 'bg-red-50 text-red-400 font-semibold' };
+  if (place === 1) return { node: <>{'\uD83E\uDD47'} 1st</>, cls: 'bg-amber-50/80 text-amber-800 font-bold' };
+  if (place === 2) return { node: <>{'\uD83E\uDD48'} 2nd</>, cls: 'bg-slate-100/80 text-slate-600 font-semibold' };
+  if (place === 3) return { node: <>{'\uD83E\uDD49'} 3rd</>, cls: 'bg-orange-50/80 text-orange-700 font-semibold' };
+  if (place != null) {
+    return { node: <>{ordinal(place)}</>, cls: 'text-stone-500' };
+  }
+  return { node: '\u2014', cls: 'text-stone-400' };
+}
+
+// --- Results table (shared between ResultsCard and CombinedCertificate) ---
+
+function ResultsTable({ history, stats, colors }: {
+  history: RacerHistoryEntry[];
+  stats: RacerStats | undefined;
+  colors: { border: string };
+}) {
+  const count = history.length;
+  const hasTimes = history.some(h => h.time_ms != null && h.time_ms > 0);
+
+  // Scale fonts: large when few heats, shrink as list grows, current sizes are the floor
+  const cellFs = count <= 6 ? 21 : count <= 10 ? 19 : count <= 14 ? 17 : 15;
+  const placeFs = count <= 6 ? 20 : count <= 10 ? 18 : count <= 14 ? 16 : 14;
+  const timeFs = count <= 6 ? 20 : count <= 10 ? 18 : count <= 14 ? 16 : 14;
+  const cellPy = count <= 6 ? 7 : count <= 10 ? 5 : count <= 14 ? 3 : 1;
+
+  return (
+    <>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr style={{ borderBottom: `2px solid ${colors.border}40` }}>
+            <th className="text-left text-xs uppercase tracking-wider text-stone-500 font-body font-semibold pb-1.5 w-12">Rnd</th>
+            <th className="text-left text-xs uppercase tracking-wider text-stone-500 font-body font-semibold pb-1.5 w-12">Heat</th>
+            <th className="text-center text-xs uppercase tracking-wider text-stone-500 font-body font-semibold pb-1.5 w-12">Lane</th>
+            <th className="text-center text-xs uppercase tracking-wider text-stone-500 font-body font-semibold pb-1.5 w-24">Place</th>
+            {hasTimes && (
+              <th className="text-right text-xs uppercase tracking-wider text-stone-500 font-body font-semibold pb-1.5">Time</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {history.map((h, i) => {
+            const pl = placeDisplay(h.place, h.dnf);
+            return (
+              <tr
+                key={h.id}
+                className={i % 2 === 0 ? 'bg-stone-50/50' : ''}
+                style={{ borderBottom: '1px solid #e7e5e440' }}
+              >
+                <td className="font-body font-semibold text-stone-600" style={{ fontSize: cellFs, paddingTop: cellPy, paddingBottom: cellPy }}>{h.round}</td>
+                <td className="font-body text-stone-500" style={{ fontSize: cellFs, paddingTop: cellPy, paddingBottom: cellPy }}>{h.heat_number}</td>
+                <td className="text-center font-body text-stone-500" style={{ fontSize: cellFs, paddingTop: cellPy, paddingBottom: cellPy }}>{h.lane_number}</td>
+                <td className="text-center">
+                  <span className={cn("inline-block rounded px-2 py-0.5 font-body", pl.cls)} style={{ fontSize: placeFs }}>{pl.node}</span>
+                </td>
+                {hasTimes && (
+                  <td className="text-right font-cert-numbers text-stone-600" style={{ fontSize: timeFs, paddingTop: cellPy, paddingBottom: cellPy }}>
+                    {fmtTime(h.time_ms)}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {stats && (
+        <div
+          className="mt-auto pt-2 flex gap-5 border-t font-body"
+          style={{ borderColor: `${colors.border}30` }}
+        >
+          {stats.best_time_ms != null && (
+            <div>
+              <span className="text-xs uppercase tracking-wider text-stone-400 font-semibold">Best </span>
+              <span className="font-bold text-stone-700 font-cert-numbers text-sm">{fmtTime(stats.best_time_ms)}</span>
+            </div>
+          )}
+          {stats.avg_time_ms != null && (
+            <div>
+              <span className="text-xs uppercase tracking-wider text-stone-400 font-semibold">Avg </span>
+              <span className="font-bold text-stone-700 font-cert-numbers text-sm">{fmtTime(stats.avg_time_ms)}</span>
+            </div>
+          )}
+          <div className="ml-auto text-sm text-stone-600 font-semibold self-end">
+            {stats.heats_raced} heat{stats.heats_raced !== 1 ? 's' : ''} raced
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// --- Results Card (full page, back of certificate) ---
+
+interface CertResultsBaseProps {
+  racer: Racer;
+  history: RacerHistoryEntry[];
+  stats: RacerStats | undefined;
+  tier: CertTier;
+  event: Event;
+  totalRacers: number;
+}
+
+interface ResultsCardProps extends CertResultsBaseProps {
+  standings: Standing[];
+}
+
+function ResultsCard({ racer, history, stats, tier, event, totalRacers, standings }: ResultsCardProps) {
+  const colors = getTierColors(tier);
+  const denImage = racer.den ? DEN_IMAGES[racer.den] : null;
+  const racerBestLane = bestLane(history);
+  const overallPlace = standings.findIndex(s => s.racer_id === racer.id) + 1;
+
+  return (
+    <div data-testid="results-card" className="certificate-page break-after-page py-6 px-4 print:py-0 print:px-0">
+      <div className="cert-scale-wrapper mx-auto">
+        <div className="cert-card rounded print:rounded-none bg-[#fffdf7] relative overflow-hidden w-full h-full">
+          <div className="absolute inset-2 rounded-sm pointer-events-none" style={{ border: `2px solid ${colors.border}55` }} />
+          <RopeKnotBorder color={colors.border} />
+
+          <div className="cert-inner pt-6 px-10 pb-5 relative flex h-full gap-8" style={{ boxSizing: 'border-box' }}>
+            {/* LEFT: Racer identity — full height, content spread, footer pinned */}
+            <div className="w-[32%] flex flex-col items-center border-r pr-6 text-center self-stretch" style={{ borderColor: `${colors.border}30` }}>
+              <div className="flex-1 flex flex-col items-center justify-around">
+                {denImage && (
+                  <img src={denImage} alt={racer.den ?? ''} className="w-24 h-24 object-contain opacity-80" />
+                )}
+
+                <div>
+                  <h2 className="text-3xl font-cert-heading text-yellow-950 leading-tight tracking-wide">
+                    {racer.name}
+                  </h2>
+                  <p className="text-sm text-stone-500 font-body mt-1">
+                    {racer.den && <>{racer.den} &middot; </>}Car #{racer.car_number}
+                  </p>
+                </div>
+
+                {stats && (() => {
+                  const items: { label: string; value: string; highlight?: boolean }[] = [];
+                  if (stats.wins > 0) items.push({ label: 'Wins', value: String(stats.wins), highlight: true });
+                  if (stats.second_place_count > 0) items.push({ label: '2nd Place', value: String(stats.second_place_count) });
+                  if (stats.third_place_count > 0) items.push({ label: '3rd Place', value: String(stats.third_place_count) });
+                  if (stats.best_time_ms != null) items.push({ label: 'Best Time', value: fmtTime(stats.best_time_ms) });
+                  if (stats.avg_time_ms != null) items.push({ label: 'Avg Time', value: fmtTime(stats.avg_time_ms) });
+                  if (racerBestLane != null) items.push({ label: 'Best Lane', value: String(racerBestLane) });
+                  return (
+                    <div className="flex flex-col items-center gap-2.5">
+                      {items.map(s => <StatItem key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="mt-auto pt-3 self-start text-left">
+                <div className="text-sm text-stone-700">{event.name}</div>
+                <div className="text-xs text-stone-500">
+                  {new Date(event.date + 'T12:00:00').toLocaleDateString(undefined, {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT: Results table */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-baseline justify-between mb-3">
+                <h3
+                  className="text-xl font-bold uppercase tracking-[0.2em] font-body m-0"
+                  style={{ color: colors.border }}
+                >
+                  Race Results
+                </h3>
+                {overallPlace > 0 && (
+                  <div className="text-base font-bold font-body" style={{ color: colors.border }}>
+                    {ordinal(overallPlace)} <span className="text-sm font-normal text-stone-400">of {totalRacers}</span>
+                  </div>
+                )}
+              </div>
+
+              {history.length > 0 ? (
+                <ResultsTable history={history} stats={stats} colors={colors} />
+              ) : (
+                <p className="text-stone-400 italic font-body text-sm">No race results recorded</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Combined Certificate (single page: cert + results) ---
+
+function CombinedCertificate({ racer, history, stats, tier, event, totalRacers }: CertResultsBaseProps) {
+  const colors = getTierColors(tier);
+  const denImage = racer.den ? DEN_IMAGES[racer.den] : null;
+  const isPodium = tier.type === 'podium';
+  const headline = tierHeadline(tier);
+  const subtitle = tierSubtitle(tier, totalRacers);
+  const racerBestLane = bestLane(history);
+  const medal = isPodium
+    ? tier.place === 1 ? '\uD83E\uDD47' : tier.place === 2 ? '\uD83E\uDD48' : '\uD83E\uDD49'
+    : null;
+
+  return (
+    <div data-testid="combined-certificate" className="certificate-page break-after-page py-6 px-4 print:py-0 print:px-0">
+      <div className="cert-scale-wrapper mx-auto">
+        <div className="cert-card rounded print:rounded-none bg-[#fffdf7] relative overflow-hidden font-serif w-full h-full">
+          <div className="absolute inset-2 rounded-sm pointer-events-none" style={{ border: `2px solid ${colors.border}55` }} />
+          <RopeKnotBorder color={colors.border} />
+
+          <div className="cert-inner pt-5 px-12 pb-4 relative flex flex-col h-full" style={{ boxSizing: 'border-box' }}>
+
+            {/* TOP: Certificate title bar */}
+            <div className="text-center mb-3">
+              <div className="flex justify-center items-center gap-4 mb-2">
+                <FleurDeLis color={colors.border} size={34} />
+                <div>
+                  <h1 className="text-[26px] font-bold uppercase tracking-wider m-0" style={{ color: colors.border }}>
+                    Certificate of Achievement
+                  </h1>
+                  <h2 className="text-[10px] font-semibold uppercase tracking-[0.35em] text-stone-500 m-0">
+                    Cub Scouts of America
+                  </h2>
+                </div>
+                <FleurDeLis color={colors.border} size={34} />
+              </div>
+              <div className="w-36 h-px mx-auto" style={{ background: `linear-gradient(90deg, transparent, ${colors.border}88, transparent)` }} />
+            </div>
+
+            {/* MAIN: Left (name + den + stats) | Right (results table) */}
+            <div className="flex gap-6 flex-1">
+              {/* Left: Name, headline, den, stats */}
+              <div className="w-[38%] flex flex-col items-center justify-around text-center border-r pr-6" style={{ borderColor: `${colors.border}30` }}>
+                <div className="text-center">
+                  <p className="text-xs text-stone-400 italic mb-0.5">This certificate is proudly presented to</p>
+                  <h2 className="text-4xl text-yellow-950 leading-tight tracking-wide font-cert-heading m-0 whitespace-nowrap">
+                    {racer.name}
+                  </h2>
+                </div>
+
+                <div className="text-center">
+                  {medal && <span className="text-3xl mr-1.5">{medal}</span>}
+                  <span className={cn("font-cert-heading text-yellow-950 tracking-wide", isPodium ? "text-[36px]" : "text-[30px]")}>
+                    {headline}
+                  </span>
+                  {medal && <span className="text-2xl ml-1.5">{medal}</span>}
+                  {subtitle && (
+                    <div className="text-sm font-semibold tracking-wide opacity-70 font-body mt-0.5">{subtitle}</div>
+                  )}
+                </div>
+
+                {denImage && (
+                  <img src={denImage} alt={racer.den ?? ''} className="w-20 h-20 object-contain opacity-80" />
+                )}
+
+                {stats && (() => {
+                  const items: { label: string; value: string; highlight?: boolean }[] = [];
+                  if (stats.wins > 0) items.push({ label: 'Wins', value: String(stats.wins), highlight: true });
+                  if (stats.best_time_ms != null) items.push({ label: 'Best', value: fmtTime(stats.best_time_ms) });
+                  if (stats.avg_time_ms != null) items.push({ label: 'Avg', value: fmtTime(stats.avg_time_ms) });
+                  if (racerBestLane != null) items.push({ label: 'Best Lane', value: String(racerBestLane) });
+                  items.push({ label: 'Car #', value: racer.car_number });
+                  return (
+                    <div className={cn("grid gap-x-6 gap-y-0.5", items.length > 3 ? "grid-cols-2" : "grid-cols-1")}>
+                      {items.map((s, i) => (
+                        <div key={s.label} className={cn("text-center", items.length > 3 && items.length % 2 === 1 && i === items.length - 1 && "col-span-2")}>
+                          <div className={cn("text-xl font-extrabold font-cert-numbers leading-tight", s.highlight ? "text-stone-900" : "text-stone-700")}>
+                            {formatStatValue(s.value)}
+                          </div>
+                          <div className="text-[10px] uppercase tracking-widest text-stone-400 font-bold font-body leading-tight">
+                            {formatOrdinalText(s.label)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Right: Results table */}
+              <div className="flex-1 flex flex-col">
+                <h3
+                  className="text-sm font-bold uppercase tracking-[0.15em] mb-2 font-body"
+                  style={{ color: colors.border }}
+                >
+                  Race Results
+                </h3>
+
+                {history.length > 0 ? (
+                  <ResultsTable history={history} stats={stats} colors={colors} />
+                ) : (
+                  <p className="text-stone-400 italic font-body text-sm">No race results recorded</p>
+                )}
+              </div>
+            </div>
+
+            {/* BOTTOM: Event + Signature */}
+            <div className="flex justify-between items-end mt-auto pt-2">
+              <div>
+                <div className="text-sm text-stone-700">{event.name}</div>
+                <div className="text-xs text-stone-500">
+                  {new Date(event.date + 'T12:00:00').toLocaleDateString(undefined, {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                  })}
+                </div>
+              </div>
+              <div className="text-center min-w-[180px]">
+                <div className="border-b border-stone-500 h-6 mb-0.5" />
+                <p className="text-xs text-stone-500 uppercase tracking-widest font-semibold m-0">Cubmaster</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- View ---
 
 function FullPageMessage({ children, color = 'text-stone-500' }: { children: React.ReactNode; color?: string }) {
@@ -333,6 +664,8 @@ export function CertificateView() {
   const [racers, setRacers] = useState<Racer[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [racerStats, setRacerStats] = useState<Map<string, RacerStats>>(new Map());
+  const [racerHistories, setRacerHistories] = useState<Map<string, RacerHistoryEntry[]>>(new Map());
+  const [printMode, setPrintMode] = useState<PrintMode>('cert');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authDenied, setAuthDenied] = useState(false);
@@ -377,16 +710,21 @@ export function CertificateView() {
         }
 
         if (!targetEventId) {
-          const events = await api.getEvents();
-          const activeEvent =
-            events.find(e => e.status === 'complete') ||
-            events[events.length - 1];
-          if (!activeEvent) {
-            setError('No event found');
-            setLoading(false);
-            return;
+          const savedId = localStorage.getItem(CURRENT_EVENT_KEY);
+          if (savedId) {
+            targetEventId = savedId;
+          } else {
+            const events = await api.getEvents();
+            const activeEvent =
+              events.find(e => e.status === 'complete') ||
+              events[events.length - 1];
+            if (!activeEvent) {
+              setError('No event found');
+              setLoading(false);
+              return;
+            }
+            targetEventId = activeEvent.id;
           }
-          targetEventId = activeEvent.id;
         }
 
         const [eventData, racerData, standingData] = await Promise.all([
@@ -407,8 +745,13 @@ export function CertificateView() {
 
         const histories = await Promise.all(racerData.map(r => api.getRacerHistory(r.id)));
         const statsMap = new Map<string, RacerStats>();
-        racerData.forEach((r, i) => statsMap.set(r.id, computeRacerStats(histories[i]!)));
+        const historyMap = new Map<string, RacerHistoryEntry[]>();
+        racerData.forEach((r, i) => {
+          statsMap.set(r.id, computeRacerStats(histories[i]!));
+          historyMap.set(r.id, histories[i]!);
+        });
         setRacerStats(statsMap);
+        setRacerHistories(historyMap);
       } catch {
         setError('Failed to load data');
       } finally {
@@ -456,33 +799,87 @@ export function CertificateView() {
     return <FullPageMessage>No racer found</FullPageMessage>;
   }
 
+  const pageCount = printMode === 'cert-results' ? targetRacers.length * 2 : targetRacers.length;
+
   return (
     <div className="bg-stone-200 min-h-screen p-4 print:bg-white print:p-0">
       <div className="no-print text-center mb-4">
+        {/* Print mode selector */}
+        <div className="flex items-center justify-center gap-1 bg-stone-100 rounded-lg p-1 mb-3 max-w-md mx-auto">
+          {([
+            ['cert', 'Certificate'],
+            ['cert-results', 'Cert + Results'],
+            ['combined', 'Combined'],
+          ] as const).map(([mode, label]) => (
+            <button
+              key={mode}
+              onClick={() => setPrintMode(mode)}
+              className={cn(
+                "flex-1 px-3 py-1.5 text-sm font-body font-semibold rounded-md transition-colors cursor-pointer",
+                printMode === mode
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-stone-500 hover:text-stone-700"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <button
           data-testid="btn-print"
           onClick={() => window.print()}
           className="bg-primary text-white py-3 px-8 text-base font-bold rounded-md cursor-pointer font-body"
         >
-          Print Certificates
+          Print {printMode === 'cert' ? 'Certificates' : printMode === 'cert-results' ? 'Certificates + Results' : 'Combined'}
         </button>
         <p className="text-stone-500 mt-1.5 text-sm font-body">
-          {targetRacers.length} certificate{targetRacers.length !== 1 ? 's' : ''} ready
+          {pageCount} page{pageCount !== 1 ? 's' : ''}
+          {printMode === 'cert-results' && ` (${targetRacers.length} racer${targetRacers.length !== 1 ? 's' : ''} \u00d7 2)`}
+          {' ready'}
         </p>
       </div>
 
       {targetRacers.map(racer => {
         const stats = racerStats.get(racer.id);
+        const history = racerHistories.get(racer.id) ?? [];
         const tier = classifyRacer(standings, racers, racer.id);
+
+        if (printMode === 'combined') {
+          return (
+            <CombinedCertificate
+              key={racer.id}
+              racer={racer}
+              history={history}
+              stats={stats}
+              tier={tier}
+              event={event}
+              totalRacers={standings.length}
+            />
+          );
+        }
+
         return (
-          <Certificate
-            key={racer.id}
-            racer={racer}
-            stats={stats}
-            tier={tier}
-            event={event}
-            totalRacers={standings.length}
-          />
+          <React.Fragment key={racer.id}>
+            <Certificate
+              racer={racer}
+              stats={stats}
+              tier={tier}
+              event={event}
+              totalRacers={standings.length}
+            />
+            {printMode === 'cert-results' && (
+              <ResultsCard
+                racer={racer}
+                history={history}
+                stats={stats}
+                tier={tier}
+                event={event}
+                totalRacers={standings.length}
+                standings={standings}
+              />
+            )}
+          </React.Fragment>
         );
       })}
 

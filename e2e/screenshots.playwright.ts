@@ -496,3 +496,95 @@ test('14-certificate', async ({ page }) => {
 
   saveIfChanged('screenshots/14-certificate.png', await page.screenshot());
 });
+
+/** Seed an event, generate heats with extra rounds, complete them all in a loop
+ *  (the planner queues heats progressively), and end the race.
+ *  Returns the event and racers array. Each racer will have ~rounds history entries. */
+async function seedCompletedRace(name: string, rounds: number, customRacers?: typeof racers) {
+  const event = await seedEvent({ name, ...(customRacers ? { racers: customRacers } : {}) });
+
+  // Re-generate heats with more rounds
+  await fetch(`${baseUrl}/api/events/${event.id}/heats`, { method: 'DELETE' });
+  await fetch(`${baseUrl}/api/events/${event.id}/generate-heats`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rounds }),
+  });
+
+  // Complete heats in a loop — planner generates new heats as earlier ones finish
+  let completed = 0;
+  for (let pass = 0; pass < 20; pass++) {
+    const heatsRes = await fetch(`${baseUrl}/api/events/${event.id}/heats`);
+    const heats = await heatsRes.json();
+    const pending = heats.filter((h: any) => h.status === 'pending');
+    if (pending.length === 0) break;
+
+    for (const heat of pending) {
+      const h = completed;
+      await fetch(`${baseUrl}/api/heats/${heat.id}/start`, { method: 'POST' });
+      const results = heat.lanes.map((lane: any, idx: number) => ({
+        lane_number: lane.lane_number,
+        racer_id: lane.racer_id,
+        place: ((idx + h) % 4) + 1,
+        time_ms: 3200 + Math.round(Math.sin(h * 1.7 + idx * 2.3) * 400 + idx * 80),
+      }));
+      await fetch(`${baseUrl}/api/heats/${heat.id}/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results }),
+      });
+      await fetch(`${baseUrl}/api/heats/${heat.id}/complete`, { method: 'POST' });
+      completed++;
+    }
+  }
+
+  await fetch(`${baseUrl}/api/events/${event.id}/end-race`, { method: 'POST' });
+
+  const racersRes = await fetch(`${baseUrl}/api/events/${event.id}/racers`);
+  const eventRacers = await racersRes.json();
+  return { event, racers: eventRacers };
+}
+
+// 6 racers on 4 lanes → ~2 heats per round (manageable table)
+const sixRacers = [
+  { name: 'Dean Kim',         den: 'Wolves',  hasPhoto: true },
+  { name: 'Klara Kny-Flores', den: 'Webelos', hasPhoto: true },
+  { name: 'Flora Kny-Flores', den: 'Tigers',  hasPhoto: true },
+  { name: 'Liam Chen',        den: 'Bears',   hasPhoto: true },
+  { name: 'Nate McShreedy',   den: 'Wolves',  hasPhoto: false },
+  { name: 'Olivia Park',      den: 'Webelos', hasPhoto: false },
+];
+
+test('15-certificate-results-card', async ({ page }) => {
+  test.setTimeout(15000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const { event, racers: eventRacers } = await seedCompletedRace('Results Card Demo', 1, sixRacers);
+
+  await page.goto(`${baseUrl}/certificate/${eventRacers[0].id}`);
+  await page.waitForSelector('[data-testid="certificate"]');
+  await page.click('text=Cert + Results');
+  await page.waitForSelector('[data-testid="results-card"]');
+  await page.waitForTimeout(500);
+
+  // Scroll to show the results card
+  await page.evaluate(() => {
+    document.querySelector('[data-testid="results-card"]')?.scrollIntoView();
+  });
+  await page.waitForTimeout(300);
+
+  saveIfChanged('screenshots/15-certificate-results-card.png', await page.screenshot());
+});
+
+test('16-certificate-combined', async ({ page }) => {
+  test.setTimeout(15000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const { event, racers: eventRacers } = await seedCompletedRace('Combined Cert Demo', 1, sixRacers);
+
+  await page.goto(`${baseUrl}/certificate/${eventRacers[0].id}`);
+  await page.waitForSelector('[data-testid="certificate"]');
+  await page.click('text=Combined');
+  await page.waitForSelector('[data-testid="combined-certificate"]');
+  await page.waitForTimeout(500);
+
+  saveIfChanged('screenshots/16-certificate-combined.png', await page.screenshot());
+});
