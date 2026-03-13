@@ -336,24 +336,29 @@ export function CertificateView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authDenied, setAuthDenied] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        // Batch certificate printing requires admin access
-        if (isBatch) {
-          try {
-            const status = await api.getAuthStatus();
-            if (!status.admin && !status.publicMode) {
-              setAuthDenied(true);
-              setLoading(false);
-              return;
-            }
-          } catch {
+        // Check auth status — in private mode, viewer cookie is required
+        try {
+          const status = await api.getAuthStatus();
+          if (status.privateMode && !status.admin && !status.viewer) {
+            setNeedsLogin(true);
+            setLoading(false);
+            return;
+          }
+          // Batch certificate printing requires admin access
+          if (isBatch && !status.admin && !status.publicMode) {
             setAuthDenied(true);
             setLoading(false);
             return;
           }
+        } catch {
+          setAuthDenied(true);
+          setLoading(false);
+          return;
         }
 
         let targetEventId: string | null = null;
@@ -408,6 +413,10 @@ export function CertificateView() {
       }
     })();
   }, [singleRacerId]);
+
+  if (needsLogin) {
+    return <FullPageMessage color="text-slate-500">Authentication required. Please log in from the main page first.</FullPageMessage>;
+  }
 
   if (authDenied) {
     return <FullPageMessage color="text-amber-600">Admin access required to print batch certificates.</FullPageMessage>;

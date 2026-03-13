@@ -1,6 +1,6 @@
 # Cloud Deployment Plan
 
-Deploy DerbyTimer to the public internet so the race could be run from the cloaud and parents can view standings and certificates after the event — not just on the local network at the venue.
+Deploy DerbyTimer to the public internet so the race could be run from the cloud and parents can view standings and certificates after the event — not just on the local network at the venue.
 
 ## Goal
 

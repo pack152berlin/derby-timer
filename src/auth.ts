@@ -22,7 +22,7 @@ const resolveAutoKey = (): string => {
   if (dir !== "." && !existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  writeFileSync(keyPath, key, "utf-8");
+  writeFileSync(keyPath, key, { encoding: "utf-8", mode: 0o600 });
   return key;
 };
 
@@ -112,28 +112,34 @@ export const ADMIN_PURPOSE = "derby_admin_session";
 export const VIEWER_PURPOSE = "derby_viewer_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
+export const isSecureRequest = (req: Request): boolean => {
+  if (new URL(req.url).protocol === "https:") return true;
+  const proto = req.headers.get("x-forwarded-proto");
+  return proto === "https";
+};
+
 const setCookie = (
   headers: Headers,
   name: string,
   value: string,
-  maxAge: number
+  maxAge: number,
+  secure: boolean = false
 ) => {
-  headers.append(
-    "Set-Cookie",
-    `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}`
-  );
+  let cookie = `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+  if (secure) cookie += "; Secure";
+  headers.append("Set-Cookie", cookie);
 };
 
-export const setAdminCookie = async (headers: Headers): Promise<void> => {
+export const setAdminCookie = async (headers: Headers, secure: boolean = false): Promise<void> => {
   if (!_adminKey) return;
   const hmac = await computeHmac(_adminKey, ADMIN_PURPOSE);
-  setCookie(headers, ADMIN_COOKIE, hmac, COOKIE_MAX_AGE);
+  setCookie(headers, ADMIN_COOKIE, hmac, COOKIE_MAX_AGE, secure);
 };
 
-export const setViewerCookie = async (headers: Headers): Promise<void> => {
+export const setViewerCookie = async (headers: Headers, secure: boolean = false): Promise<void> => {
   if (!_viewerKey) return;
   const hmac = await computeHmac(_viewerKey, VIEWER_PURPOSE);
-  setCookie(headers, VIEWER_COOKIE, hmac, COOKIE_MAX_AGE);
+  setCookie(headers, VIEWER_COOKIE, hmac, COOKIE_MAX_AGE, secure);
 };
 
 export const clearAdminCookie = (headers: Headers): void => {
@@ -150,16 +156,20 @@ const validateAdminCookie = async (
   cookies: Record<string, string>
 ): Promise<boolean> => {
   if (!_adminKey) return false;
+  const cookie = cookies[ADMIN_COOKIE];
+  if (!cookie) return false;
   const expected = await computeHmac(_adminKey, ADMIN_PURPOSE);
-  return cookies[ADMIN_COOKIE] === expected;
+  return timingSafeEqual(cookie, expected);
 };
 
 const validateViewerCookie = async (
   cookies: Record<string, string>
 ): Promise<boolean> => {
   if (!_viewerKey) return false;
+  const cookie = cookies[VIEWER_COOKIE];
+  if (!cookie) return false;
   const expected = await computeHmac(_viewerKey, VIEWER_PURPOSE);
-  return cookies[VIEWER_COOKIE] === expected;
+  return timingSafeEqual(cookie, expected);
 };
 
 export const hasViewerAccess = async (req: Request): Promise<boolean> => {

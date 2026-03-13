@@ -19,7 +19,7 @@ A shared secret approach — significantly easier for volunteers to manage than 
 ### A. The Admin Key
 
 *   The server checks for a `DERBY_ADMIN_KEY` environment variable.
-*   **Default (Public Mode)**: If `DERBY_ADMIN_KEY` is not set (or set to `none`), the app defaults to "Public Mode" where all users are treated as admins. This is the race-day default for local networks — no setup friction.
+*   **Default (Public Mode)**: If `DERBY_ADMIN_KEY` is not set, the app defaults to "Public Mode" where all users are treated as admins. This is the race-day default for local networks — no setup friction.
 *   **Explicit Key**: Set `DERBY_ADMIN_KEY` to a specific string for a persistent, known password.
 *   **Secure Zero-Config (Auto)**: If `DERBY_ADMIN_KEY=auto`, the server manages a unique key:
     *   **Generation**: Creates a high-entropy random string on first run.
@@ -39,7 +39,7 @@ A shared secret approach — significantly easier for volunteers to manage than 
 *   **Cookie value**: `HMAC-SHA256(viewer_key, "derby_viewer_session")` — same pattern as the admin cookie.
 *   **Login endpoint**: `POST /viewer/login` accepts `{ password }` and sets the `derby_viewer` cookie.
 *   **Middleware**: A `viewerRequired(handler)` wrapper checks for either `derby_admin` or `derby_viewer` cookie. Applied to all GET routes when `DERBY_VIEWER_KEY` is set.
-*   **Display exception**: The `/display` route checks for a `?token=VIEWER_KEY` query param as an alternative to the cookie, so a projector can be set up without a keyboard login. The token sets the cookie and redirects, same as the admin QR flow.
+*   **Display**: The `/display` route requires the viewer cookie like any other page. Projector setup requires logging in on the device first (future: add `?token=` param for keyboard-free setup).
 
 #### Cloud Setup
 
@@ -74,7 +74,7 @@ The pack leader shares the viewer password with families. Anyone with the passwo
 *   **Cookie attributes**:
     *   `HttpOnly` — always (prevents JS access)
     *   `SameSite=Lax` — prevents CSRF on cross-origin requests
-    *   `Secure` — set when `NODE_ENV=production` or when the request came over HTTPS
+    *   `Secure` — set when the request came over HTTPS (detected via URL scheme or `X-Forwarded-Proto` header)
     *   `Path=/` — available on all routes
     *   `Max-Age=604800` (7 days) — reasonable session length for post-event viewing
 *   **Logout**: `POST /admin/logout` clears the cookie.
@@ -83,7 +83,7 @@ The pack leader shares the viewer password with families. Anyone with the passwo
 
 These routes are always public when `DERBY_VIEWER_KEY` is **not** set. When it **is** set, they require the viewer (or admin) cookie:
 
-*   `/display` — projector page (supports `?token=` param for keyboard-free setup)
+*   `/display` — projector page (requires viewer cookie when viewer key is set)
 *   `/certificate/:id` — parents view their kid's certificate
 *   `/certificates` — batch view for printing
 *   All `GET` endpoints: `/api/events`, `/api/events/:id/heats`, `/api/events/:id/standings`, `/api/racers/:id/photo`
