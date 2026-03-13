@@ -11,6 +11,22 @@ import {
   umzug,
 } from "./db";
 import {
+  adminOnly,
+  viewerRequired,
+  getAdminKey,
+  getViewerKey,
+  getAuthStatus,
+  setAdminCookie,
+  setViewerCookie,
+  clearAdminCookie,
+  clearViewerCookie,
+  computeHmac,
+  parseCookies,
+  isPublicMode,
+  isPrivateMode,
+  logAuthConfig,
+} from "./auth";
+import {
   clampLookahead,
   planHeatQueue,
   planNextHeat,
@@ -26,6 +42,7 @@ import {
 // Initialize database on startup
 await umzug.up();
 console.log("Database initialized");
+logAuthConfig();
 
 // Repository instances
 const eventsRepo = new EventRepository();
@@ -524,11 +541,11 @@ const server = Bun.serve({
 
     // ===== EVENTS API =====
     "/api/events": {
-      GET: () => {
+      GET: viewerRequired(() => {
         const events = eventsRepo.findAll();
         return respondJson(events);
-      },
-      POST: async (req) => {
+      }),
+      POST: adminOnly(async (req) => {
         const body = (await req.json()) as {
           name: string;
           date: string;
@@ -543,16 +560,16 @@ const server = Bun.serve({
           lane_count: body.lane_count,
         });
         return respondJson(event, 201);
-      },
+      }),
     },
 
     "/api/events/:id": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const event = eventsRepo.findById(req.params.id);
         if (!event) return respondJson({ error: "Event not found" }, 404);
         return respondJson(event);
-      },
-      PATCH: async (req) => {
+      }),
+      PATCH: adminOnly(async (req) => {
         const body = (await req.json()) as {
           name?: string;
           date?: string;
@@ -562,8 +579,8 @@ const server = Bun.serve({
         const event = eventsRepo.update(req.params.id, body);
         if (!event) return respondJson({ error: "Event not found" }, 404);
         return respondJson(event);
-      },
-      DELETE: (req) => {
+      }),
+      DELETE: adminOnly((req) => {
         const eventRacers = racersRepo.findByEvent(req.params.id);
         if (eventRacers.length > 0) {
           return respondJson(
@@ -578,11 +595,11 @@ const server = Bun.serve({
         planningStateRepo.clearSettings(req.params.id);
         clearRoundRacerCache(req.params.id);
         return respondJson({ success: true });
-      },
+      }),
     },
 
     "/api/events/:id/end-race": {
-      POST: (req) => {
+      POST: adminOnly((req) => {
         const event = eventsRepo.findById(req.params.id);
         if (!event) return respondJson({ error: "Event not found" }, 404);
         if (event.status !== "racing") {
@@ -607,16 +624,16 @@ const server = Bun.serve({
         broadcast({ type: "STANDINGS_UPDATED", eventId: req.params.id });
 
         return respondJson(updated);
-      },
+      }),
     },
 
     // ===== RACERS API (includes car info now) =====
     "/api/events/:eventId/racers": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const racers = racersRepo.findByEvent(req.params.eventId);
         return respondJson(racers);
-      },
-      POST: async (req) => {
+      }),
+      POST: adminOnly(async (req) => {
         const body = (await req.json()) as {
           name: string;
           den?: string;
@@ -667,16 +684,16 @@ const server = Bun.serve({
           },
           409
         );
-      },
+      }),
     },
 
     "/api/racers/:id": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const racer = racersRepo.findById(req.params.id);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
         return respondJson(racer);
-      },
-      PATCH: async (req) => {
+      }),
+      PATCH: adminOnly(async (req) => {
         const body = (await req.json()) as {
           name?: string;
           den?: string | null;
@@ -722,8 +739,8 @@ const server = Bun.serve({
         broadcast({ type: "RACERS_UPDATED", eventId: racer.event_id });
 
         return respondJson(racer);
-      },
-      DELETE: (req) => {
+      }),
+      DELETE: adminOnly((req) => {
         const racer = racersRepo.findById(req.params.id);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
 
@@ -735,11 +752,11 @@ const server = Bun.serve({
         broadcast({ type: "RACERS_UPDATED", eventId });
 
         return respondJson({ success: true });
-      },
+      }),
     },
 
     "/api/racers/:id/photo": {
-      GET: async (req) => {
+      GET: viewerRequired(async (req) => {
         const racer = racersRepo.findById(req.params.id);
         if (!racer) {
           return respondJson({ error: "Racer not found" }, 404);
@@ -760,9 +777,9 @@ const server = Bun.serve({
             "Cache-Control": "public, max-age=300",
           },
         });
-      },
+      }),
 
-      POST: async (req) => {
+      POST: adminOnly(async (req) => {
         const racer = racersRepo.findById(req.params.id);
         if (!racer) {
           return respondJson({ error: "Racer not found" }, 404);
@@ -823,9 +840,9 @@ const server = Bun.serve({
         broadcast({ type: "RACERS_UPDATED", eventId: updatedRacer.event_id });
 
         return respondJson(updatedRacer);
-      },
+      }),
 
-      DELETE: (req) => {
+      DELETE: adminOnly((req) => {
         const racer = racersRepo.findById(req.params.id);
         if (!racer) {
           return respondJson({ error: "Racer not found" }, 404);
@@ -846,18 +863,18 @@ const server = Bun.serve({
         broadcast({ type: "RACERS_UPDATED", eventId: updatedRacer.event_id });
 
         return respondJson(updatedRacer);
-      },
+      }),
     },
 
     "/api/racers/:id/history": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const history = resultsRepo.findByRacer(req.params.id);
         return respondJson(history);
-      },
+      }),
     },
 
     "/api/racers/:id/inspect": {
-      POST: async (req) => {
+      POST: adminOnly(async (req) => {
         const body = (await req.json()) as { weight_ok: boolean };
         const racer = racersRepo.inspect(req.params.id, body.weight_ok ?? false);
         if (!racer) return respondJson({ error: "Racer not found" }, 404);
@@ -865,12 +882,12 @@ const server = Bun.serve({
         broadcast({ type: "RACERS_UPDATED", eventId: racer.event_id });
 
         return respondJson(racer);
-      },
+      }),
     },
 
     // ===== HEATS API =====
     "/api/events/:eventId/heats": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const heats = heatsRepo.findByEventWithLanes(req.params.eventId);
         const results = resultsRepo.findByEvent(req.params.eventId);
         
@@ -890,8 +907,8 @@ const server = Bun.serve({
         });
         
         return respondJson(heatsWithResults);
-      },
-      POST: async (req) => {
+      }),
+      POST: adminOnly(async (req) => {
         const body = (await req.json()) as {
           round: number;
           heat_number: number;
@@ -907,8 +924,8 @@ const server = Bun.serve({
           lanes: body.lanes,
         });
         return respondJson(heat, 201);
-      },
-      DELETE: (req) => {
+      }),
+      DELETE: adminOnly((req) => {
         const runningHeat = heatsRepo.findRunning();
         if (runningHeat?.event_id === req.params.eventId) {
           heatsRepo.updateStatus(runningHeat.id, "pending");
@@ -923,19 +940,19 @@ const server = Bun.serve({
         broadcast({ type: "STANDINGS_UPDATED", eventId: req.params.eventId });
 
         return respondJson({ success: true });
-      },
+      }),
     },
 
     "/api/heats/:id": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const heat = heatsRepo.findWithLanes(req.params.id);
         if (!heat) return respondJson({ error: "Heat not found" }, 404);
         return respondJson(heat);
-      },
+      }),
     },
 
     "/api/heats/:id/start": {
-      POST: (req) => {
+      POST: adminOnly((req) => {
         const requestedHeat = heatsRepo.findById(req.params.id);
         if (!requestedHeat) return respondJson({ error: "Heat not found" }, 404);
 
@@ -950,11 +967,11 @@ const server = Bun.serve({
         broadcast({ type: "HEATS_UPDATED", eventId: heat.event_id });
 
         return respondJson(heat);
-      },
+      }),
     },
 
     "/api/heats/:id/complete": {
-      POST: (req) => {
+      POST: adminOnly((req) => {
         const existingHeat = heatsRepo.findById(req.params.id);
         if (!existingHeat) return respondJson({ error: "Heat not found" }, 404);
 
@@ -972,12 +989,12 @@ const server = Bun.serve({
         broadcast({ type: "STANDINGS_UPDATED", eventId: heat.event_id });
 
         return respondJson(heat);
-      },
+      }),
     },
 
     // ===== HEAT GENERATION API =====
     "/api/events/:eventId/generate-heats": {
-      POST: async (req) => {
+      POST: adminOnly(async (req) => {
         const body = (await req.json()) as {
           rounds?: number;
           lane_count?: number;
@@ -1033,16 +1050,16 @@ const server = Bun.serve({
 
         const createdHeats = heatsRepo.findByEventWithLanes(req.params.eventId);
         return respondJson(createdHeats);
-      },
+      }),
     },
 
     // ===== RESULTS API =====
     "/api/heats/:heatId/results": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const results = resultsRepo.findByHeat(req.params.heatId);
         return respondJson(results);
-      },
-      POST: async (req) => {
+      }),
+      POST: adminOnly(async (req) => {
         const heat = heatsRepo.findById(req.params.heatId);
         if (!heat) return respondJson({ error: "Heat not found" }, 404);
 
@@ -1078,26 +1095,26 @@ const server = Bun.serve({
         broadcast({ type: "STANDINGS_UPDATED", eventId: heat.event_id });
 
         return respondJson(savedResults);
-      },
+      }),
     },
 
     // ===== STANDINGS API =====
     "/api/events/:eventId/standings": {
-      GET: (req) => {
+      GET: viewerRequired((req) => {
         const standings = resultsRepo.getStandings(req.params.eventId);
         return respondJson(standings);
-      },
+      }),
     },
 
     // ===== LIVE RACE CONSOLE API =====
     "/api/race/active": {
-      GET: () => {
+      GET: viewerRequired(() => {
         return respondJson(getActiveHeatStatus());
-      },
+      }),
     },
 
     "/api/race/stop": {
-      POST: () => {
+      POST: adminOnly(() => {
         const runningHeat = heatsRepo.findRunning();
         if (!runningHeat) {
           return respondJson({
@@ -1115,9 +1132,62 @@ const server = Bun.serve({
           running: false,
           elapsedMs,
         });
+      }),
+    },
+
+    // ===== AUTH ROUTES =====
+    "/admin/login": {
+      POST: async (req) => {
+        const body = (await req.json()) as { password?: string };
+        const adminKey = getAdminKey();
+        if (!adminKey || body.password !== adminKey) {
+          return respondJson({ error: "Invalid password" }, 401);
+        }
+        const headers = new Headers({ "Content-Type": "application/json" });
+        await setAdminCookie(headers);
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      },
+      GET: async (req) => {
+        const url = new URL(req.url);
+        const token = url.searchParams.get("token");
+        const adminKey = getAdminKey();
+        if (!adminKey || token !== adminKey) {
+          return respondJson({ error: "Invalid token" }, 401);
+        }
+        const headers = new Headers({ Location: "/" });
+        await setAdminCookie(headers);
+        return new Response(null, { status: 302, headers });
       },
     },
-    
+
+    "/admin/logout": {
+      POST: (_req) => {
+        const headers = new Headers({ "Content-Type": "application/json" });
+        clearAdminCookie(headers);
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      },
+    },
+
+    "/viewer/login": {
+      POST: async (req) => {
+        const body = (await req.json()) as { password?: string };
+        const viewerKey = getViewerKey();
+        if (!viewerKey || body.password !== viewerKey) {
+          return respondJson({ error: "Invalid password" }, 401);
+        }
+        const headers = new Headers({ "Content-Type": "application/json" });
+        await setViewerCookie(headers);
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      },
+    },
+
+    "/admin/status": {
+      GET: async (req) => {
+        const status = await getAuthStatus(req);
+        return respondJson(status);
+      },
+    },
+
     // Fallback: Serve index.html for all other paths to support React Router
     "/:path*": index,
   },

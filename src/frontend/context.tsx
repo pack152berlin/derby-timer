@@ -6,6 +6,9 @@ export interface AppContextType {
   racers: Racer[];
   heats: Heat[];
   standings: Standing[];
+  isAdmin: boolean;
+  isPublicMode: boolean;
+  isPrivateMode: boolean;
   setCurrentRacerId: (id: string | null) => void;
   refreshData: () => Promise<void>;
   refreshDataSilent: () => Promise<void>;

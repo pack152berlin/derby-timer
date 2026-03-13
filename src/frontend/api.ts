@@ -1,5 +1,12 @@
 import type { Event, Racer, Heat, Standing, HeatResult, RacerHistoryEntry } from './types';
 
+export type AuthStatus = {
+  admin: boolean;
+  viewer: boolean;
+  publicMode: boolean;
+  privateMode: boolean;
+};
+
 type CreateRacerInput = {
   name: string;
   den?: string | null;
@@ -177,6 +184,12 @@ export const api = {
   async getStandings(eventId: string): Promise<Standing[]> {
     const res = await fetch(`/api/events/${eventId}/standings`);
     return res.ok ? res.json() : [];
+  },
+
+  async getAuthStatus(): Promise<AuthStatus> {
+    const res = await fetch('/admin/status');
+    if (!res.ok) return { admin: false, viewer: false, publicMode: true, privateMode: false };
+    return res.json();
   },
 
   async getRacerHistory(racerId: string): Promise<RacerHistoryEntry[]> {
