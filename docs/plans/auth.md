@@ -8,6 +8,7 @@ Administrative access control for DerbyTimer — covering both local race-day us
 
 *   **Admins**: Full access to registration, inspection, race control, and settings.
 *   **Guests (Parents/Public)**: Read-only access to standings, schedules, displays, and certificates.
+*   **Privacy option**: Optional viewer password so the entire site requires authentication — important for privacy-focused families who don't want their kids' names and photos on a public URL.
 *   **Local-First Priority**: Easy to set up without an internet connection or complex user management.
 *   **Cloud-Ready**: The same auth mechanism works identically when deployed to Fly.io for post-event sharing.
 
@@ -25,7 +26,39 @@ A shared secret approach — significantly easier for volunteers to manage than 
     *   **Persistence**: Saved to a file next to the database (e.g., `/data/.derby_admin_key` on Fly.io, `.derby_admin_key` locally). Server restarts don't log everyone out.
     *   **Manual Rotation**: Delete the key file and restart → new key, all sessions revoked.
 
-### B. Admin Distribution
+### B. Viewer Password (Privacy Mode)
+
+*   The server checks for a `DERBY_VIEWER_KEY` environment variable.
+*   **Default (Open)**: If `DERBY_VIEWER_KEY` is not set, all read-only content (standings, certificates, display) is publicly accessible — the normal behavior.
+*   **Password-Protected**: If `DERBY_VIEWER_KEY` is set, **every page** requires authentication. Unauthenticated visitors see a login page with a simple "Enter event password" prompt.
+*   **Why**: Some families don't want their children's names and car photos on a public URL. The viewer password lets the pack leader share the URL and password privately (e.g., in a pack email or GroupMe) without exposing data to the open internet.
+
+#### How It Works
+
+*   **Two cookies, two tiers**: The existing `derby_admin` cookie grants full access. A second `derby_viewer` cookie grants read-only access. The admin cookie implicitly satisfies the viewer check too — admins don't need to enter the viewer password separately.
+*   **Cookie value**: `HMAC-SHA256(viewer_key, "derby_viewer_session")` — same pattern as the admin cookie.
+*   **Login endpoint**: `POST /viewer/login` accepts `{ password }` and sets the `derby_viewer` cookie.
+*   **Middleware**: A `viewerRequired(handler)` wrapper checks for either `derby_admin` or `derby_viewer` cookie. Applied to all GET routes when `DERBY_VIEWER_KEY` is set.
+*   **Display exception**: The `/display` route checks for a `?token=VIEWER_KEY` query param as an alternative to the cookie, so a projector can be set up without a keyboard login. The token sets the cookie and redirects, same as the admin QR flow.
+
+#### Cloud Setup
+
+```bash
+fly secrets set DERBY_ADMIN_KEY=admin-password DERBY_VIEWER_KEY=viewer-password
+```
+
+The pack leader shares the viewer password with families. Anyone with the password can see standings and certificates. Without it, they see nothing.
+
+#### Modes Summary
+
+| `DERBY_ADMIN_KEY` | `DERBY_VIEWER_KEY` | Behavior |
+|---|---|---|
+| Not set | Not set | **Public mode** — full access, no auth (race-day default) |
+| Set | Not set | **Admin-protected** — reads are public, writes require admin login |
+| Set | Set | **Fully private** — both viewing and admin require passwords |
+| Not set | Set | Invalid — server warns and ignores viewer key (no point without admin key) |
+
+### C. Admin Distribution
 
 **Local (race day):** Terminal QR code printed at startup. Volunteers scan to authenticate.
 *   **QR Format**: `http://<local-ip>:3000/admin/login?token=SECRET_TOKEN`
@@ -33,7 +66,7 @@ A shared secret approach — significantly easier for volunteers to manage than 
 
 **Cloud (post-event):** The pack leader uses `fly secrets set DERBY_ADMIN_KEY=their-chosen-password`. They log in via a simple `/admin/login` page (see section 4).
 
-### C. Storage & Persistence (Cookie-Based)
+### D. Storage & Persistence (Cookie-Based)
 
 *   **Browser**: The server sets an `HttpOnly` cookie (`derby_admin=HMAC_HASH`) on successful login. The browser sends it automatically on every request.
 *   **Why cookies over headers**: The codebase has ~25 standalone `fetch()` calls in `api.ts` with no shared wrapper. Retrofitting `Authorization` headers on every call is error-prone. Additionally, `<img src="/api/racers/:id/photo">` tags can't carry headers. Cookies are sent automatically on all requests, including WebSocket upgrades and image loads.
@@ -46,13 +79,21 @@ A shared secret approach — significantly easier for volunteers to manage than 
     *   `Max-Age=604800` (7 days) — reasonable session length for post-event viewing
 *   **Logout**: `POST /admin/logout` clears the cookie.
 
-### D. Routes That Must Stay Public
+### E. Routes That Must Stay Public
 
-*   `/display` — projector page has no keyboard/mouse
+These routes are always public when `DERBY_VIEWER_KEY` is **not** set. When it **is** set, they require the viewer (or admin) cookie:
+
+*   `/display` — projector page (supports `?token=` param for keyboard-free setup)
 *   `/certificate/:id` — parents view their kid's certificate
 *   `/certificates` — batch view for printing
-*   All `GET` endpoints used by display and certificates: `/api/events`, `/api/events/:id/heats`, `/api/events/:id/standings`, `/api/racers/:id/photo`
-*   `/ws` — WebSocket for live updates (read-only broadcast)
+*   All `GET` endpoints: `/api/events`, `/api/events/:id/heats`, `/api/events/:id/standings`, `/api/racers/:id/photo`
+*   `/ws` — WebSocket for live updates (viewer cookie validated on upgrade)
+
+The only truly always-public routes (even with viewer key set):
+
+*   `/viewer/login` — the viewer login page itself
+*   `/admin/login` — the admin login page
+*   `/healthcheck` — for Fly.io health checks
 
 ## 3. Protected Areas
 
@@ -87,22 +128,28 @@ Prefer showing pages read-only with a subtle "Admin access required" banner over
 
 1. Implement `src/auth.ts`:
    - `getAdminKey()` — reads from `DERBY_ADMIN_KEY` env, or loads/generates from key file
+   - `getViewerKey()` — reads from `DERBY_VIEWER_KEY` env (no auto-generation; explicit only)
    - `adminOnly(handler)` — cookie validation wrapper, returns `401` on failure
-   - `setAdminCookie(res)` / `clearAdminCookie(res)` — cookie management
-   - `isPublicMode()` — returns true when no key is configured
+   - `viewerRequired(handler)` — checks for `derby_admin` or `derby_viewer` cookie; only active when viewer key is set
+   - `setAdminCookie(res)` / `setViewerCookie(res)` / `clearCookies(res)` — cookie management
+   - `isPublicMode()` — returns true when no admin key is configured
+   - `isPrivateMode()` — returns true when viewer key is configured
 2. Add routes:
-   - `GET /admin/login?token=...` — validates token, sets cookie, `302` redirects to `/`
-   - `POST /admin/login` — accepts `{ password }` JSON body, validates, sets cookie (for the web login form)
-   - `POST /admin/logout` — clears cookie
-   - `GET /admin/status` — returns `{ admin: true/false, publicMode: true/false }`
+   - `GET /admin/login?token=...` — validates token, sets admin cookie, `302` redirects to `/`
+   - `POST /admin/login` — accepts `{ password }` JSON body, validates, sets admin cookie
+   - `POST /admin/logout` — clears admin cookie
+   - `POST /viewer/login` — accepts `{ password }` JSON body, validates, sets viewer cookie
+   - `GET /admin/status` — returns `{ admin: true/false, viewer: true/false, publicMode: true/false, privateMode: true/false }`
 3. Wrap all `POST`/`PATCH`/`DELETE` routes with `adminOnly()` except explicitly public ones
-4. Auto-discover local network IP; print QR code to terminal via `qrcode-terminal`
+4. When `DERBY_VIEWER_KEY` is set, wrap all `GET` routes with `viewerRequired()` except login and healthcheck
+5. Auto-discover local network IP; print QR code to terminal via `qrcode-terminal`
 
 ### Phase 2: Frontend Auth Context
 
-1. Add `isAdmin` and `isPublicMode` to `AppContext`
+1. Add `isAdmin`, `isViewer`, `isPublicMode`, and `isPrivateMode` to `AppContext`
 2. On app load, call `GET /admin/status` to determine auth state
-3. No URL param handling needed — the cookie flow is entirely server-side
+3. If `privateMode && !isViewer && !isAdmin`, redirect to `/viewer/login`
+4. No URL param handling needed — the cookie flow is entirely server-side
 
 ### Phase 3: Frontend UI Updates
 
@@ -124,10 +171,14 @@ Prefer showing pages read-only with a subtle "Admin access required" banner over
 ### Setting the Admin Key on Fly.io
 
 ```bash
+# Admin only (standings/certificates are public)
 fly secrets set DERBY_ADMIN_KEY=your-chosen-password
+
+# Admin + viewer (everything requires a password)
+fly secrets set DERBY_ADMIN_KEY=admin-password DERBY_VIEWER_KEY=viewer-password
 ```
 
-This is the only auth-related deployment step. The `auto` mode also works — the generated key persists on the Fly volume at `/data/.derby_admin_key`.
+The `auto` admin key mode also works — the generated key persists on the Fly volume at `/data/.derby_admin_key`. The viewer key must be set explicitly (there's no `auto` mode for it — the pack leader chooses what to share with families).
 
 ### HTTPS & Cookie Security
 
@@ -137,12 +188,12 @@ This is the only auth-related deployment step. The `auto` mode also works — th
 
 ### Public vs Admin on the Cloud
 
-When deployed, the app serves two audiences:
+When deployed, the app serves two or three audiences depending on configuration:
 
-1. **Parents**: Visit the public URL, see standings and certificates. No login needed.
-2. **Pack leader**: Logs in via `/admin` with the password to manage data if corrections are needed post-event.
+1. **Parents**: Visit the public URL. If `DERBY_VIEWER_KEY` is set, they enter the viewer password (shared by the pack leader via email/GroupMe). If not set, they see standings and certificates without logging in.
+2. **Pack leader**: Logs in via `/admin` with the admin password to manage data if corrections are needed post-event.
 
-The default post-event workflow is read-only — parents just view results. Admin access is only needed if the pack leader needs to fix a name, update a car number, or regenerate certificates.
+The default post-event workflow is read-only — parents just view results. For privacy-conscious packs, set the viewer key so only families with the password can see names and photos.
 
 ### Database Security
 
@@ -166,22 +217,27 @@ If DerbyTimer ever supports multi-pack hosting or persistent web accounts, the `
 
 ### Test Scripts
 
-All test scripts set `DERBY_ADMIN_KEY=test-secret` and include the admin cookie in requests:
+All test scripts set both keys and include the appropriate cookies in requests:
 
 ```bash
-"test:integration": "DERBY_ADMIN_KEY=test-secret DERBY_DB_PATH=test-integration.db PORT=3099 bun src/index.ts & ..."
+"test:integration": "DERBY_ADMIN_KEY=test-secret DERBY_VIEWER_KEY=test-viewer DERBY_DB_PATH=test-integration.db PORT=3099 bun src/index.ts & ..."
 "test:ui": "DERBY_ADMIN_KEY=test-secret DERBY_DB_PATH=test-ui.db PORT=3001 bun src/index.ts & ..."
 ```
 
 ### Integration Tests (`tests/auth.integration.ts`)
 
 *   `POST /api/heats/:id/start` without cookie → `401`
-*   `POST /api/heats/:id/start` with valid cookie → `200`
+*   `POST /api/heats/:id/start` with valid admin cookie → `200`
 *   `GET /admin/login?token=wrong` → `401`
 *   `GET /admin/login?token=correct` → `302` + `Set-Cookie` with `HttpOnly`
 *   `POST /admin/login` with correct password → `200` + `Set-Cookie`
-*   `GET /api/events` without cookie → `200` (public read)
-*   Rate limiting: 11 rapid login attempts → `429`
+*   `GET /api/events` without cookie (no viewer key) → `200` (public read)
+*   `GET /api/events` without cookie (viewer key set) → `401`
+*   `GET /api/events` with viewer cookie (viewer key set) → `200`
+*   `GET /api/events` with admin cookie (viewer key set) → `200` (admin implies viewer)
+*   `POST /viewer/login` with correct password → `200` + `Set-Cookie` (`derby_viewer`)
+*   `POST /viewer/login` with wrong password → `401`
+*   Rate limiting: 11 rapid login attempts → `429` (applies to both `/admin/login` and `/viewer/login`)
 *   Cookie has `Secure` flag when request includes `X-Forwarded-Proto: https`
 
 ### E2E Tests (`e2e/auth.playwright.ts`)
@@ -191,6 +247,8 @@ All test scripts set `DERBY_ADMIN_KEY=test-secret` and include the admin cookie 
 *   **Password Login**: Submit password on `/admin` form. Verify cookie is set.
 *   **Logout**: Call `/admin/logout`. Verify admin actions disappear.
 *   **Public Mode**: Start server without `DERBY_ADMIN_KEY`. Verify no banners, full access.
+*   **Private Mode**: Start server with `DERBY_VIEWER_KEY=test-viewer`. Navigate to `/standings` — redirected to viewer login. Enter password, verify standings load.
+*   **Private Mode Admin**: In private mode, admin cookie grants full access without needing viewer password.
 
 ## 7. Related Plans
 

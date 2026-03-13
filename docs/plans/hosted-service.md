@@ -193,7 +193,7 @@ Event created → Active (30 days) → Archived (S3) → Deleted (after 1 year)
 
 ### Phase 1: Cloud Deployment (prerequisite)
 
-Complete the [Deployment Plan](./deployment.md) and [Auth Plan](./auth.md) first. The hosted service builds on top of a working Fly.io deployment.
+Complete the [Deployment Plan](./deployment.md) and [Auth Plan](./auth.md) first. The hosted service builds on top of a working Fly.io deployment. Auth provides admin keys (for pack leaders) and optional viewer passwords (for privacy-conscious families) — see the auth plan for the full two-tier cookie system.
 
 ### Phase 2: Pi Bridge
 
@@ -223,7 +223,7 @@ Complete the [Deployment Plan](./deployment.md) and [Auth Plan](./auth.md) first
 ## Related Plans
 
 - [Deployment](./deployment.md) — the Fly.io foundation this service builds on
-- [Auth](./auth.md) — admin key auth, extended for multi-user accounts
+- [Auth](./auth.md) — admin key + viewer password auth (privacy mode for families), cookie sessions
 - [Pi Deployment](./pi-deployment.md) — the local Pi image (bridge reuses this SD card setup)
 - [Remote Access](./remote-access.md) — the simpler tunnel approach for tech-savvy packs
 - [Display Pub/Sub](./display-pubsub.md) — WebSocket display events, served from the cloud in this model
