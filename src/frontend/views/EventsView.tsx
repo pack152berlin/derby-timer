@@ -16,8 +16,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Event } from '../types';
 import { api } from '../api';
+import { useApp } from '../context';
+import { AdminBanner } from '../components/AdminBanner';
 
 export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => void }) {
+  const { canEdit } = useApp();
   const [events, setEvents] = useState<Event[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
@@ -73,15 +76,19 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           </h1>
           <p className="text-slate-500 mt-1">Select an event or create a new race event!</p>
         </div>
-        <Button 
-          onClick={() => setShowForm(!showForm)}
-          size="lg"
-          className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-6 shadow-lg"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          New Event
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => setShowForm(!showForm)}
+            size="lg"
+            className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-6 shadow-lg"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            New Event
+          </Button>
+        )}
       </div>
+
+      <AdminBanner />
 
       {showForm && (
         <Card className="mb-8 border-2 border-slate-200">
@@ -144,7 +151,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
               className="group relative cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2 gap-2"
               onClick={() => onSelectEvent(event)}
             >
-              {event.racer_count === 0 && (
+              {canEdit && event.racer_count === 0 && (
                 <Button
                   variant="ghost"
                   size="sm"

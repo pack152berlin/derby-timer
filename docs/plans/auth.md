@@ -2,7 +2,7 @@
 
 Administrative access control for DerbyTimer — covering both local race-day use and cloud deployment.
 
-## Status: Not Started
+## Status: Phase 1-3 Complete
 
 ## 1. Goal
 
@@ -101,17 +101,18 @@ The only truly always-public routes (even with viewer key set):
 
 | View / Component | Guest Access | Admin Access |
 | :--- | :--- | :--- |
-| **Event List** (`/`) | View only | Create / Delete |
-| **Registration** (`/register`) | Read-only with "Admin required" banner | Full access |
-| **Heat Schedule** (`/heats`) | View only | Generate / Clear Heats |
-| **Race Control** (`/race`) | Read-only with "Admin required" banner | Start / Save Results |
+| **Event List** (`/`) | View only (no create/delete) | Create / Delete |
+| **Registration** (`/register`) | Admin-only page | Full access |
+| **Heat Schedule** (`/heats`) | View only (no generate/clear/end) | Generate / Clear Heats |
+| **Race Control** (`/race`) | Admin-only page | Start / Save Results |
 | **Standings** (`/standings`) | Full access | Same |
 | **Racer Profile** (`/racer/:id`) | View only | Edit details / photos |
-| **Race Format** (`/format`) | View only | Edit settings |
+| **Race Format** (`/format`) | View only | Same |
 | **Display** (`/display`) | Full access | Same |
-| **Certificates** (`/certificate/:id`, `/certificates`) | Full access | Same |
+| **Certificate** (`/certificate/:id`) | Full access | Same |
+| **Batch Certificates** (`/certificates`) | Admin-only page | Print all certificates |
 
-Prefer showing pages read-only with a subtle "Admin access required" banner over hard redirects. This is friendlier for parents who navigate to the wrong page.
+Admin-only pages (Registration, Race Control, Batch Certificates) show a centered "Admin access required" message. Read-only pages (Events, Schedule) hide mutation buttons and show an "Admin access required" banner. In public mode (no key set), everything works as today — no banners, no restrictions.
 
 ### API (Backend)
 

@@ -2,7 +2,9 @@
 
 > A turnkey Pinewood Derby race management system that any pack volunteer can set up, run, and tear down in under an hour — no internet required.
 
-Built with Bun, SQLite, and React. One laptop, one network, zero cloud dependencies.
+Built with Bun, SQLite, and React. One laptop, one network, zero cloud dependencies. 
+
+See [plans](docs/plans/) for the long-term vision — cloud deployment, hardware timer integration, and more.
 
 ## Features
 
@@ -86,12 +88,47 @@ bun run rehearsal:race-day --cars 50 --lanes 4 --rounds 2 --keep-db
 ## Testing
 
 ```bash
-bun run test:all         # All tests (unit + integration + UI)
-bun test                 # Unit + integration tests
-bun run test:unit        # Unit tests only
-bun run test:integration # API + WebSocket tests (isolated server on :3099)
-bun run test:ui          # Playwright E2E tests
-bun run screenshots      # Capture UI screenshots with Playwright
+bun run test:all              # All tests (unit + integration + UI)
+bun test                      # Unit + integration tests
+bun run test:unit             # Unit tests only
+bun run test:integration:api  # API + WebSocket tests (public mode, :3099)
+bun run test:integration:auth # Auth integration tests (admin + viewer keys, :3098)
+bun run test:ui               # Playwright E2E tests
+bun run screenshots           # Capture UI screenshots with Playwright
+```
+
+## Authentication
+
+DerbyTimer supports three auth modes controlled by environment variables. **By default (no keys set), everything is open** — the race-day default for local networks with zero setup friction.
+
+### Auth Modes
+
+| `DERBY_ADMIN_KEY` | `DERBY_VIEWER_KEY` | Mode |
+|---|---|---|
+| Not set | Not set | **Public** — full access, no auth (race-day default) |
+| Set | Not set | **Admin-protected** — reads are public, mutations require admin login |
+| Set | Set | **Fully private** — both viewing and admin require passwords |
+
+### Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DERBY_ADMIN_KEY` | Admin password. Set to `auto` to generate a random key on first run (saved next to DB). |
+| `DERBY_VIEWER_KEY` | Viewer password. When set, all pages require authentication. |
+
+### Developing with Auth
+
+```bash
+# Test admin-protected mode
+DERBY_ADMIN_KEY=secret bun start
+# Then POST to /admin/login with { "password": "secret" }
+
+# Test fully private mode
+DERBY_ADMIN_KEY=secret DERBY_VIEWER_KEY=viewer bun start
+# All pages require login. Use /admin/login or /viewer/login.
+
+# Auto-generated admin key (persisted to .derby_admin_key file)
+DERBY_ADMIN_KEY=auto bun start
 ```
 
 ## Race Day Workflow
@@ -208,6 +245,7 @@ Individual racer profiles are accessible from the Standings and Registration vie
 derby-timer/
 ├── src/
 │   ├── index.ts               # Bun server, all API routes, WebSocket
+│   ├── auth.ts                # Authentication module (HMAC cookies, middleware)
 │   ├── migrate.ts             # Standalone migration runner
 │   ├── db/
 │   │   ├── connection.ts      # SQLite singleton
