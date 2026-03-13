@@ -13,32 +13,21 @@ test.describe('Registration Sorting UI', () => {
     });
     const event = await eventResponse.json();
 
-    // 2. Navigate to registration for this event
-    await page.goto(`${baseUrl}/register`);
-    
-    // Select the event if needed (assuming the UI shows event selection first)
-    // Based on RegistrationView.tsx, if no event is selected it shows a message.
-    // We'll click the event card in the EventsView
+    // 2. Create two racers via API (faster than UI form interactions)
+    await fetch(`${baseUrl}/api/events/${event.id}/racers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Older Racer' }),
+    });
+    await fetch(`${baseUrl}/api/events/${event.id}/racers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Newer Racer' }),
+    });
+
+    // 3. Navigate to registration for this event
+    await page.goto(`${baseUrl}/`);
     await page.click(`[data-testid="event-card-${event.id}"]`);
-
-    // 3. Add two racers
-    // Racer 1 (will be older)
-    await page.click('[data-testid="btn-add-racer"]');
-    await page.fill('[data-testid="input-racer-name"]', 'Older Racer');
-    await page.click('[data-testid="btn-submit-racer"]');
-    
-    // Wait for confirmation modal and close it
-    await expect(page.locator('text=Racer Registered!')).toBeVisible();
-    await page.click('[data-testid="btn-close-success"]');
-
-    // Racer 2 (will be newer)
-    await page.click('[data-testid="btn-add-racer"]');
-    await page.fill('[data-testid="input-racer-name"]', 'Newer Racer');
-    await page.click('[data-testid="btn-submit-racer"]');
-
-    // Wait for confirmation modal and close it
-    await expect(page.locator('text=Racer Registered!')).toBeVisible();
-    await page.click('[data-testid="btn-close-success"]');
 
     // 4. Verify default sorting (Newest First)
     const racerCards = page.locator('[data-testid="racer-card"]');
