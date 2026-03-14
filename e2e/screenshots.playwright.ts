@@ -558,7 +558,7 @@ const sixRacers = [
 test('15-certificate-results-card', async ({ page }) => {
   test.setTimeout(15000);
   await page.setViewportSize({ width: 1280, height: 900 });
-  const { event, racers: eventRacers } = await seedCompletedRace('Results Card Demo', 1, sixRacers);
+  const { racers: eventRacers } = await seedCompletedRace('Results Card Demo', 1, sixRacers);
 
   await page.goto(`${baseUrl}/certificate/${eventRacers[0].id}`);
   await page.waitForSelector('[data-testid="certificate"]');
@@ -578,7 +578,7 @@ test('15-certificate-results-card', async ({ page }) => {
 test('16-certificate-combined', async ({ page }) => {
   test.setTimeout(15000);
   await page.setViewportSize({ width: 1280, height: 900 });
-  const { event, racers: eventRacers } = await seedCompletedRace('Combined Cert Demo', 1, sixRacers);
+  const { racers: eventRacers } = await seedCompletedRace('Combined Cert Demo', 1, sixRacers);
 
   await page.goto(`${baseUrl}/certificate/${eventRacers[0].id}`);
   await page.waitForSelector('[data-testid="certificate"]');
@@ -663,7 +663,7 @@ test('21-event-edit', async ({ page }) => {
   await page.waitForTimeout(600);
 
   // Verify it loaded in edit mode
-  await page.locator('text=Edit Event').waitFor();
+  await page.getByRole('heading', { name: 'Edit Event' }).first().waitFor();
 
   saveIfChanged('screenshots/21-event-edit.png', await page.screenshot({ fullPage: true }));
 });
