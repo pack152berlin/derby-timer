@@ -671,6 +671,15 @@ export function CertificateView() {
   const [authDenied, setAuthDenied] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
 
+  // Swap favicon to certificate/award icon while on this page
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) return;
+    const original = link.href;
+    link.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='15' r='14' fill='white' opacity='.18'/%3E%3Cg transform='translate(4,1.5) scale(0.24)'%3E%3Cpath d='M50 5 C50 5 58 25 58 45 C58 60 55 70 50 80 C45 70 42 60 42 45 C42 25 50 5 50 5Z' fill='%23003F87'/%3E%3Cpath d='M15 50 C15 50 30 35 42 42 C48 46 50 55 50 80 C40 65 25 60 18 55 C12 50 15 50 15 50Z' fill='%23003F87' opacity='.85'/%3E%3Cpath d='M85 50 C85 50 70 35 58 42 C52 46 50 55 50 80 C60 65 75 60 82 55 C88 50 85 50 85 50Z' fill='%23003F87' opacity='.85'/%3E%3Ccircle cx='50' cy='45' r='4' fill='white' opacity='.6'/%3E%3Crect x='38' y='82' width='24' height='5' rx='2' fill='%23003F87' opacity='.7'/%3E%3Cpath d='M42 90 L50 105 L58 90Z' fill='%23003F87' opacity='.5'/%3E%3C/g%3E%3C/svg%3E";
+    return () => { link.href = original; };
+  }, []);
+
   useEffect(() => {
     (async () => {
       setAuthDenied(false);

@@ -588,3 +588,48 @@ test('16-certificate-combined', async ({ page }) => {
 
   saveIfChanged('screenshots/16-certificate-combined.png', await page.screenshot());
 });
+
+test('17-info-overview', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Info Page Demo' });
+
+  // Select event then go to info page
+  await page.goto(`${baseUrl}/`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
+  await page.goto(`${baseUrl}/info`);
+  await page.waitForTimeout(400);
+
+  saveIfChanged('screenshots/17-info-overview.png', await page.screenshot({ fullPage: true }));
+});
+
+test('18-info-scheduling', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Info Scheduling Demo' });
+
+  await page.goto(`${baseUrl}/`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
+  await page.goto(`${baseUrl}/info`);
+  await page.waitForTimeout(300);
+
+  // Click the Heat Scheduling sidebar button
+  await page.locator('nav button', { hasText: 'Heat Scheduling' }).click();
+  await page.waitForTimeout(300);
+
+  saveIfChanged('screenshots/18-info-scheduling.png', await page.screenshot({ fullPage: true }));
+});
+
+test('19-info-standings', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const event = await seedEvent({ name: 'Info Standings Demo' });
+
+  await page.goto(`${baseUrl}/`);
+  await page.click(`[data-testid="event-card-${event.id}"]`);
+  await page.goto(`${baseUrl}/info`);
+  await page.waitForTimeout(300);
+
+  // Click the Standings & Ranking sidebar button
+  await page.locator('nav button', { hasText: 'Standings & Ranking' }).click();
+  await page.waitForTimeout(300);
+
+  saveIfChanged('screenshots/19-info-standings.png', await page.screenshot({ fullPage: true }));
+});

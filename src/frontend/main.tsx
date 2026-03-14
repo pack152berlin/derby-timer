@@ -26,7 +26,7 @@ import { RegistrationView } from './views/RegistrationView';
 import { HeatsView } from './views/HeatsView';
 import { RaceConsoleView } from './views/RaceConsoleView';
 import { StandingsView } from './views/StandingsView';
-import { RaceFormatView } from './views/RaceFormatView';
+import { InfoView } from './views/info/InfoView';
 import { RacerProfileView } from './views/RacerProfileView';
 import { CertificateView } from './views/CertificateView';
 import { PinewoodFullLoader } from './components/PinewoodLoader';
@@ -233,7 +233,7 @@ function AppRoutes() {
               path="/standings" 
               element={currentEvent ? <StandingsView /> : <Navigate to="/" replace />} 
             />
-            <Route path="/format" element={<RaceFormatView />} />
+            <Route path="/info" element={<InfoView />} />
             <Route 
               path="/racer/:id" 
               element={currentEvent ? <RacerProfileView /> : <Navigate to="/" replace />} 
@@ -438,16 +438,16 @@ function Navigation({
             <div className="flex items-center gap-1">
               <div className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible sm:pb-0">
                 <button
-                  onClick={() => navigate('/format')}
+                  onClick={() => navigate('/info')}
                   className={cn(
                     "h-11 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer",
-                    location.pathname === '/format'
+                    location.pathname === '/info'
                       ? "bg-[#003F87] text-white shadow-md"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                   )}
                 >
                   <BookOpen size={18} />
-                  <span>Race Format</span>
+                  <span>Info</span>
                 </button>
 
                 {!currentEvent ? (
