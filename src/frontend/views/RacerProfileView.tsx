@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { splitName } from '@/lib/name-utils';
 import { api } from '../api';
 import { useApp } from '../context';
-import type { Heat, Racer, RacerHistoryEntry } from '../types';
+import type { Heat, Racer, RacerHistoryEntry, EventAwardWinner } from '../types';
 
 import { DEN_IMAGES, DEN_ACCENT, DENS_WITH_LIGHT_ACCENT } from '../lib/den-utils';
 import { denPlacement } from '../lib/den-rankings';
@@ -184,6 +184,7 @@ export function RacerProfileView() {
   const { id } = useParams<{ id: string }>();
   const { setCurrentRacerId, currentEvent, racers, standings, heats } = useApp();
   const [history, setHistory] = useState<RacerHistoryEntry[]>([]);
+  const [awardWins, setAwardWins] = useState<EventAwardWinner[]>([]);
   const [loading, setLoading] = useState(true);
 
   const racer = racers.find(r => r.id === id);
@@ -197,6 +198,14 @@ export function RacerProfileView() {
         .finally(() => setLoading(false));
     }
   }, [id]);
+
+  useEffect(() => {
+    if (currentEvent?.id) {
+      api.getAwardWinners(currentEvent.id).then(all => {
+        setAwardWins(all.filter(w => w.racer_id === id));
+      });
+    }
+  }, [currentEvent?.id, id]);
 
   if (!racer) {
     return (
@@ -268,6 +277,20 @@ export function RacerProfileView() {
 
             {denPlace && showDen && (
               <DenPlacementStrip rank={denPlace.rank} den={denPlace.den} isPodium={rank !== null && rank <= 3} />
+            )}
+
+            {awardWins.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 bg-amber-50/60 border-t border-amber-200/50">
+                {awardWins.map(a => (
+                  <div
+                    key={a.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100/80 text-amber-800 border border-amber-200/60"
+                  >
+                    <Award size={12} className="text-amber-600 shrink-0" />
+                    {a.award_name}
+                  </div>
+                ))}
+              </div>
             )}
 
             {photoUrl && (

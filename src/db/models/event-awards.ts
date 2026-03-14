@@ -83,13 +83,29 @@ export class EventAwardRepository {
     awards: CreateAwardInput[]
   ): EventAward[] {
     return this.db.transaction(() => {
-      this.db.run("DELETE FROM event_awards WHERE event_id = ?", [eventId]);
+      const existing = this.findAwardsByEvent(eventId);
+      const existingByName = new Map(existing.map(a => [a.name, a]));
+      const incomingNames = new Set(awards.map(a => a.name));
 
-      const created: EventAward[] = [];
-      for (let i = 0; i < awards.length; i++) {
-        created.push(this.createAward(eventId, { ...awards[i]!, sort_order: i }));
+      // Delete awards that are no longer in the list (cascades winners)
+      for (const old of existing) {
+        if (!incomingNames.has(old.name)) {
+          this.deleteAward(old.id);
+        }
       }
-      return created;
+
+      // Upsert: update existing (preserves ID + winners), create new
+      const result: EventAward[] = [];
+      for (let i = 0; i < awards.length; i++) {
+        const input = awards[i]!;
+        const match = existingByName.get(input.name);
+        if (match) {
+          result.push(this.updateAward(match.id, { ...input, sort_order: i })!);
+        } else {
+          result.push(this.createAward(eventId, { ...input, sort_order: i }));
+        }
+      }
+      return result;
     })();
   }
 

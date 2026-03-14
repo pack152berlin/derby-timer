@@ -3,6 +3,7 @@ import { Trophy, Search, Award, ExternalLink, Save, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useApp } from '../context';
 import { SearchInput } from '../components/SearchInput';
 import { CUB_SCOUT_DENS } from '../constants';
@@ -37,16 +38,18 @@ function AwardWinnerPicker({
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync picks when currentWinners changes (e.g. after save + reload)
   useEffect(() => {
+    const filtered = currentWinners.filter(w => w.award_id === award.id);
     const map: Record<number, string> = {};
-    for (const w of awardWinners) {
+    for (const w of filtered) {
       map[w.place] = w.racer_id;
     }
     setPicks(map);
-  }, [currentWinners]);
+  }, [currentWinners, award.id]);
 
   useEffect(() => {
     return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); };
@@ -54,16 +57,23 @@ function AwardWinnerPicker({
 
   const handleSave = async () => {
     setSaving(true);
-    const winners: { racer_id: string; place: number }[] = [];
-    for (let p = 1; p <= maxPlace; p++) {
-      if (picks[p]) {
-        winners.push({ racer_id: picks[p]!, place: p });
+    setSaveError(false);
+    try {
+      const winners: { racer_id: string; place: number }[] = [];
+      for (let p = 1; p <= maxPlace; p++) {
+        if (picks[p]) {
+          winners.push({ racer_id: picks[p]!, place: p });
+        }
       }
+      await onSave(award.id, winners);
+      setSaved(true);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaveError(true);
+      savedTimerRef.current = setTimeout(() => setSaveError(false), 3000);
+    } finally {
+      setSaving(false);
     }
-    await onSave(award.id, winners);
-    setSaving(false);
-    setSaved(true);
-    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
   };
 
   const placeLabels = ['', '1st', '2nd', '3rd'];
@@ -102,10 +112,15 @@ function AwardWinnerPicker({
         size="sm"
         onClick={handleSave}
         disabled={saving}
-        className="h-9 gap-1.5 bg-[#003F87] hover:bg-[#002f66] text-white font-bold text-sm shrink-0"
+        className={cn(
+          "h-9 gap-1.5 font-bold text-sm shrink-0",
+          saveError
+            ? "bg-red-600 hover:bg-red-700 text-white"
+            : "bg-[#003F87] hover:bg-[#002f66] text-white"
+        )}
       >
         {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-        {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
+        {saving ? 'Saving...' : saveError ? 'Failed' : saved ? 'Saved' : 'Save'}
       </Button>
     </div>
   );

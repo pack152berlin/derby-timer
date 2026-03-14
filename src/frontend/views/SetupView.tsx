@@ -248,15 +248,20 @@ const DEFAULT_AWARDS = [
 
 // ─── Certificate Preview ─────────────────────────────────────────────────────
 
-const FAKE_RACER = {
+const FAKE_RACER: import('../types').Racer = {
   id: 'preview',
   name: 'Samantha Rodriguez',
   den: 'Bears',
   car_number: '42',
   weight_ok: 1,
-  photo_url: null,
-  checked_in: true,
-} as const;
+  event_id: '',
+  inspected_at: null,
+  car_photo_filename: null,
+  car_photo_mime_type: null,
+  car_photo_bytes: null,
+  created_at: '',
+  updated_at: '',
+};
 
 const FAKE_STATS: import('../lib/certificate-stats').RacerStats = {
   wins: 11,
@@ -301,7 +306,7 @@ function CertificatePreviewModal({
         </DialogHeader>
         <div className="px-4 pb-6 pt-2 cert-preview-modal">
           <Certificate
-            racer={FAKE_RACER as any}
+            racer={FAKE_RACER}
             stats={FAKE_STATS}
             tier={{ type: 'podium', place: 2 }}
             event={fakeEvent}
@@ -529,7 +534,7 @@ export function SetupView() {
         }
 
         localStorage.setItem(CURRENT_EVENT_KEY, event.id);
-        window.location.href = '/register';
+        navigate('/register');
       }
     } catch {
       setCreating(false);
@@ -634,8 +639,7 @@ export function SetupView() {
             </div>
 
             {/* Cub Scout Dens preview */}
-            {(
-              <div>
+            <div>
                 <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
                   Included Dens
                 </h3>
@@ -663,7 +667,6 @@ export function SetupView() {
                   Racers pick their den during registration. Den rankings and &ldquo;Fastest in Den&rdquo; awards are automatic.
                 </p>
               </div>
-            )}
 
           </div>
 
