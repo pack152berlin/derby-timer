@@ -90,7 +90,7 @@ function AwardWinnerPicker({
               <span className="text-xs font-semibold text-slate-400">{placeLabels[place]}</span>
             )}
             <Select
-              value={picks[place] ?? '_none'}
+              value={picks[place] || '_none'}
               onValueChange={(v) => setPicks(prev => ({ ...prev, [place]: v === '_none' ? '' : v }))}
             >
               <SelectTrigger className="h-9 w-[180px] text-sm bg-white border-slate-300">

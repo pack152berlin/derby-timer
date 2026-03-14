@@ -1125,6 +1125,10 @@ const server = Bun.serve({
             return respondJson({ error: "Award name must be 200 characters or fewer" }, 400);
           }
         }
+        const trimmedNames = body.awards.map(a => a.name.trim().toLowerCase());
+        if (new Set(trimmedNames).size !== trimmedNames.length) {
+          return respondJson({ error: "Award names must be unique" }, 400);
+        }
         const awards = awardsRepo.replaceAwardsForEvent(
           req.params.eventId,
           body.awards.map(a => ({ ...a, name: a.name.trim() }))
@@ -1167,6 +1171,7 @@ const server = Bun.serve({
         if (!body.winners || !Array.isArray(body.winners)) {
           return respondJson({ error: "Winners array is required" }, 400);
         }
+        const places = new Set<number>();
         for (const w of body.winners) {
           if (!w.racer_id || typeof w.racer_id !== 'string') {
             return respondJson({ error: "Each winner must have a racer_id" }, 400);
@@ -1174,6 +1179,14 @@ const server = Bun.serve({
           if (typeof w.place !== 'number' || w.place < 1 || w.place > 3) {
             return respondJson({ error: "Place must be 1, 2, or 3" }, 400);
           }
+          if (places.has(w.place)) {
+            return respondJson({ error: "Duplicate place values are not allowed" }, 400);
+          }
+          places.add(w.place);
+        }
+        const existingAward = awardsRepo.updateAward(req.params.awardId, {});
+        if (!existingAward) {
+          return respondJson({ error: "Award not found" }, 404);
         }
         awardsRepo.setWinnersForAward(req.params.awardId, body.winners);
         return respondJson({ success: true });
