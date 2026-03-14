@@ -6,7 +6,7 @@ interface HeatRecord  { id: string; status: string; lanes: { lane_number: number
 interface EventRecord { id: string; status: string }
 interface ActiveHeatResponse { heatId: string | null; running: boolean; elapsedMs: number }
 
-const PORT = 3097;
+const PORT = 3847;
 const DB_PATH = `/tmp/server-restart-test-${Date.now()}.db`;
 const BASE_URL = `http://localhost:${PORT}`;
 
