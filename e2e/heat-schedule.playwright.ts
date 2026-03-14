@@ -45,7 +45,7 @@ test.describe('Heat Schedule', () => {
     // Click the button — dialog should appear
     await page.click('[data-testid="btn-generate-heats"]');
     await expect(page.locator('[role="dialog"]')).toBeVisible();
-    await expect(page.locator('[role="dialog"]')).toContainText('Generate Heats');
+    await expect(page.locator('[role="dialog"]')).toContainText('Start Racing');
     await expect(page.locator('[role="dialog"]')).toContainText('1 eligible racer');
 
     // Cancel — dialog closes, no heats generated
