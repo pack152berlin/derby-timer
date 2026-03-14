@@ -37,9 +37,9 @@ export function up(): void {
 }
 
 export function down(): void {
+  db.exec("DROP TABLE IF EXISTS event_award_winners");
+  db.exec("DROP TABLE IF EXISTS event_awards");
   try {
-    db.exec("DROP TABLE IF EXISTS event_award_winners");
-    db.exec("DROP TABLE IF EXISTS event_awards");
     db.exec("ALTER TABLE events DROP COLUMN organization");
   } catch {
     // SQLite builds without DROP COLUMN support can keep the nullable column.

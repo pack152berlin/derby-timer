@@ -250,7 +250,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ awards }),
     });
-    return res.json();
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to set awards (${res.status})`);
+    }
+    const data = await res.json();
+    return data.map((a: any) => ({ ...a, allow_second: !!a.allow_second, allow_third: !!a.allow_third }));
   },
 
   async updateAward(id: string, data: { name?: string; allow_second?: boolean; allow_third?: boolean }): Promise<EventAward> {
@@ -259,11 +264,20 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    return res.json();
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to update award (${res.status})`);
+    }
+    const award = await res.json();
+    return { ...award, allow_second: !!award.allow_second, allow_third: !!award.allow_third };
   },
 
   async deleteAward(id: string): Promise<void> {
-    await fetch(`/api/awards/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/awards/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to delete award (${res.status})`);
+    }
   },
 
   async getAwardWinners(eventId: string): Promise<EventAwardWinner[]> {
@@ -272,14 +286,22 @@ export const api = {
   },
 
   async setAwardWinners(awardId: string, winners: { racer_id: string; place: number }[]): Promise<void> {
-    await fetch(`/api/awards/${awardId}/winners`, {
+    const res = await fetch(`/api/awards/${awardId}/winners`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ winners }),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to save award winners (${res.status})`);
+    }
   },
 
   async deleteAwardWinner(id: string): Promise<void> {
-    await fetch(`/api/award-winners/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/award-winners/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to delete award winner (${res.status})`);
+    }
   },
 };
