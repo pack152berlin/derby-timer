@@ -153,6 +153,32 @@ async function optimizePhotoForUpload(file: File): Promise<File> {
   });
 }
 
+function InspectionRing({ percent }: { percent: number }) {
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+  const color = percent === 100 ? '#10b981' : percent >= 70 ? '#003F87' : '#f59e0b';
+
+  return (
+    <div className="relative w-16 h-16 shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="4.5" />
+        <circle
+          cx="30" cy="30" r={radius}
+          fill="none" stroke={color} strokeWidth="4.5"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-sm font-black text-slate-700 leading-none tabular-nums">{percent}%</span>
+      </div>
+    </div>
+  );
+}
+
 export function RegistrationView() {
   const { currentEvent, racers, refreshData, canEdit } = useApp();
   const [activeTab, setActiveTab] = useState('registerTab');
@@ -200,10 +226,22 @@ export function RegistrationView() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-3 sm:mb-6">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
-            Registration
-          </h1>
+        <div className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
+              Registration
+            </h1>
+            <div className="flex items-center gap-3 mt-1 text-sm">
+              <span className="font-bold text-slate-500">
+                <span className="tabular-nums">{racers.length}</span> Racers
+              </span>
+              <span className="w-1 h-1 rounded-full bg-slate-300" />
+              <span className="font-bold text-slate-500">
+                <span className="tabular-nums">{inspectedCount}</span> Inspected
+              </span>
+            </div>
+          </div>
+          {racers.length > 0 && <InspectionRing percent={inspectionPercent} />}
           <Button
             variant="outline"
             size="sm"
@@ -214,16 +252,6 @@ export function RegistrationView() {
             <HelpCircle className="h-4 w-4" />
             <span>Help</span>
           </Button>
-        </div>
-        <div className="hidden sm:flex flex-wrap items-center gap-4 sm:gap-6 mt-3 text-sm">
-          <div className="flex items-center gap-2 text-slate-600">
-            <Users size={18} className="text-[#003F87]" />
-            <span className="font-semibold">{racers.length} Racers</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-600">
-            <CheckCircle size={18} className="text-emerald-500" />
-            <span className="font-semibold">{inspectedCount} Inspected ({inspectionPercent}%)</span>
-          </div>
         </div>
       </div>
 
@@ -353,6 +381,7 @@ function RacersTab({
   const [racerToDelete, setRacerToDelete] = useState<Racer | null>(null);
   const [photoToRemoveRacer, setPhotoToRemoveRacer] = useState<Racer | null>(null);
   const [lastAddedRacer, setLastAddedRacer] = useState<Racer | null>(null);
+  const [justSavedRacerId, setJustSavedRacerId] = useState<string | null>(null);
   const cardPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -512,8 +541,10 @@ function RacersTab({
         den: editRacerDen.trim() || null,
         weight_ok: editRacerInspected,
       });
-      setNotice(`Updated ${name}.`);
+      const savedId = racer.id;
       resetEditForm();
+      setJustSavedRacerId(savedId);
+      setTimeout(() => setJustSavedRacerId(prev => prev === savedId ? null : prev), 1200);
       await refreshData();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update racer.';
@@ -600,11 +631,12 @@ function RacersTab({
       )}
 
       {showAddForm && (
-        <Card className="mb-4 border-2 border-blue-200">
-          <CardHeader className="lg:py-2 px-4">
-            <CardTitle className="text-lg">Add New Racer</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 px-4 pb-4">
+        <Card className="mb-4 border-0 ring-2 ring-[#003F87]/20 shadow-md">
+          <div className="bg-[#003F87] px-4 py-2.5 flex items-center gap-2">
+            <Plus className="w-4 h-4 text-white/70" />
+            <span className="text-base font-black uppercase tracking-wider text-white">New Racer</span>
+          </div>
+          <CardContent className="pt-4 px-4 pb-4">
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               {/* Name */}
               <div>
@@ -796,24 +828,36 @@ function RacersTab({
           const sectionHeader = activeTab === 'inspectionTab' && (
             idx === 0 && !racer.weight_ok ? (
               <div className="col-span-full pt-1 pb-2">
-                <p className="text-lg text-amber-600 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Pending Inspection - Please Review
-                </p>
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-amber-300" />
+                  <p className="text-xl font-black uppercase tracking-widest text-amber-600 flex items-center gap-2 px-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Needs Inspection
+                  </p>
+                  <div className="h-px flex-1 bg-amber-300" />
+                </div>
               </div>
             ) : idx === 0 && racer.weight_ok ? (
               <div className="col-span-full pt-1 pb-2">
-                <p className="text-lg text-emerald-600 flex items-center gap-1.5">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Already Passing Inspection
-                </p>
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-emerald-300" />
+                  <p className="text-xl font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2 px-2">
+                    <CheckCircle className="w-5 h-5" />
+                    Passed
+                  </p>
+                  <div className="h-px flex-1 bg-emerald-300" />
+                </div>
               </div>
             ) : prevRacer && !prevRacer.weight_ok && racer.weight_ok ? (
               <div className="col-span-full pt-3 pb-2">
-                <p className="text-lg text-emerald-600 flex items-center gap-1.5">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Already Passing Inspection
-                </p>
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-emerald-300" />
+                  <p className="text-xl font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2 px-2">
+                    <CheckCircle className="w-5 h-5" />
+                    Passed
+                  </p>
+                  <div className="h-px flex-1 bg-emerald-300" />
+                </div>
               </div>
             ) : null
           );
@@ -824,12 +868,17 @@ function RacersTab({
           <Card
             data-testid="racer-card"
             className={cn(
-              "relative group transition-all duration-200 py-1 border-2",
+              "relative group transition-all duration-200 py-1 border-0 ring-1 shadow-sm",
               activeTab === 'inspectionTab' && !racer.weight_ok
-                ? "bg-amber-50 border-amber-200 [box-shadow:inset_0_1px_4px_rgba(255,255,255,0.95),0_1px_3px_rgba(120,60,0,0.09)]"
-                : "border-slate-200 hover:border-blue-300 [box-shadow:inset_0_1px_3px_rgba(255,255,255,0.8),0_1px_3px_rgba(0,0,0,0.07)]"
+                ? "bg-amber-50/80 ring-amber-200"
+                : "ring-slate-200 hover:ring-slate-300 hover:shadow-md"
             )}
           >
+            {/* Left accent stripe — glanceable inspection status */}
+            <div className={cn(
+              "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
+              racer.weight_ok ? "bg-emerald-500" : "bg-amber-400"
+            )} />
             {/* Desktop delete — floating pill, hover-reveal, register tab only */}
             {!isEditing && activeTab === 'registerTab' && (
               <Button
@@ -852,14 +901,9 @@ function RacersTab({
                   <div
                     data-testid={`car-number-${racer.car_number}`}
                     onClick={() => setCurrentRacerId(racer.id)}
-                    className={cn(
-                      "w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center border-2 cursor-pointer hover:scale-110 transition-transform active:scale-90 font-black text-xl",
-                      !racer.weight_ok && activeTab === 'registerTab'
-                        ? "bg-amber-50 text-amber-600 border-amber-300"
-                        : "bg-slate-100 text-slate-500 border-slate-200"
-                    )}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center bg-[#003F87] text-white cursor-pointer hover:scale-105 transition-transform active:scale-95 font-black text-xl sm:text-2xl shadow-sm"
                   >
-                    #{racer.car_number}
+                    {racer.car_number}
                   </div>
 
                   {racer.car_photo_filename ? (
@@ -867,7 +911,7 @@ function RacersTab({
                       <img
                         src={api.getRacerPhotoUrl(racer.id, racer.updated_at)}
                         alt={`${racer.name} car photo`}
-                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 border-slate-300 object-cover"
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-slate-200 object-cover"
                         loading="lazy"
                       />
                       <button
@@ -881,11 +925,10 @@ function RacersTab({
                   ) : (
                     <button
                       onClick={() => beginCardPhotoUpload(racer.id)}
-                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-colors cursor-pointer"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-dashed border-slate-300 text-slate-300 flex items-center justify-center bg-slate-50/50 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-400 transition-colors cursor-pointer"
                       title="Add Photo"
                     >
-                      <Camera className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase">No Pic</span>
+                      <Camera className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -1015,6 +1058,11 @@ function RacersTab({
                         Cancel
                       </Button>
                     </>
+                  ) : justSavedRacerId === racer.id ? (
+                    <div className="flex items-center gap-1.5 text-emerald-600 pr-1">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="text-sm font-bold">Saved</span>
+                    </div>
                   ) : (
                     <>
                       <Button
@@ -1084,13 +1132,13 @@ function RacersTab({
       </div>
 
         {racers.length === 0 && !showAddForm && (
-          <Card className="border-2 border-dashed border-slate-300 m-4">
-            <CardContent className="text-center py-12">
-              <Users className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-              <p className="text-lg text-slate-500 font-medium">No racers registered yet</p>
-              <p className="text-slate-400 mt-1">Tap "Add Racer" to get started</p>
-            </CardContent>
-          </Card>
+          <div className="text-center py-14 px-4">
+            <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-2xl flex items-center justify-center">
+              <Car className="w-8 h-8 text-slate-300" />
+            </div>
+            <p className="text-lg text-slate-400 font-bold">No racers yet</p>
+            <p className="text-slate-400 mt-1 text-sm">Tap "Add Racer" to get started</p>
+          </div>
         )}
       </AppTabs>
 
@@ -1142,8 +1190,8 @@ function RacersTab({
           </DialogHeader>
           
           <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border-2 border-slate-200">
-            <div className="text-5xl font-black text-[#003F87] leading-none">
-              #{lastAddedRacer?.car_number}
+            <div className="w-18 h-18 sm:w-20 sm:h-20 bg-[#003F87] text-white rounded-xl flex items-center justify-center shadow-md shrink-0">
+              <span className="text-4xl sm:text-5xl font-black leading-none">{lastAddedRacer?.car_number}</span>
             </div>
             <div className="flex-1 min-w-0 border-l-2 border-slate-200 pl-4">
               <p className="font-bold text-lg text-slate-900 truncate leading-tight">
