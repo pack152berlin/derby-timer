@@ -437,8 +437,11 @@ export function SetupView() {
   const addCustomAward = () => {
     const trimmed = newAwardName.trim();
     if (!trimmed) return;
-    setCustomAwards((prev) => [...prev, trimmed]);
-    setEnabledAwards((prev) => new Set([...prev, `custom-${customAwards.length}`]));
+    setCustomAwards((prev) => {
+      const newIndex = prev.length;
+      setEnabledAwards((en) => new Set([...en, `custom-${newIndex}`]));
+      return [...prev, trimmed];
+    });
     setNewAwardName('');
   };
 
