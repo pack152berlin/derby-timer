@@ -1,6 +1,6 @@
 import React from 'react';
-import { Users, Smartphone, Scale, ClipboardCheck } from 'lucide-react';
-import { SectionHeading, Callout } from './components';
+import { Users, Smartphone, Scale, ClipboardCheck, Zap, Upload, FileSpreadsheet } from 'lucide-react';
+import { SectionHeading, Callout, StepList } from './components';
 
 export function RegistrationPage() {
   return (
@@ -8,29 +8,81 @@ export function RegistrationPage() {
       <SectionHeading id="how-registration">How Registration Works</SectionHeading>
       <div className="space-y-3 text-slate-700">
         <p>
-          Registration is the first step on race day. Every car needs a name, car number, and den
-          assignment before it can race. DerbyTimer is designed so{' '}
-          <strong>multiple volunteers can register cars simultaneously</strong> from their own phones
-          or tablets — no single bottleneck at a laptop.
+          Registration is the first step on race day. DerbyTimer is built around three
+          principles that keep check-in fast and stress-free:
         </p>
-        <p>
-          Just open the app on any device, tap <strong>Registration</strong>, and start adding
-          racers. All devices see updates in real time.
-        </p>
+        <div className="grid gap-3 sm:grid-cols-3 my-3">
+          {[
+            {
+              icon: <Users className="w-5 h-5" />,
+              title: 'Parallel check-in',
+              desc: 'Any number of volunteers register racers simultaneously from their own phones. No single bottleneck.',
+            },
+            {
+              icon: <Zap className="w-5 h-5" />,
+              title: 'Fast & conflict-free',
+              desc: 'Car numbers are validated on save. Duplicates are caught automatically — multiple stations never clash.',
+            },
+            {
+              icon: <FileSpreadsheet className="w-5 h-5" />,
+              title: 'Pre-filled roster',
+              desc: 'Upload your pack roster ahead of time so volunteers just confirm attendance instead of typing names.',
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-xl border-2 border-[#003F87]/15 bg-[#003F87]/[0.03] p-4 space-y-2"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[#003F87] flex items-center justify-center text-white">
+                {item.icon}
+              </div>
+              <p className="font-bold text-slate-900 text-sm">{item.title}</p>
+              <p className="text-sm text-slate-600 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <SectionHeading id="parallel-stations">Parallel Registration Stations</SectionHeading>
+      <SectionHeading id="check-in-flow">Check-in Flow</SectionHeading>
       <div className="space-y-3 text-slate-700">
         <p>
-          For packs with 30+ cars, a single registration line creates a long wait. The fastest
-          approach is to set up <strong>2–4 registration stations</strong>, each staffed by a
-          volunteer with their own phone.
+          Each racer goes through these steps — they can happen at one table or be
+          split across stations depending on your pack&apos;s size.
+        </p>
+        <StepList
+          steps={[
+            {
+              title: 'Open DerbyTimer on any device',
+              desc: 'Volunteers navigate to the app on their phone, tablet, or laptop and tap Registration.',
+            },
+            {
+              title: 'Enter racer details',
+              desc: 'Name, den, and car number for each racer. If a roster was uploaded, just confirm the entry.',
+            },
+            {
+              title: 'Inspect and weigh',
+              desc: 'Mark cars as passing the weight check — at the same table or a separate inspection station.',
+            },
+            {
+              title: 'Snap a photo (optional)',
+              desc: 'Take a car photo for the race display and certificates. Not required — skip to save time.',
+            },
+          ]}
+        />
+      </div>
+
+      <SectionHeading id="parallel-stations">Parallel Stations</SectionHeading>
+      <div className="space-y-3 text-slate-700">
+        <p>
+          There&apos;s no limit to how many volunteers can register at once. For packs with 30+ cars,
+          put <strong>as many volunteers as you have</strong> on their phones — every extra person
+          shortens the line.
         </p>
         <div className="grid gap-3 sm:grid-cols-3 my-3">
           {[
             {
               icon: <Smartphone className="w-5 h-5" />,
-              title: '2–3 stations',
+              title: 'Any number of devices',
               desc: 'Each volunteer opens DerbyTimer on their phone and adds racers independently.',
             },
             {
@@ -61,20 +113,18 @@ export function RegistrationPage() {
       <SectionHeading id="inspection">Separate Inspection Station</SectionHeading>
       <div className="space-y-3 text-slate-700">
         <p>
-          Inspection (weight check) should be a <strong>separate station</strong> from registration.
-          Combining the two into one line slows everything down — the scale becomes the bottleneck
-          while registration volunteers wait.
+          Inspection can happen at the same table as registration or at a{' '}
+          <strong>separate dedicated station</strong> — whatever fits your pack&apos;s setup.
+        </p>
+        <p>
+          For larger events, a separate inspection table helps. Registration volunteers stay focused
+          on entering data while a dedicated inspector handles the scale. Both workflows happen in
+          parallel so no one waits for the other.
         </p>
         <Callout>
-          Recommended setup: volunteers register cars at their phones, then direct families to a
-          dedicated inspection table with a scale. The inspection volunteer opens the Inspect tab and
-          marks each car as it passes.
+          Either way, any volunteer can open the <strong>Inspect</strong> tab and mark cars as they
+          pass the weight check.
         </Callout>
-        <p>
-          This separation lets registration and inspection run in parallel. A car can be registered
-          at station A while a different car is being weighed at the inspection table — no one waits
-          for the other.
-        </p>
       </div>
 
       <SectionHeading id="car-photos">Car Photos</SectionHeading>

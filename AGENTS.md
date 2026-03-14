@@ -115,6 +115,7 @@ Always use Tailwind utility classes over custom CSS:
 - **High contrast** - slate-900 text on white backgrounds minimum
 - **Large typography on Display Pages** - text-xl minimum for headers, text-lg for content
 - **Minimum font size** - `text-xs` (12px) is the smallest allowed text size anywhere in the UI. Never use `text-[10px]`, `text-[9px]`, or any smaller size — even for labels, badges, or secondary info.
+- **Documentation base font** - Use `text-base` (16px) as the base body font for documentation and info pages. `text-sm` is acceptable for secondary labels and captions, but primary readable content should be `text-base`.
 - **Bold weights** - font-bold, font-black for emphasis
 - **Brand palette** — navy `#003F87` for active states and primary CTAs; crimson `#CE1126` for accent stripes and warning badges. Do not introduce orange or other brand colors.
 

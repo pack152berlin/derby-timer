@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trophy, Flag, Clock, Plus, X } from 'lucide-react';
 import { LilyChevronRight } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -21,8 +21,8 @@ import { AdminBanner } from '../components/AdminBanner';
 
 export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => void }) {
   const { canEdit } = useApp();
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
-  const [showForm, setShowForm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
@@ -45,17 +45,6 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
     }
   };
 
-  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const event = await api.createEvent({
-      name: formData.get('name') as string,
-      date: formData.get('date') as string,
-      lane_count: parseInt(formData.get('lane_count') as string)
-    });
-    setShowForm(false);
-    onSelectEvent(event);
-  };
 
   const getStatusBadge = (status: Event['status']) => {
     const variants: Record<string, { variant: any; className: string }> = {
@@ -78,7 +67,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
         </div>
         {canEdit && (
           <Button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => navigate('/new')}
             size="lg"
             className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-6 shadow-lg"
           >
@@ -89,57 +78,6 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
       </div>
 
       <AdminBanner />
-
-      {showForm && (
-        <Card className="mb-8 border-2 border-slate-200">
-          <CardHeader>
-            <CardTitle>Create New Event</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-4 items-end">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold mb-2 text-slate-600">Event Name</label>
-                <Input 
-                  name="name" 
-                  required 
-                  placeholder="Pack 123 Pinewood Derby"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-slate-600">Date</label>
-                <Input 
-                  name="date" 
-                  type="date" 
-                  required 
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2 text-slate-600">Lanes</label>
-                <select 
-                  name="lane_count" 
-                  defaultValue="4"
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003F87] focus:border-transparent"
-                >
-                  <option value="2">2 Lanes</option>
-                  <option value="3">3 Lanes</option>
-                  <option value="4">4 Lanes</option>
-                  <option value="5">5 Lanes</option>
-                  <option value="6">6 Lanes</option>
-                </select>
-              </div>
-              <div className="md:col-span-4 flex gap-2">
-                <Button type="submit" className="flex-1 bg-[#003F87] hover:bg-[#002f66] text-white font-semibold">
-                  Create Event
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {events.map(event => {

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Timer, Shuffle, Trophy, ClipboardList, ChevronDown } from 'lucide-react';
+import { Timer, Shuffle, Trophy, ClipboardList, ChevronDown, AlertTriangle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Page } from './components';
 import { PageTocMobile } from './components';
@@ -29,6 +29,7 @@ const pages: Page[] = [
     icon: <ClipboardList className="w-4 h-4" />,
     sections: [
       { id: 'how-registration', title: 'How Registration Works' },
+      { id: 'check-in-flow', title: 'Check-in Flow' },
       { id: 'parallel-stations', title: 'Parallel Stations' },
       { id: 'inspection', title: 'Separate Inspection Station' },
       { id: 'car-photos', title: 'Car Photos' },
@@ -63,6 +64,42 @@ const pages: Page[] = [
     component: StandingsPage,
   },
 ];
+
+// ─── Shared pieces ──────────────────────────────────────────────────────────
+
+function WipBanner() {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-6">
+      <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+      <p className="text-sm text-amber-800 leading-relaxed">
+        <strong>Work in progress</strong> — these pages are updated as the project develops and may
+        not reflect the latest features.
+      </p>
+    </div>
+  );
+}
+
+function GitHubPanel() {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        Project Planning
+      </p>
+      <p className="text-sm text-slate-600 leading-relaxed mb-3">
+        Detailed operational research and planning docs are on GitHub.
+      </p>
+      <a
+        href="https://github.com/pack152berlin/derby-timer/tree/main/docs/plans"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#003F87] hover:underline"
+      >
+        View plans on GitHub
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    </div>
+  );
+}
 
 // ─── Main InfoView ───────────────────────────────────────────────────────────
 
@@ -131,6 +168,9 @@ export function InfoView() {
                 );
               })}
             </div>
+            <div className="mt-6">
+              <GitHubPanel />
+            </div>
           </div>
         </nav>
 
@@ -187,6 +227,7 @@ export function InfoView() {
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">{activePage.subtitle}</p>
             </div>
+            <WipBanner />
             <ActiveComponent />
           </div>
         </div>
@@ -195,6 +236,7 @@ export function InfoView() {
       {/* Content area — mobile (outside flex so it's full width) */}
       <div className="md:hidden">
         <PageTocMobile sections={activePage.sections} />
+        <WipBanner />
         <ActiveComponent />
       </div>
     </div>

@@ -27,6 +27,7 @@ import { HeatsView } from './views/HeatsView';
 import { RaceConsoleView } from './views/RaceConsoleView';
 import { StandingsView } from './views/StandingsView';
 import { InfoView } from './views/info/InfoView';
+import { SetupView } from './views/SetupView';
 import { RacerProfileView } from './views/RacerProfileView';
 import { CertificateView } from './views/CertificateView';
 import { PinewoodFullLoader } from './components/PinewoodLoader';
@@ -234,6 +235,7 @@ function AppRoutes() {
               element={currentEvent ? <StandingsView /> : <Navigate to="/" replace />} 
             />
             <Route path="/info" element={<InfoView />} />
+            <Route path="/new" element={<SetupView />} />
             <Route 
               path="/racer/:id" 
               element={currentEvent ? <RacerProfileView /> : <Navigate to="/" replace />} 
@@ -451,9 +453,18 @@ function Navigation({
                 </button>
 
                 {!currentEvent ? (
-                  <Badge variant="outline" className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center cursor-not-allowed">
-                    Select an event to begin
-                  </Badge>
+                  location.pathname === '/' ? (
+                    <Badge variant="outline" className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center cursor-not-allowed">
+                      Select an event to begin
+                    </Badge>
+                  ) : (
+                    <button
+                      onClick={() => navigate('/')}
+                      className="h-11 px-4 text-sm font-semibold ml-1 sm:ml-2 flex items-center rounded-lg border border-slate-200 text-slate-600 hover:text-[#003F87] hover:border-[#003F87] transition-colors cursor-pointer"
+                    >
+                      Select an event to begin
+                    </button>
+                  )
                 ) : (
                   <>
                     {navItems.map(item => {
