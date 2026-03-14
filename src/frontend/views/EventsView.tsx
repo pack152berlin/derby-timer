@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Flag, Clock, Plus, X } from 'lucide-react';
-import { LilyChevronRight } from '@/components/LilyChevron';
+import { Trophy, Flag, Clock, Plus, X, Pencil, Users, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -12,12 +10,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Event } from '../types';
 import { api } from '../api';
 import { useApp } from '../context';
 import { AdminBanner } from '../components/AdminBanner';
+
+const STATUS_CONFIG: Record<Event['status'], { label: string; accent: string; pill: string; pulse?: boolean; border?: string }> = {
+  draft: {
+    label: 'Draft',
+    accent: 'bg-slate-300',
+    pill: 'bg-slate-100 text-slate-600 border-slate-300',
+    border: 'border-dashed border-slate-300',
+  },
+  checkin: {
+    label: 'Check-in',
+    accent: 'bg-blue-500',
+    pill: 'bg-blue-50 text-blue-700 border-blue-300',
+  },
+  racing: {
+    label: 'Racing',
+    accent: 'bg-[#CE1126]',
+    pill: 'bg-red-50 text-[#CE1126] border-red-300',
+    pulse: true,
+  },
+  complete: {
+    label: 'Complete',
+    accent: 'bg-emerald-500',
+    pill: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+  },
+};
 
 export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => void }) {
   const { canEdit } = useApp();
@@ -45,17 +67,6 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
     }
   };
 
-
-  const getStatusBadge = (status: Event['status']) => {
-    const variants: Record<string, { variant: any; className: string }> = {
-      draft: { variant: 'secondary' as const, className: 'bg-slate-100 text-slate-600 border-slate-300' },
-      checkin: { variant: 'default' as const, className: 'bg-blue-50 text-blue-800 border-blue-300' },
-      racing: { variant: 'default' as const, className: 'bg-red-50 text-red-700 border-red-300' },
-      complete: { variant: 'default' as const, className: 'bg-emerald-50 text-emerald-700 border-emerald-300' }
-    };
-    return variants[status] || { variant: 'secondary' as const, className: 'bg-slate-100 text-slate-600' };
-  };
-
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -63,7 +74,7 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
           <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
             Race Events
           </h1>
-          <p className="text-slate-500 mt-1">Select an event or create a new race event!</p>
+          <p className="text-slate-500 mt-1">Select an event or create a new race day</p>
         </div>
         {canEdit && (
           <Button
@@ -81,61 +92,88 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
 
       <div className="grid gap-4 md:grid-cols-2">
         {events.map(event => {
-          const statusBadge = getStatusBadge(event.status);
+          const cfg = STATUS_CONFIG[event.status];
           return (
-            <Card 
+            <div
               key={event.id}
               data-testid={`event-card-${event.id}`}
-              className="group relative cursor-pointer hover:border-[#003F87] transition-all duration-200 hover:shadow-lg border-2 gap-2"
+              className={cn(
+                'group relative rounded-xl border-2 bg-white overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-[#003F87]',
+                cfg.border ?? 'border-slate-200',
+              )}
               onClick={() => onSelectEvent(event)}
             >
-              {canEdit && event.racer_count === 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEventToDelete(event);
-                  }}
-                  className="absolute -top-2 -right-2 h-8 px-2 rounded-full bg-white border shadow-sm text-slate-400 hover:text-white hover:bg-red-600 transition-all z-10 flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100"
-                  title="Delete Event"
-                >
-                  <X className="h-3 w-3" />
-                  <span className="text-[10px] font-bold uppercase">Delete</span>
-                </Button>
-              )}
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-xl">{event.name}</CardTitle>
-                  <Badge 
-                    variant={statusBadge.variant}
-                    className={cn("uppercase tracking-wider text-xs", statusBadge.className)}
-                  >
-                    {event.status}
-                  </Badge>
+              {/* Left accent band */}
+              <div className={cn('absolute inset-y-0 left-0 w-1.5 rounded-l-xl', cfg.accent, cfg.pulse && 'animate-pulse')} />
+
+              <div className="pl-5 pr-4 py-4">
+                {/* Top row: name + status pill */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="text-lg font-bold text-slate-900 leading-snug">{event.name}</h3>
+                  <span className={cn(
+                    'shrink-0 inline-flex items-center text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border',
+                    cfg.pill,
+                  )}>
+                    {cfg.label}
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-slate-500 text-sm">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Clock size={16} className="text-[#CE1126]" />
-                    <span className="font-medium">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+
+                {/* Date */}
+                <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-3">
+                  <Clock size={14} className="text-[#CE1126] shrink-0" />
+                  <span className="font-medium">
+                    {new Date(event.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+                </div>
+
+                {/* Stat chips + action buttons row */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 rounded-md px-2 py-1">
+                      <Users size={12} className="text-slate-400" />
+                      {event.racer_count} Racers
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 rounded-md px-2 py-1">
+                      <Layers size={12} className="text-slate-400" />
+                      {event.lane_count} Lanes
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Flag size={16} className="text-slate-400" />
-                    <span className="font-medium">{event.racer_count} Racers / {event.lane_count} Lanes</span>
-                  </div>
+
+                  {/* Admin actions */}
+                  {canEdit && (
+                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/event/${event.id}/edit`);
+                        }}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#003F87] hover:bg-[#003F87]/10 transition-colors cursor-pointer"
+                        title="Edit Event"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      {event.racer_count === 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEventToDelete(event);
+                          }}
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Delete Event"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="mt-4 pt-4 flex items-center justify-end text-[#003F87] font-semibold text-sm">
-                  Select Event
-                  <LilyChevronRight className="w-4 h-4 ml-1" />
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>
 
+      {/* Delete confirmation dialog */}
       <Dialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
         <DialogContent>
           <DialogHeader>
@@ -155,14 +193,27 @@ export function EventsView({ onSelectEvent }: { onSelectEvent: (e: Event) => voi
         </DialogContent>
       </Dialog>
 
+      {/* Empty state */}
       {events.length === 0 && (
-        <Card className="border-2 border-dashed border-slate-300">
-          <CardContent className="text-center py-16">
-            <Trophy className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg text-slate-500 font-medium">No events yet</p>
-            <p className="text-slate-400 mt-1">Create your first race day to get started</p>
-          </CardContent>
-        </Card>
+        <div className="border-2 border-dashed border-slate-300 rounded-2xl py-20 px-8 text-center">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <Trophy className="w-10 h-10 text-slate-300" />
+          </div>
+          <p className="text-xl font-bold text-slate-700 mb-1">No events yet</p>
+          <p className="text-slate-400 mb-6 max-w-sm mx-auto">
+            Create your first race day to start managing heats, racers, and standings.
+          </p>
+          {canEdit && (
+            <Button
+              onClick={() => navigate('/new')}
+              size="lg"
+              className="bg-[#003F87] hover:bg-[#002f66] text-white font-semibold px-8 shadow-lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create First Event
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

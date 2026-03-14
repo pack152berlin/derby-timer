@@ -618,6 +618,56 @@ test('18-info-scheduling', async ({ page }) => {
   saveIfChanged('screenshots/18-info-scheduling.png', await page.screenshot({ fullPage: true }));
 });
 
+test('20-event-setup', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  await page.goto(`${baseUrl}/new`);
+  await page.waitForTimeout(300);
+
+  // Fill in some example data so the form looks populated
+  await page.fill('input[placeholder="Pack 152 Pinewood Derby 2026"]', 'Pack 152 Pinewood Derby 2026');
+  await page.waitForTimeout(200);
+
+  saveIfChanged('screenshots/20-event-setup.png', await page.screenshot({ fullPage: true }));
+});
+
+test('21-event-edit', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  // Create an event with awards to edit
+  const eventRes = await fetch(`${baseUrl}/api/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Pack 152 Pinewood Derby 2026',
+      date: '2026-03-15',
+      lane_count: 4,
+      organization: 'Cub Scouts of America',
+    }),
+  });
+  const event = await eventRes.json();
+
+  // Set up some awards
+  await fetch(`${baseUrl}/api/events/${event.id}/awards`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      awards: [
+        { name: 'Most Creative', allow_second: true, allow_third: false },
+        { name: 'Best Build Quality', allow_second: false, allow_third: false },
+      ],
+    }),
+  });
+
+  await page.goto(`${baseUrl}/event/${event.id}/edit`);
+  await page.waitForTimeout(600);
+
+  // Verify it loaded in edit mode
+  await page.locator('text=Edit Event').waitFor();
+
+  saveIfChanged('screenshots/21-event-edit.png', await page.screenshot({ fullPage: true }));
+});
+
 test('19-info-standings', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const event = await seedEvent({ name: 'Info Standings Demo' });

@@ -1,4 +1,4 @@
-import type { Event, Racer, Heat, Standing, HeatResult, RacerHistoryEntry } from './types';
+import type { Event, Racer, Heat, Standing, HeatResult, RacerHistoryEntry, EventAward, EventAwardWinner } from './types';
 
 export type AuthStatus = {
   admin: boolean;
@@ -38,6 +38,19 @@ export const api = {
     }
   },
   
+  async updateEvent(id: string, data: { name?: string; date?: string; lane_count?: number; organization?: string; status?: string }): Promise<Event> {
+    const res = await fetch(`/api/events/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Failed to update event (${res.status})`);
+    }
+    return res.json();
+  },
+
   async createEvent(data: Partial<Event>): Promise<Event> {
     const res = await fetch('/api/events', {
       method: 'POST',
@@ -218,5 +231,55 @@ export const api = {
       ...r,
       dnf: !!r.dnf
     }));
-  }
+  },
+
+  async getAwards(eventId: string): Promise<EventAward[]> {
+    const res = await fetch(`/api/events/${eventId}/awards`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map((a: any) => ({
+      ...a,
+      allow_second: !!a.allow_second,
+      allow_third: !!a.allow_third,
+    }));
+  },
+
+  async setAwards(eventId: string, awards: { name: string; allow_second?: boolean; allow_third?: boolean }[]): Promise<EventAward[]> {
+    const res = await fetch(`/api/events/${eventId}/awards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ awards }),
+    });
+    return res.json();
+  },
+
+  async updateAward(id: string, data: { name?: string; allow_second?: boolean; allow_third?: boolean }): Promise<EventAward> {
+    const res = await fetch(`/api/awards/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async deleteAward(id: string): Promise<void> {
+    await fetch(`/api/awards/${id}`, { method: 'DELETE' });
+  },
+
+  async getAwardWinners(eventId: string): Promise<EventAwardWinner[]> {
+    const res = await fetch(`/api/events/${eventId}/award-winners`);
+    return res.ok ? res.json() : [];
+  },
+
+  async setAwardWinners(awardId: string, winners: { racer_id: string; place: number }[]): Promise<void> {
+    await fetch(`/api/awards/${awardId}/winners`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ winners }),
+    });
+  },
+
+  async deleteAwardWinner(id: string): Promise<void> {
+    await fetch(`/api/award-winners/${id}`, { method: 'DELETE' });
+  },
 };

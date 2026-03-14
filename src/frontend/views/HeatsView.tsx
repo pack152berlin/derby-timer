@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useDeferredValue, useCallback } from 'react';
-import { AlertCircle, BarChart3, Car, Clock, Play } from 'lucide-react';
+import { AlertCircle, AlertTriangle, BarChart3, Car, Clock, Play } from 'lucide-react';
 import { LilyChevronDown } from '@/components/LilyChevron';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -745,15 +745,27 @@ export function HeatsView() {
       <Dialog open={showGenerateConfirm} onOpenChange={(open) => !open && setShowGenerateConfirm(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Generate Heats</DialogTitle>
+            <DialogTitle>Start Racing</DialogTitle>
             <DialogDescription>
               Generate heats for <strong>{eligibleRacers.length}</strong> eligible racers?
             </DialogDescription>
           </DialogHeader>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3 my-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-semibold mb-1">The following settings will be locked once racing begins:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-amber-700">
+                <li>Scheduling algorithm &amp; scoring mode</li>
+                <li>Timing hardware</li>
+                <li>Number of lanes</li>
+              </ul>
+              <p className="mt-1.5 text-xs text-amber-600">Registration, custom awards, and event details can still be changed.</p>
+            </div>
+          </div>
           <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
             <Button variant="outline" onClick={() => setShowGenerateConfirm(false)}>Cancel</Button>
             <Button className="bg-[#003F87] hover:bg-[#002f66] text-white" onClick={confirmGenerate}>
-              Generate Heats
+              Start Racing
             </Button>
           </DialogFooter>
         </DialogContent>

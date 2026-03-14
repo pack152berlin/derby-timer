@@ -7,6 +7,7 @@ export interface Event {
   date: string;
   lane_count: number;
   racer_count: number;
+  organization: string;
   status: 'draft' | 'checkin' | 'racing' | 'complete';
   created_at: string;
   updated_at: string;
@@ -16,12 +17,14 @@ export interface CreateEventInput {
   name: string;
   date: string;
   lane_count?: number;
+  organization?: string;
 }
 
 export interface UpdateEventInput {
   name?: string;
   date?: string;
   lane_count?: number;
+  organization?: string;
   status?: 'draft' | 'checkin' | 'racing' | 'complete';
 }
 
@@ -35,11 +38,12 @@ export class EventRepository {
   create(input: CreateEventInput): Event {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    
+    const organization = input.organization ?? 'Cub Scouts of America';
+
     this.db.run(
-      `INSERT INTO events (id, name, date, lane_count, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, input.name, input.date, input.lane_count ?? 4, 'draft', now, now]
+      `INSERT INTO events (id, name, date, lane_count, organization, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, input.name, input.date, input.lane_count ?? 4, organization, 'draft', now, now]
     );
 
     return {
@@ -48,6 +52,7 @@ export class EventRepository {
       date: input.date,
       lane_count: input.lane_count ?? 4,
       racer_count: 0,
+      organization,
       status: 'draft',
       created_at: now,
       updated_at: now
@@ -77,17 +82,19 @@ export class EventRepository {
     const name = input.name ?? existing.name;
     const date = input.date ?? existing.date;
     const lane_count = input.lane_count ?? existing.lane_count;
+    const organization = input.organization ?? existing.organization;
     const status = input.status ?? existing.status;
-    
+
     this.db.run(
       `UPDATE events SET
         name = ?,
         date = ?,
         lane_count = ?,
+        organization = ?,
         status = ?,
         updated_at = ?
        WHERE id = ?`,
-      [name, date, lane_count, status, now, id]
+      [name, date, lane_count, organization, status, now, id]
     );
 
     return this.findById(id);
