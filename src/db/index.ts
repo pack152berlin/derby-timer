@@ -6,3 +6,4 @@ export { RacerRepository, type Racer, type CreateRacerInput, type UpdateRacerInp
 export { HeatRepository, type Heat, type HeatLane, type CreateHeatInput } from './models/heats';
 export { ResultRepository, type Result, type CreateResultInput, type Standing } from './models/results';
 export { PlanningStateRepository, type PlanningSettingsRecord } from './models/planning-state';
+export { EventAwardRepository, type EventAward, type CreateAwardInput, type EventAwardWinner } from './models/event-awards';

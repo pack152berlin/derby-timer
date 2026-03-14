@@ -4,9 +4,28 @@ export interface Event {
   date: string;
   lane_count: number;
   racer_count: number;
+  organization: string;
   status: 'draft' | 'checkin' | 'racing' | 'complete';
   created_at: string;
   updated_at: string;
+}
+
+export interface EventAward {
+  id: string;
+  event_id: string;
+  name: string;
+  allow_second: boolean;
+  allow_third: boolean;
+  sort_order: number;
+}
+
+export interface EventAwardWinner {
+  id: string;
+  award_id: string;
+  racer_id: string;
+  place: number;
+  award_name: string;
+  racer_name: string;
 }
 
 export interface Racer {

@@ -64,8 +64,9 @@ function AppRoutes() {
   // Hydrate from localStorage on initial load
   useEffect(() => {
     const hydrate = async () => {
+      let status: AuthStatus = { admin: false, viewer: false, publicMode: false, privateMode: false };
       try {
-        const status = await api.getAuthStatus();
+        status = await api.getAuthStatus();
         setAuthStatus(status);
       } catch (e) {
         console.error('Failed to fetch auth status:', e);
@@ -84,6 +85,22 @@ function AppRoutes() {
           }
         } catch (e) {
           console.error('Failed to hydrate event:', e);
+        }
+      } else if (!status.admin && window.location.pathname === '/') {
+        // Non-admin auto-skip: if exactly 1 event, skip event selection (viewers + public-mode users)
+        try {
+          const events = await api.getEvents();
+          if (events.length === 1) {
+            const event = events[0]!;
+            setCurrentEvent(event);
+            localStorage.setItem(CURRENT_EVENT_KEY, event.id);
+            await fetchData(event.id);
+            // Navigate viewer to appropriate page
+            const dest = event.status === 'complete' ? '/standings' : '/heats';
+            navigate(dest, { replace: true });
+          }
+        } catch (e) {
+          console.error('Failed to auto-select event:', e);
         }
       }
       setIsHydrated(true);
@@ -151,7 +168,6 @@ function AppRoutes() {
     setLoading(true);
     await fetchData(event.id);
     setLoading(false);
-    const canEdit = authStatus.admin || authStatus.publicMode;
     navigate(event.status === 'complete' ? '/standings' : canEdit ? '/register' : '/heats');
   };
 
@@ -164,6 +180,8 @@ function AppRoutes() {
     }
   };
 
+  const canEdit = authStatus.admin || authStatus.publicMode;
+
   const contextValue = {
     currentEvent,
     racers,
@@ -173,7 +191,7 @@ function AppRoutes() {
     isViewer: authStatus.viewer,
     isPublicMode: authStatus.publicMode,
     isPrivateMode: authStatus.privateMode,
-    canEdit: authStatus.admin || authStatus.publicMode,
+    canEdit,
     setCurrentRacerId: (id: string | null) => {
       if (id) {
         if (!location.pathname.startsWith('/racer/')) {
@@ -235,7 +253,8 @@ function AppRoutes() {
               element={currentEvent ? <StandingsView /> : <Navigate to="/" replace />} 
             />
             <Route path="/info" element={<InfoView />} />
-            <Route path="/new" element={<SetupView />} />
+            <Route path="/new" element={canEdit ? <SetupView /> : <Navigate to="/" replace />} />
+            <Route path="/event/:id/edit" element={canEdit ? <SetupView /> : <Navigate to="/" replace />} />
             <Route 
               path="/racer/:id" 
               element={currentEvent ? <RacerProfileView /> : <Navigate to="/" replace />} 

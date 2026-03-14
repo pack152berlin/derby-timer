@@ -28,6 +28,8 @@ Default to using Bun instead of Node.js.
 
 Use `bun test` to run tests. Create comprehensive test files that describe how the API works.
 
+**Always run `bunx tsc --noEmit` before running tests** to catch type errors early. Fix any new errors before proceeding to test execution.
+
 ### Test script rules
 
 The `test`, `test:integration`, and `test:ui` scripts start a server before running. **Never use `sleep N` to wait for the server.** Use a curl health-check loop instead:
@@ -122,6 +124,7 @@ Always use Tailwind utility classes over custom CSS:
 ### "Derp" UX - Foolproof Simplicity
 - **One action per screen** - don't overwhelm users
 - **Big buttons** - h-12 (48px) minimum for primary standalone CTAs; compact inline card actions (e.g. Save/Cancel/Edit in a list row) may use h-9
+- **Matched row heights** - when an input and a button sit side-by-side in the same row, they must share the same explicit height class (e.g. both `h-11`) so they align visually
 - **Clear labels** - no icons without text labels for primary actions; compact inline icon-only actions must have `aria-label` and `title`
 - **Confirmation dialogs** for destructive actions (delete, clear)
 - **Visual feedback** - loading states, success badges, clear status indicators

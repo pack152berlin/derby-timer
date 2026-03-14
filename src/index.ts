@@ -8,6 +8,7 @@ import {
   HeatRepository,
   ResultRepository,
   PlanningStateRepository,
+  EventAwardRepository,
   umzug,
 } from "./db";
 import {
@@ -52,6 +53,7 @@ const racersRepo = new RacerRepository();
 const heatsRepo = new HeatRepository();
 const resultsRepo = new ResultRepository();
 const planningStateRepo = new PlanningStateRepository();
+const awardsRepo = new EventAwardRepository();
 
 const photoUploadDir = Bun.env.DERBY_UPLOAD_DIR ?? "uploads/car-photos";
 const parsedMaxPhotoBytes = Number(Bun.env.DERBY_MAX_PHOTO_BYTES ?? "1200000");
@@ -517,7 +519,9 @@ const server = Bun.serve({
     "/heats": index,
     "/race": index,
     "/standings": index,
-    "/format": index,
+    "/new": index,
+    "/info": index,
+    "/event/:id/edit": index,
     "/racer/:id": index,
     "/display": display,
     "/certificate/:id": index,
@@ -544,6 +548,7 @@ const server = Bun.serve({
           name: string;
           date: string;
           lane_count?: number;
+          organization?: string;
         };
         if (!body.name || !body.date) {
           return respondJson({ error: "Name and date are required" }, 400);
@@ -552,6 +557,7 @@ const server = Bun.serve({
           name: body.name,
           date: body.date,
           lane_count: body.lane_count,
+          organization: body.organization,
         });
         return respondJson(event, 201);
       }),
@@ -568,6 +574,7 @@ const server = Bun.serve({
           name?: string;
           date?: string;
           lane_count?: number;
+          organization?: string;
           status?: "draft" | "checkin" | "racing" | "complete";
         };
         const event = eventsRepo.update(req.params.id, body);
@@ -1089,6 +1096,79 @@ const server = Bun.serve({
         broadcast({ type: "STANDINGS_UPDATED", eventId: heat.event_id });
 
         return respondJson(savedResults);
+      }),
+    },
+
+    // ===== AWARDS API =====
+    "/api/events/:eventId/awards": {
+      GET: viewerRequired((req) => {
+        const awards = awardsRepo.findAwardsByEvent(req.params.eventId);
+        return respondJson(awards);
+      }),
+      POST: adminOnly(async (req) => {
+        const body = (await req.json()) as {
+          awards: {
+            name: string;
+            allow_second?: boolean;
+            allow_third?: boolean;
+            sort_order?: number;
+          }[];
+        };
+        if (!body.awards || !Array.isArray(body.awards)) {
+          return respondJson({ error: "Awards array is required" }, 400);
+        }
+        const awards = awardsRepo.replaceAwardsForEvent(
+          req.params.eventId,
+          body.awards
+        );
+        return respondJson(awards);
+      }),
+    },
+
+    "/api/awards/:id": {
+      PATCH: adminOnly(async (req) => {
+        const body = (await req.json()) as {
+          name?: string;
+          allow_second?: boolean;
+          allow_third?: boolean;
+          sort_order?: number;
+        };
+        const award = awardsRepo.updateAward(req.params.id, body);
+        if (!award) return respondJson({ error: "Award not found" }, 404);
+        return respondJson(award);
+      }),
+      DELETE: adminOnly((req) => {
+        const deleted = awardsRepo.deleteAward(req.params.id);
+        if (!deleted) return respondJson({ error: "Award not found" }, 404);
+        return respondJson({ success: true });
+      }),
+    },
+
+    "/api/events/:eventId/award-winners": {
+      GET: viewerRequired((req) => {
+        const winners = awardsRepo.findWinnersByEvent(req.params.eventId);
+        return respondJson(winners);
+      }),
+    },
+
+    "/api/awards/:awardId/winners": {
+      POST: adminOnly(async (req) => {
+        const body = (await req.json()) as {
+          winners: { racer_id: string; place: number }[];
+        };
+        if (!body.winners || !Array.isArray(body.winners)) {
+          return respondJson({ error: "Winners array is required" }, 400);
+        }
+        awardsRepo.setWinnersForAward(req.params.awardId, body.winners);
+        return respondJson({ success: true });
+      }),
+    },
+
+    "/api/award-winners/:id": {
+      DELETE: adminOnly((req) => {
+        const deleted = awardsRepo.deleteWinner(req.params.id);
+        if (!deleted) return respondJson({ error: "Winner not found" }, 404);
+        return respondJson({ success: true });
       }),
     },
 

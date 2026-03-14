@@ -382,7 +382,12 @@ function RacersTab({
   const [photoToRemoveRacer, setPhotoToRemoveRacer] = useState<Racer | null>(null);
   const [lastAddedRacer, setLastAddedRacer] = useState<Racer | null>(null);
   const [justSavedRacerId, setJustSavedRacerId] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardPhotoInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -544,7 +549,8 @@ function RacersTab({
       const savedId = racer.id;
       resetEditForm();
       setJustSavedRacerId(savedId);
-      setTimeout(() => setJustSavedRacerId(prev => prev === savedId ? null : prev), 1200);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setJustSavedRacerId(prev => prev === savedId ? null : prev), 1200);
       await refreshData();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update racer.';
@@ -1042,7 +1048,7 @@ function RacersTab({
                         size="sm"
                         onClick={() => handleSaveEdit(racer)}
                         disabled={isSavingEdit || !editRacerName.trim()}
-                        className="h-9 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
+                        className="h-10 px-3 bg-[#003F87] hover:bg-[#002f66] text-white"
                       >
                         {isSavingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                         Save
@@ -1053,7 +1059,7 @@ function RacersTab({
                         size="sm"
                         onClick={resetEditForm}
                         disabled={isSavingEdit}
-                        className="h-9 px-3"
+                        className="h-10 px-3"
                       >
                         Cancel
                       </Button>

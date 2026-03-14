@@ -1,13 +1,178 @@
-import React, { useState, useMemo } from 'react';
-import { Trophy, Search, Award, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Trophy, Search, Award, ExternalLink, Save, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { useApp } from '../context';
 import { SearchInput } from '../components/SearchInput';
 import { CUB_SCOUT_DENS } from '../constants';
 import { calculatePlaceCounts } from '../lib/standings-utils';
 import { StandingHeader, type SortCol, type SortDir } from './standings/StandingHeader';
 import { StandingRow } from './standings/StandingRow';
+import { api } from '../api';
+import type { EventAward, EventAwardWinner } from '../types';
+
+// --- Award Winner Assignment ---
+
+function AwardWinnerPicker({
+  award,
+  racerOptions,
+  currentWinners,
+  onSave,
+}: {
+  award: EventAward;
+  racerOptions: { id: string; name: string; car_number: string }[];
+  currentWinners: EventAwardWinner[];
+  onSave: (awardId: string, winners: { racer_id: string; place: number }[]) => Promise<void>;
+}) {
+  const maxPlace = award.allow_third ? 3 : award.allow_second ? 2 : 1;
+  const awardWinners = currentWinners.filter(w => w.award_id === award.id);
+
+  const [picks, setPicks] = useState<Record<number, string>>(() => {
+    const map: Record<number, string> = {};
+    for (const w of awardWinners) {
+      map[w.place] = w.racer_id;
+    }
+    return map;
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Sync picks when currentWinners changes (e.g. after save + reload)
+  useEffect(() => {
+    const map: Record<number, string> = {};
+    for (const w of awardWinners) {
+      map[w.place] = w.racer_id;
+    }
+    setPicks(map);
+  }, [currentWinners]);
+
+  useEffect(() => {
+    return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); };
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const winners: { racer_id: string; place: number }[] = [];
+    for (let p = 1; p <= maxPlace; p++) {
+      if (picks[p]) {
+        winners.push({ racer_id: picks[p]!, place: p });
+      }
+    }
+    await onSave(award.id, winners);
+    setSaving(false);
+    setSaved(true);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+  };
+
+  const placeLabels = ['', '1st', '2nd', '3rd'];
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 py-3 border-b border-slate-100 last:border-b-0">
+      <div className="w-40 shrink-0">
+        <span className="font-bold text-sm text-slate-800">{award.name}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 flex-1">
+        {Array.from({ length: maxPlace }, (_, i) => i + 1).map(place => (
+          <div key={place} className="flex items-center gap-1.5">
+            {maxPlace > 1 && (
+              <span className="text-xs font-semibold text-slate-400">{placeLabels[place]}</span>
+            )}
+            <Select
+              value={picks[place] ?? '_none'}
+              onValueChange={(v) => setPicks(prev => ({ ...prev, [place]: v === '_none' ? '' : v }))}
+            >
+              <SelectTrigger className="h-9 w-[180px] text-sm bg-white border-slate-300">
+                <SelectValue placeholder="Select racer..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— None —</SelectItem>
+                {racerOptions.map(r => (
+                  <SelectItem key={r.id} value={r.id}>
+                    #{r.car_number} {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
+      <Button
+        size="sm"
+        onClick={handleSave}
+        disabled={saving}
+        className="h-9 gap-1.5 bg-[#003F87] hover:bg-[#002f66] text-white font-bold text-sm shrink-0"
+      >
+        {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+        {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
+      </Button>
+    </div>
+  );
+}
+
+function CustomAwardsSection({
+  eventId,
+  racerOptions,
+}: {
+  eventId: string;
+  racerOptions: { id: string; name: string; car_number: string }[];
+}) {
+  const [awards, setAwards] = useState<EventAward[]>([]);
+  const [winners, setWinners] = useState<EventAwardWinner[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    const [a, w] = await Promise.all([
+      api.getAwards(eventId),
+      api.getAwardWinners(eventId),
+    ]);
+    setAwards(a);
+    setWinners(w);
+    setLoading(false);
+  }, [eventId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSave = async (awardId: string, newWinners: { racer_id: string; place: number }[]) => {
+    await api.setAwardWinners(awardId, newWinners);
+    await loadData();
+  };
+
+  if (loading) return null;
+  if (awards.length === 0) return null;
+
+  return (
+    <Card className="border border-slate-200 shadow-sm">
+      <CardContent className="pt-5 pb-3 px-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Award className="w-5 h-5 text-[#003F87]" />
+          <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">
+            Custom Awards
+          </h2>
+        </div>
+        <p className="text-sm text-slate-500 mb-4">
+          Assign winners for each award category. Racers are listed by standings rank.
+        </p>
+        <div>
+          {awards.map(award => (
+            <AwardWinnerPicker
+              key={award.id}
+              award={award}
+              racerOptions={racerOptions}
+              currentWinners={winners}
+              onSave={handleSave}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --- Main View ---
 
 export function StandingsView() {
   const { standings, racers, heats, setCurrentRacerId, currentEvent, canEdit } = useApp();
@@ -87,6 +252,16 @@ export function StandingsView() {
     return result;
   }, [standings, racers, heats, denFilter, searchTerm, sortCol, sortDir, placeCountsByRacer]);
 
+  // Build racer options sorted by standings rank for award pickers
+  const racerOptions = useMemo(() => {
+    const standingOrder = new Map(standings.map((s, i) => [s.racer_id, i]));
+    return [...racers]
+      .sort((a, b) => (standingOrder.get(a.id) ?? 9999) - (standingOrder.get(b.id) ?? 9999))
+      .map(r => ({ id: r.id, name: r.name, car_number: r.car_number }));
+  }, [racers, standings]);
+
+  const showAwards = canEdit && currentEvent?.status === 'complete' && currentEvent?.id;
+
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-6">
       <div className="flex items-start justify-between">
@@ -99,16 +274,25 @@ export function StandingsView() {
           </p>
         </div>
         {canEdit && currentEvent?.status === 'complete' && (
-          <a
-            href="/certificates"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 h-12 rounded-lg font-bold text-sm bg-[#003F87] hover:bg-[#002f66] text-white transition-colors shadow-sm"
-          >
-            <Award size={18} />
-            <span className="hidden sm:inline">Print Certificates</span>
-            <ExternalLink size={14} className="text-white/60" />
-          </a>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => document.getElementById('custom-awards-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex items-center gap-2 px-4 h-12 rounded-lg font-bold text-sm border-2 border-[#003F87] text-[#003F87] hover:bg-[#003F87]/10 transition-colors cursor-pointer"
+            >
+              <Award size={18} />
+              <span className="hidden sm:inline">Assign Awards</span>
+            </button>
+            <a
+              href="/certificates"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 h-12 rounded-lg font-bold text-sm bg-[#003F87] hover:bg-[#002f66] text-white transition-colors shadow-sm"
+            >
+              <Award size={18} />
+              <span className="hidden sm:inline">Print Certificates</span>
+              <ExternalLink size={14} className="text-white/60" />
+            </a>
+          </div>
         )}
       </div>
 
@@ -174,6 +358,15 @@ export function StandingsView() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {showAwards && (
+        <div id="custom-awards-section" className="scroll-mt-20">
+          <CustomAwardsSection
+            eventId={currentEvent!.id}
+            racerOptions={racerOptions}
+          />
         </div>
       )}
     </div>
